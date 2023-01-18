@@ -16,3 +16,18 @@ class HSRawData:
     def __len__(self):
         pass
 
+    def __load_from_video(self):
+        pass
+
+    def __load_from_images(self):
+        pass
+
+    def __load_from_geotiff(self):
+        pass
+
+    def __load_from_mat(self):
+        pass
+
+    def __load_from_h5(self):
+        pass
+
