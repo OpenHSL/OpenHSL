@@ -33,8 +33,17 @@ class HSImage:
         hsi: np.ndarray
 
         """
-        self.data = hsi
-        self.metadata = metadata
+
+        if isinstance(hsi, np.ndarray):
+            self.data = hsi
+        else:
+            raise ValueError()
+
+        if isinstance(metadata, dict):
+            self.metadata = metadata
+        else:
+            raise ValueError()
+    # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_mat(self, path_to_file: str, mat_key: str):
         """
@@ -49,6 +58,7 @@ class HSImage:
             mat_file['image']
         """
         self.data = loadmat(path_to_file)[mat_key]
+    # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_tiff(self, path_to_file: str):
         """
@@ -59,7 +69,9 @@ class HSImage:
         path_to_file: str
             Path to .tiff file
         """
+        # TODO GDAL or what?
         ...
+    # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_npy(self, path_to_file: str):
         """
@@ -71,6 +83,7 @@ class HSImage:
             Path to .npy file
         """
         self.data = np.load(path_to_file)
+    # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_h5(self, path_to_file: str, h5_key: str = None):
         """
@@ -84,6 +97,7 @@ class HSImage:
             Key for field in .h5 file as dict object
         """
         self.data = h5py.File(path_to_file, 'r')[h5_key]
+    # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_images(self, path_to_dir: str):
         """
@@ -100,7 +114,7 @@ class HSImage:
             img = Image.open(f'{path_to_dir}/{image_name}').convert("L")
             hsi.append(np.array(img))
         self.data = np.array(hsi).transpose((1, 2, 0))
-
+    # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_mat(self, path_to_file: str, mat_key: str):
         """
@@ -115,6 +129,7 @@ class HSImage:
         """
         temp_dict = {mat_key: self.data}
         savemat(path_to_file, temp_dict)
+    # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_tiff(self, path_to_file: str):
         """
@@ -126,6 +141,7 @@ class HSImage:
             Path to saving file
         """
         ...
+    # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_h5(self, path_to_file: str, h5_key: str):
         """
@@ -140,6 +156,7 @@ class HSImage:
         """
         with h5py.File(path_to_file, 'w') as f:
             f.create_dataset(h5_key, data=self.data)
+    # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_npy(self, path_to_file: str):
         """
@@ -151,6 +168,7 @@ class HSImage:
             Path to saving file
         """
         np.save(path_to_file, self.data)
+    # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_images(self, path_to_dir: str, format: str = 'png'):
         """
@@ -170,3 +188,4 @@ class HSImage:
                 Image.fromarray(self.data[:, :, i]).convert("L").save(f'{path_to_dir}/{i}.{format}')
             else:
                 raise Exception('Unexpected format')
+    # ------------------------------------------------------------------------------------------------------------------
