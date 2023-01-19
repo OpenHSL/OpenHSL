@@ -4,11 +4,29 @@ import numpy as np
 
 class HSMask:
     """
-    Image-like object which contains:
-        2D-Array
-            Each pixel has value from [0, class_counts - 1]
-        3D-Array
-            Each layer is binary image where 1 is class and 0 is not-class
+    HSMask()
+
+        Image-like object which contains:
+            2D-Array
+                Each pixel has value from [0, class_counts - 1]
+            3D-Array
+                Each layer is binary image where 1 is class and 0 is not-class
+
+        Parameters
+        ----------
+
+        Attributes
+        ----------
+
+        See Also
+        --------
+
+        Notes
+        -----
+
+        Examples
+        --------
+
     """
 
     def __init__(self, mask: Optional[np.array], metadata: Optional[Dict]):

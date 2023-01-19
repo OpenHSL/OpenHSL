@@ -6,9 +6,27 @@ from hsi import HSImage
 
 class Dataloader:
     """
-    Creates loader from HSImage and HSMask (optional)
+    Dataloader()
 
-    Has built-in Sampler
+        Creates loader from HSImage and HSMask (optional)
+
+        Has built-in Sampler
+
+        Parameters
+        ----------
+
+        Attributes
+        ----------
+
+        See Also
+        --------
+
+        Notes
+        -----
+
+        Examples
+        --------
+
     """
 
     def __init__(self, hsi: Optional[HSImage], mask: Optional[HSMask]):

@@ -1,6 +1,24 @@
 class Model:
     """
-    Abstract class for decorating machine learning algorithms
+    Model()
+
+        Abstract class for decorating machine learning algorithms
+
+        Parameters
+        ----------
+
+        Attributes
+        ----------
+
+        See Also
+        --------
+
+        Notes
+        -----
+
+        Examples
+        --------
+
     """
     def __init__(self):
         pass

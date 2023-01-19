@@ -6,31 +6,54 @@ from PIL import Image
 from scipy.io import loadmat, savemat
 from typing import Optional, Dict
 
+
 class HSImage:
     """
-    Hyperspectral Image which has a dimension X - Y - Z
-    where Z is a count of channels
+    HSImage(hsi, metadata)
 
-    Data are captured along axis X
+        Hyperspectral Image which has a dimension X - Y - Z
+        where Z is a count of channels
 
-    ...
-    Attributes
-    ----------
-    data : np.ndarray
-        Hyperspectral Image in array format
+        Data are captured along axis X
 
-    Methods
-    -------
+        Parameters
+        ----------
+
+        Attributes
+        ----------
+
+        See Also
+        --------
+
+        Notes
+        -----
+
+        Examples
+        --------
 
 
     """
+
     def __init__(self, hsi: Optional[np.ndarray], metadata: Optional[Dict]):
         """
-        Initializes HSI object
+        Inits HSI object
 
         Parameters
         ----------
         hsi: np.ndarray
+            #TODO maybe this description must be replaced to hs_raw_pushbroom_data.py?
+            3D-matrix which has a dimension X - Y - Z
+            where
+            X is along-axis of capturing data
+            Y is constant resolution
+            Z is a count of channels
+        metadata: dict
+
+        Raises
+        ------
+
+        Examples
+        --------
 
         """
 
@@ -47,66 +70,83 @@ class HSImage:
 
     def load_from_mat(self, path_to_file: str, mat_key: str):
         """
-        Loads HSI from .mat file
+        load_from_mat(path_to_file, mat_key)
 
-        Parameters
-        ----------
-        path_to_file: str
-            Path to .mat file
-        mat_key: str
-            Key for field in .mat file as dict object
-            mat_file['image']
+            Loads HSI from .mat file
+
+            Parameters
+            ----------
+            path_to_file: str
+                Path to .mat file
+            mat_key: str
+                Key for field in .mat file as dict object
+                mat_file['image']
+
+            Returns
+            -------
+
+            Raises
+            ------
+
         """
         self.data = loadmat(path_to_file)[mat_key]
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_tiff(self, path_to_file: str):
         """
-        Loads HSI from .tiff file
+        load_from_tiff(path_to_file)
 
-        Parameters
-        ----------
-        path_to_file: str
-            Path to .tiff file
-        """
-        # TODO GDAL or what?
-        ...
+            Loads HSI from .tiff file
+
+            Parameters
+            ----------
+            path_to_file: str
+                Path to .tiff file
+            """
+            # TODO GDAL or what?
+        pass
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_npy(self, path_to_file: str):
         """
-        Loads HSI from .npy file
+        load_from_npy(path_to_file)
 
-        Parameters
-        ----------
-        path_to_file: str
-            Path to .npy file
+            Loads HSI from .npy file
+
+            Parameters
+            ----------
+            path_to_file: str
+                Path to .npy file
         """
         self.data = np.load(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_h5(self, path_to_file: str, h5_key: str = None):
         """
-        Loads HSI from .h5 file
+        load_from_h5(path_to_file, h5_key)
 
-        Parameters
-        ----------
-        path_to_file: str
-            Path to .h5 file
-        h5_key: str
-            Key for field in .h5 file as dict object
+            Loads HSI from .h5 file
+
+            Parameters
+            ----------
+            path_to_file: str
+                Path to .h5 file
+            h5_key: str
+                Key for field in .h5 file as dict object
         """
         self.data = h5py.File(path_to_file, 'r')[h5_key]
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_images(self, path_to_dir: str):
         """
-        Loads HSI from images are placed in directory
+        load_from_images(path_to_dir)
 
-        Parameters
-        ----------
-        path_to_dir: str
-            Path to directory with images
+            Loads HSI from images are placed in directory
+
+            Parameters
+            ----------
+            path_to_dir: str
+                Path to directory with images
         """
         images_list = listdir(path_to_dir)
         hsi = []
@@ -118,14 +158,16 @@ class HSImage:
 
     def save_to_mat(self, path_to_file: str, mat_key: str):
         """
-        Saves HSI to .mat file as dictionary
+        save_to_mat(path_to_file, mat_key)
 
-        Parameters
-        ----------
-        path_to_file: str
-            Path to saving file
-        mat_key: str
-            Key for dictionary
+            Saves HSI to .mat file as dictionary
+
+            Parameters
+            ----------
+            path_to_file: str
+                Path to saving file
+            mat_key: str
+                Key for dictionary
         """
         temp_dict = {mat_key: self.data}
         savemat(path_to_file, temp_dict)
@@ -133,26 +175,31 @@ class HSImage:
 
     def save_to_tiff(self, path_to_file: str):
         """
-        Saves HSI to .tiff file
+        save_to_tiff(path_to_file)
 
-        Parameters
-        ----------
-        path_to_file: str
-            Path to saving file
+            Saves HSI to .tiff file
+
+            Parameters
+            ----------
+            path_to_file: str
+                Path to saving file
         """
+        # TODO GDAL?
         ...
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_h5(self, path_to_file: str, h5_key: str):
         """
-        Saves HSI to .h5 file as dictionary
+        save_to_h5(path_to_file, h5_key)
 
-        Parameters
-        ----------
-        path_to_file: str
-            Path to saving file
-        h5_key: str
-            Key for dictionary
+            Saves HSI to .h5 file as dictionary
+
+            Parameters
+            ----------
+            path_to_file: str
+                Path to saving file
+            h5_key: str
+                Key for dictionary
         """
         with h5py.File(path_to_file, 'w') as f:
             f.create_dataset(h5_key, data=self.data)
@@ -160,26 +207,30 @@ class HSImage:
 
     def save_to_npy(self, path_to_file: str):
         """
-        Saves HSI to .npy file
+        save_to_npy(path_to_file)
 
-        Parameters
-        ----------
-        path_to_file: str
-            Path to saving file
+            Saves HSI to .npy file
+
+            Parameters
+            ----------
+            path_to_file: str
+                Path to saving file
         """
         np.save(path_to_file, self.data)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_images(self, path_to_dir: str, format: str = 'png'):
         """
-        Saves HSI to .npy file
+        save_to_images(path_to_dir, format)
 
-        Parameters
-        ----------
-        path_to_dir: str
-            Path to saving file
-        format: str
-            Format of images (png, jpg, jpeg, bmp)
+            Saves HSI to .npy file
+
+            Parameters
+            ----------
+            path_to_dir: str
+                Path to saving file
+            format: str
+                Format of images (png, jpg, jpeg, bmp)
         """
         if not isdir(path_to_dir):
             mkdir(path_to_dir)

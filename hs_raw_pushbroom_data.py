@@ -1,7 +1,24 @@
 class HSRawData:
     """
-    Reader and iterator of raw data-files such as video,
-    common images (png, bmp) and multichannel images (mat, gettiff, h5)
+    HSRawData()
+
+        Reader and iterator of raw data-files such as video,
+        common images (png, bmp) and multichannel images (mat, gettiff, h5)
+
+        Parameters
+        ----------
+
+        Attributes
+        ----------
+
+        See Also
+        --------
+
+        Notes
+        -----
+
+        Examples
+        --------
 
     """
     def __init__(self):

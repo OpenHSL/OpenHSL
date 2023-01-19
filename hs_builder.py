@@ -3,13 +3,38 @@ from hs_raw_pushbroom_data import HSRawData
 
 class HSBuilder:
     """
-    Build a HSI object from HSRawData
+    HSBuilder()
+
+        Build a HSI object from HSRawData
+
+        Parameters
+        ----------
+
+        Attributes
+        ----------
+
+        See Also
+        --------
+
+        Notes
+        -----
+
+        Examples
+        --------
 
     """
 
     def __init__(self, hs_raw_data: HSRawData, metadata_):
         pass
 
+    def load_from_rail_dev(self):
+        pass
+
+    def load_from_uav_dev(self):
+        pass
+
+    def load_from_rot_dev(self):
+        pass
 
     def some_preparation_on_hsi(self):
         pass
