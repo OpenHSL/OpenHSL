@@ -1,7 +1,7 @@
 import numpy as np
 
 from hsi import HSImage
-from hs_raw_pushbroom_data import HSRawData
+from hs_raw_pb_data import RawImagesData
 
 
 class HSBuilder:
@@ -24,8 +24,8 @@ class HSBuilder:
 
     """
 
-    def __init__(self, hs_raw_data: HSRawData, metadata):
-        self.HSI = None
+    def __init__(self, hs_raw_data, metadata):
+        self.hsi = None
         self.hs_raw_data = hs_raw_data
         self.metadata = metadata
     # ------------------------------------------------------------------------------------------------------------------
@@ -53,6 +53,7 @@ class HSBuilder:
         for frame in rail_iterator:
             tmp_layer = self._some_preparation_on_frame(frame=frame)
             hsi_tmp.append(tmp_layer)
+        self.hsi = np.array(hsi_tmp).transpose((1, 2, 0))
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_uav_dev(self):
