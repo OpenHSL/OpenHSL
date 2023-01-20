@@ -12,67 +12,53 @@ class HSImage:
     HSImage(hsi, metadata)
 
         Hyperspectral Image which has a dimension X - Y - Z
-        where Z is a count of channels
-
-        Data are captured along axis X
+        where Z is a count of channels.
+        Data are captured along axis X.
 
         Parameters
         ----------
+        hsi: np.ndarray
+            3D-matrix which has a dimension X - Y - Z.
+            where:
+                X is along-axis of capturing data.
+                Y is constant resolution.
+                Z is a count of channels.
 
+        metadata: dict
+            contains # TODO what contains?
         Attributes
         ----------
+        data: np.ndarray
 
-        See Also
-        --------
-
-        Notes
-        -----
+        metadata: dict
 
         Examples
         --------
+            arr = np.zeros((100, 100, 250))
+            md = {'capturing place' : 'Samara'}
 
+            hsi = HSImage(hsi=arr, metadata=md)
 
     """
 
     def __init__(self, hsi: Optional[np.ndarray], metadata: Optional[Dict]):
         """
-        Inits HSI object
+            Inits HSI object.
 
-        Parameters
-        ----------
-        hsi: np.ndarray
-            #TODO maybe this description must be replaced to hs_raw_pushbroom_data.py?
-            3D-matrix which has a dimension X - Y - Z
-            where
-            X is along-axis of capturing data
-            Y is constant resolution
-            Z is a count of channels
-        metadata: dict
-
-        Raises
-        ------
-
-        Examples
-        --------
-
+            Raises
+            ------
+            ValueError
+                When type of his-object or metadata doesn't match np.ndarray and dict corresponding
         """
-
-        if isinstance(hsi, np.ndarray):
-            self.data = hsi
-        else:
-            raise ValueError()
-
-        if isinstance(metadata, dict):
-            self.metadata = metadata
-        else:
-            raise ValueError()
+        self.data = hsi
+        self.metadata = metadata
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_mat(self, path_to_file: str, mat_key: str):
         """
         load_from_mat(path_to_file, mat_key)
 
-            Loads HSI from .mat file
+            Loads HSI from .mat file.
 
             Parameters
             ----------
@@ -81,22 +67,19 @@ class HSImage:
             mat_key: str
                 Key for field in .mat file as dict object
                 mat_file['image']
-
-            Returns
-            -------
-
             Raises
             ------
 
         """
         self.data = loadmat(path_to_file)[mat_key]
+
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_tiff(self, path_to_file: str):
         """
         load_from_tiff(path_to_file)
 
-            Loads HSI from .tiff file
+            Loads HSI from .tiff file.
 
             Parameters
             ----------
@@ -111,7 +94,7 @@ class HSImage:
         """
         load_from_npy(path_to_file)
 
-            Loads HSI from .npy file
+            Loads HSI from .npy file.
 
             Parameters
             ----------
@@ -125,7 +108,7 @@ class HSImage:
         """
         load_from_h5(path_to_file, h5_key)
 
-            Loads HSI from .h5 file
+            Loads HSI from .h5 file.
 
             Parameters
             ----------
@@ -141,7 +124,7 @@ class HSImage:
         """
         load_from_images(path_to_dir)
 
-            Loads HSI from images are placed in directory
+            Loads HSI from images are placed in directory.
 
             Parameters
             ----------
@@ -192,7 +175,7 @@ class HSImage:
         """
         save_to_h5(path_to_file, h5_key)
 
-            Saves HSI to .h5 file as dictionary
+            Saves HSI to .h5 file as dictionary.
 
             Parameters
             ----------
@@ -209,7 +192,7 @@ class HSImage:
         """
         save_to_npy(path_to_file)
 
-            Saves HSI to .npy file
+            Saves HSI to .npy file.
 
             Parameters
             ----------
@@ -240,3 +223,4 @@ class HSImage:
             else:
                 raise Exception('Unexpected format')
     # ------------------------------------------------------------------------------------------------------------------
+
