@@ -1,3 +1,5 @@
+import os
+
 class HSRawData:
     """
     HSRawData()
@@ -21,30 +23,47 @@ class HSRawData:
         --------
 
     """
-    def __init__(self):
-        pass
+    def __init__(self, path_to_source, source_type):
+        self.path_to_source = path_to_source
+        self.source_type = source_type
+    # ------------------------------------------------------------------------------------------------------------------
 
     def __iter__(self):
+        if self.source_type == 'images':
+            list_imgs = os.listdir(self.path_to_source)
+            self.current_index = 0
+        if self.source_type == 'video':
+            ...
         return self
+    # ------------------------------------------------------------------------------------------------------------------
 
     def __next__(self):
+        tmp = self.current_index
+        self.current_index += 1
+        return
         raise StopIteration
+    # ------------------------------------------------------------------------------------------------------------------
 
     def __len__(self):
         pass
+    # ------------------------------------------------------------------------------------------------------------------
 
-    def __load_from_video(self):
+    def _load_from_video(self):
         pass
+    # ------------------------------------------------------------------------------------------------------------------
 
-    def __load_from_images(self):
+    def _load_from_images(self):
         pass
+    # ------------------------------------------------------------------------------------------------------------------
 
-    def __load_from_geotiff(self):
+    def _load_from_geotiff(self):
         pass
+    # ------------------------------------------------------------------------------------------------------------------
 
-    def __load_from_mat(self):
+    def _load_from_mat(self):
         pass
+    # ------------------------------------------------------------------------------------------------------------------
 
-    def __load_from_h5(self):
+    def _load_from_h5(self):
         pass
-
+    # ------------------------------------------------------------------------------------------------------------------
