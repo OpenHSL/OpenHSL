@@ -1,4 +1,5 @@
 import os
+# TODO maybe replace by cv2
 from PIL import Image
 
 
@@ -47,6 +48,8 @@ class RawImagesData:
 class RawVideoData:
     """
         RawVideoData(path_to_file)
+
+            #TODO make with cv2.video_capture
 
             Create iterator for videoframes.
             In each step return PIL.Image object # TODO maybe cv2 or np.array?
@@ -98,7 +101,7 @@ class RawMatData:
 
 
 class RawTiffData:
-
+    # TODO may be realize with GDAL?
     def __init__(self, path_to_tiff: str):
         self.path_to_tiff = path_to_tiff
 
@@ -111,7 +114,7 @@ class RawTiffData:
     def __len__(self):
         pass
 
-
+# TODO may be delete class?
 class HSRawData:
     """
     HSRawData()
@@ -170,3 +173,5 @@ class HSRawData:
     def _load_from_h5(self):
         pass
     # ------------------------------------------------------------------------------------------------------------------
+
+

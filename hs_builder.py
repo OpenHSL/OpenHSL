@@ -24,13 +24,13 @@ class HSBuilder:
 
     """
 
-    def __init__(self, path_to_data, metadata):
+    def __init__(self, path_to_data, metadata, data_type='images'):
         self.hsi = None
         self.path_to_data = path_to_data
         self.metadata = metadata
     # ------------------------------------------------------------------------------------------------------------------
 
-    def cut_target_area(self, frame: np.ndarray) -> np.ndarray:
+    def get_roi(self, frame: np.ndarray) -> np.ndarray:
         pass
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -78,11 +78,11 @@ class HSBuilder:
         """
         hsi_tmp = []
         for frame in rail_iterator:
-            tmp_layer = self.cut_target_area(frame=frame)
+            tmp_layer = self.illumination_normalization(frame=frame)
             tmp_layer = self.barrel_normalization(frame=tmp_layer)
             tmp_layer = self.trapezoid_normalization(frame=tmp_layer)
-            tmp_layer = self.illumination_normalization(frame=tmp_layer)
-            tmp_layer = HSBuilder._some_preparation_on_frame(frame=tmp_layer)
+            tmp_layer = self._some_preparation_on_frame(frame=tmp_layer)
+            tmp_layer = self.get_roi(frame=tmp_layer)
             hsi_tmp.append(np.array(tmp_layer))
 
         # this transpose is needed for replace axis for z-x-y to x-y-z
@@ -116,7 +116,7 @@ class HSBuilder:
             tmp_layer = self.trapezoid_normalization(frame=tmp_layer)
             tmp_layer = self.illumination_normalization(frame=tmp_layer)
             tmp_layer = self.rotary_normalization(frame=tmp_layer)
-            tmp_layer = HSBuilder._some_preparation_on_frame(frame=tmp_layer)
+            tmp_layer = self._some_preparation_on_frame(frame=tmp_layer)
             hsi_tmp.append(np.array(tmp_layer))
 
         # this transpose is needed for replace axis for z-x-y to x-y-z
