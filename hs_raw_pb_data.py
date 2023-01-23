@@ -1,4 +1,5 @@
 import os
+import cv2
 # TODO maybe replace by cv2
 from PIL import Image
 
@@ -47,7 +48,7 @@ class RawImagesData:
 
 class RawVideoData:
     """
-        RawVideoData(path_to_file)
+        RawVideoData(path_to_file_)
 
             #TODO make with cv2.video_capture
 
@@ -72,17 +73,34 @@ class RawVideoData:
 
         """
 
-    def __init__(self, path_to_file: str):
-        self.path_to_file = path_to_file
+    def __init__(self, path_to_file:str):
+        self.path = path_to_file
+        self.format = self.path.split(".")[-1]
+        self.current_step = 0
+        self.cap = cv2.VideoCapture(self.path)
+
 
     def __iter__(self):
-        return self
-
-    def __next__(self):
-        pass
+        while self.cap.isOpened():
+            ret, frame = self.cap.read()
+            self.frame = frame
+            if ret:
+                return self
+            else:
+                break
 
     def __len__(self):
-        pass
+        self.length = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        return self.length
+
+    def __next__(self):
+        self.current_step+=1
+        frame = self.frame
+        self.frame += 1
+        if self.current_step < len(self):
+            return frame
+        else:
+            raise StopIteration
 
 
 class RawMatData:
@@ -173,5 +191,3 @@ class HSRawData:
     def _load_from_h5(self):
         pass
     # ------------------------------------------------------------------------------------------------------------------
-
-
