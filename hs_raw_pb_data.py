@@ -1,6 +1,7 @@
 import os
 # TODO maybe replace by cv2
 from PIL import Image
+import numpy as np
 
 
 class RawImagesData:
@@ -39,7 +40,8 @@ class RawImagesData:
     def __next__(self):
         self.path_to_curr_img = next(self.imgs_list)
         path_to_img = f'{self.path_to_dir}/{self.path_to_curr_img}'
-        return Image.open(path_to_img).convert("L")
+        #TODO maybe replace by cv2.imread?
+        return np.array(Image.open(path_to_img).convert("L"))
 
     def __len__(self):
         return len(os.listdir(self.path_to_dir))
@@ -114,64 +116,5 @@ class RawTiffData:
     def __len__(self):
         pass
 
-# TODO may be delete class?
-class HSRawData:
-    """
-    HSRawData()
-
-        Reader and iterator of raw data-files such as video,
-        common images (png, bmp) and multichannel images (mat, gettiff, h5)
-
-        Parameters
-        ----------
-
-        Attributes
-        ----------
-
-        See Also
-        --------
-
-        Notes
-        -----
-
-        Examples
-        --------
-
-    """
-    def __init__(self, path_to_source, source_type):
-        pass
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def __iter__(self):
-        pass
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def __next__(self):
-        pass
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def __len__(self):
-        pass
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def _load_from_video(self):
-        pass
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def _load_from_images(self):
-        pass
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def _load_from_geotiff(self):
-        pass
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def _load_from_mat(self):
-        pass
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def _load_from_h5(self):
-        pass
-    # ------------------------------------------------------------------------------------------------------------------
 
 
