@@ -45,9 +45,32 @@ class RawImagesData:
 
 
 class RawVideoData:
+    """
+        RawVideoData(path_to_file)
 
-    def __init__(self, path_to_video: str):
-        self.path_to_video = path_to_video
+            Create iterator for videoframes.
+            In each step return PIL.Image object # TODO maybe cv2 or np.array?
+
+            Parameters
+            ----------
+            path_to_file : str
+                Path to video file
+
+            Attributes
+            ----------
+            path_to_file : str
+
+            Examples
+            --------
+            rvd = RawVideoData("./some_path")
+
+            for frame in rvd:
+                some_operation(frame)
+
+        """
+
+    def __init__(self, path_to_file: str):
+        self.path_to_file = path_to_file
 
     def __iter__(self):
         return self
