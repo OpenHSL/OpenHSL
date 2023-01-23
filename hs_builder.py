@@ -24,34 +24,48 @@ class HSBuilder:
 
     """
 
-    def __init__(self, path_to_data, metadata, data_type='images'):
+    def __init__(self, path_to_data, metadata=None, data_type='images'):
         self.hsi = None
         self.path_to_data = path_to_data
         self.metadata = metadata
+        self.data_type = data_type
+
+        if data_type == 'images':
+            self.frame_iterator = RawImagesData(self.path_to_data)
+        elif data_type == 'video':
+            self.frame_iterator = RawVideoData(self.path_to_data)
+        else:
+            # TODO other cases
+            pass
+
+        if metadata:
+            self.telemetry = self.get_telem_from_metadata(metadata)
     # ------------------------------------------------------------------------------------------------------------------
 
+    def get_telem_from_metadata(self, metadata):
+        return ...
+
     def get_roi(self, frame: np.ndarray) -> np.ndarray:
-        pass
+        return frame
     # ------------------------------------------------------------------------------------------------------------------
 
     def illumination_normalization(self, frame: np.ndarray) -> np.ndarray:
-        pass
+        return frame
     # ------------------------------------------------------------------------------------------------------------------
 
     def trapezoid_normalization(self, frame: np.ndarray) -> np.ndarray:
-        pass
+        return frame
     # ------------------------------------------------------------------------------------------------------------------
 
     def barrel_normalization(self, frame: np.ndarray) -> np.ndarray:
-        pass
+        return frame
     # ------------------------------------------------------------------------------------------------------------------
 
-    def rotary_normalization(self, frame: np.ndarray) -> np.ndarray:
-        pass
+    def rotary_normalization(self, frame: np.ndarray, grad: float) -> np.ndarray:
+        return frame
     # ------------------------------------------------------------------------------------------------------------------
 
-    @staticmethod
-    def _some_preparation_on_frame(frame: np.ndarray) -> np.ndarray:
+    def _some_preparation_on_frame(self, frame: np.ndarray) -> np.ndarray:
         """
 
         Parameters
@@ -65,7 +79,7 @@ class HSBuilder:
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_from_rail_dev(self, rail_iterator):
+    def load_from_rail_dev(self):
         """
             Creates HSI from rail-device
             Steps:
@@ -77,7 +91,7 @@ class HSBuilder:
                 6) Added to Y-Z layers set
         """
         hsi_tmp = []
-        for frame in rail_iterator:
+        for frame in self.frame_iterator:
             tmp_layer = self.illumination_normalization(frame=frame)
             tmp_layer = self.barrel_normalization(frame=tmp_layer)
             tmp_layer = self.trapezoid_normalization(frame=tmp_layer)
@@ -89,15 +103,16 @@ class HSBuilder:
         self.hsi = np.array(hsi_tmp).transpose((1, 2, 0))
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_from_uav_dev(self, uav_iterator):
+    def load_from_uav_dev(self, telem):
         """
             Creates HSI from uav-device
             #TODO REPLACE to here spectru CODE!
         """
-        pass
+        for frame, tm in zip(self.frame_iterator, telem):
+            ...
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_from_rot_dev(self, rotary_iterator):
+    def load_from_rot_dev(self, telem):
         """
             Creates HSI from rotary-device
             Steps:
@@ -110,12 +125,12 @@ class HSBuilder:
                 7) Added to Y-Z layers set
         """
         hsi_tmp = []
-        for frame in rotary_iterator:
-            tmp_layer = self.cut_target_area(frame=frame)
+        for frame, grad in (self.frame_iterator, telem):
+            tmp_layer = self.get_roi(frame=frame)
             tmp_layer = self.barrel_normalization(frame=tmp_layer)
             tmp_layer = self.trapezoid_normalization(frame=tmp_layer)
             tmp_layer = self.illumination_normalization(frame=tmp_layer)
-            tmp_layer = self.rotary_normalization(frame=tmp_layer)
+            tmp_layer = self.rotary_normalization(frame=tmp_layer, grad=grad)
             tmp_layer = self._some_preparation_on_frame(frame=tmp_layer)
             hsi_tmp.append(np.array(tmp_layer))
 
@@ -125,7 +140,7 @@ class HSBuilder:
 
     def get_hsi(self) -> HSImage:
         try:
-            return HSImage(self.hsi)
+            return HSImage(self.hsi, metadata=None)
         except:
             pass
     # ------------------------------------------------------------------------------------------------------------------
