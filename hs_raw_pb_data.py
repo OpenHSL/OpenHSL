@@ -6,16 +6,25 @@ class RawImagesData:
     """
     RawImagesData(path_to_dir)
 
-        Create iterator for images.
+        Create iterator for images set.
+        In each step return PIL.Image object
 
         Parameters
         ----------
+        path_to_dir : str
+            Path to directory with images
 
         Attributes
         ----------
+        path_to_dir : str
+        imgs_list : iterable
 
         Examples
         --------
+        rid = RawImagesData("./some_directory")
+
+        for frame in rid:
+            some_operation(frame)
 
     """
 

@@ -30,7 +30,8 @@ class HSBuilder:
         self.metadata = metadata
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _some_preparation_on_frame(self, frame: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _some_preparation_on_frame(frame: np.ndarray) -> np.ndarray:
         """
 
         Parameters
@@ -51,7 +52,7 @@ class HSBuilder:
         """
         hsi_tmp = []
         for frame in rail_iterator:
-            tmp_layer = self._some_preparation_on_frame(frame=frame)
+            tmp_layer = HSBuilder._some_preparation_on_frame(frame=frame)
             hsi_tmp.append(tmp_layer)
         self.hsi = np.array(hsi_tmp).transpose((1, 2, 0))
     # ------------------------------------------------------------------------------------------------------------------
