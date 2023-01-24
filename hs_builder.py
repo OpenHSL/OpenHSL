@@ -198,6 +198,7 @@ class HSBuilder:
             Creates HSI from uav-device
             #TODO REPLACE to here spectru CODE!
         """
+        # Oh shit. here we go again
         # TODO get min-max coordinates
         # TODO Create empy hsi by these coordinates
         for frame, telem in zip(self.frame_iterator, self.telemetry_iterator):
