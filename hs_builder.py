@@ -1,49 +1,51 @@
 import numpy as np
 
 from hsi import HSImage
-from hs_raw_pb_data import RawImagesData, RawVideoData
+from hs_raw_pb_data import RawImagesData, RawVideoData, RawCsvData
 
 
 class HSBuilder:
     """
-    HSBuilder()
+    HSBuilder(path_to_data, path_to_metadata=None, data_type=None)
 
         Build a HSI object from HSRawData
 
         Parameters
         ----------
+        path_to_data : str
+
+        path_to_metadata : str
+
+        data_type : str
+            'images' -
+            'video' -
 
         Attributes
         ----------
-
-        Notes
-        -----
+        hsi :
 
         Examples
         --------
 
     """
 
-    def __init__(self, path_to_data, metadata=None, data_type='images'):
+    def __init__(self, path_to_data, path_to_metadata=None, data_type=None):
+        """
+
+        """
         self.hsi = None
-        self.path_to_data = path_to_data
-        self.metadata = metadata
-        self.data_type = data_type
 
         if data_type == 'images':
-            self.frame_iterator = RawImagesData(self.path_to_data)
+            self.frame_iterator = RawImagesData(path_to_data)
         elif data_type == 'video':
-            self.frame_iterator = RawVideoData(self.path_to_data)
+            self.frame_iterator = RawVideoData(path_to_data)
         else:
             # TODO other cases
             pass
 
-        if metadata:
-            self.telemetry = self.get_telem_from_metadata(metadata)
+        if path_to_metadata:
+            self.telemetry_iterator = RawCsvData(path_to_metadata)
     # ------------------------------------------------------------------------------------------------------------------
-
-    def get_telem_from_metadata(self, metadata):
-        return ...
 
     def get_roi(self, frame: np.ndarray) -> np.ndarray:
         return frame
@@ -103,16 +105,16 @@ class HSBuilder:
         self.hsi = np.array(hsi_tmp).transpose((1, 2, 0))
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_from_uav_dev(self, telem):
+    def load_from_uav_dev(self):
         """
             Creates HSI from uav-device
             #TODO REPLACE to here spectru CODE!
         """
-        for frame, tm in zip(self.frame_iterator, telem):
+        for frame, telem in zip(self.frame_iterator, self.telemetry_iterator):
             ...
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_from_rot_dev(self, telem):
+    def load_from_rot_dev(self):
         """
             Creates HSI from rotary-device
             Steps:
@@ -125,12 +127,12 @@ class HSBuilder:
                 7) Added to Y-Z layers set
         """
         hsi_tmp = []
-        for frame, grad in (self.frame_iterator, telem):
+        for frame, telem in (self.frame_iterator, self.telemetry_iterator):
             tmp_layer = self.get_roi(frame=frame)
             tmp_layer = self.barrel_normalization(frame=tmp_layer)
             tmp_layer = self.trapezoid_normalization(frame=tmp_layer)
             tmp_layer = self.illumination_normalization(frame=tmp_layer)
-            tmp_layer = self.rotary_normalization(frame=tmp_layer, grad=grad)
+            tmp_layer = self.rotary_normalization(frame=tmp_layer, grad=telem)
             tmp_layer = self._some_preparation_on_frame(frame=tmp_layer)
             hsi_tmp.append(np.array(tmp_layer))
 

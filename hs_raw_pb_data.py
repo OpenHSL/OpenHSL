@@ -3,13 +3,14 @@ import cv2
 from PIL import Image
 import numpy as np
 import pandas as pd
+from typing import Tuple
 
 
 class RawImagesData:
     """
     RawImagesData(path_to_dir)
         Create iterator for images set.
-        In each step return PIL.Image object
+        In each step return ndarray object
         Parameters
         ----------
         path_to_dir : str
@@ -75,7 +76,6 @@ class RawVideoData:
         self.current_step = 0
         self.cap = cv2.VideoCapture(self.path)
 
-
     def __iter__(self):
         while self.cap.isOpened():
             ret, frame = self.cap.read()
@@ -97,6 +97,41 @@ class RawVideoData:
             return frame
         else:
             raise StopIteration
+
+
+class RawCsvData:
+    """
+
+    """
+    def __init__(self, path_to_csv: str):
+        self.path_to_csv = path_to_csv
+        self.current_step = 0
+
+        def return_name_of_video_from_df(df: pd.DataFrame, column: str) -> list:
+            x = df.loc[(df['cam_ID'] == 'Hypercam start point')]
+            x = x[column]
+            return x.values
+
+        def process_df(path_to_csv: str) -> Tuple[pd.DataFrame, list]:
+            df = pd.read_csv(path_to_csv, sep=";")
+            video_names = return_name_of_video_from_df(df, "timing")
+            df = df[df["cam_ID"] == "Hypercam frame"]
+            return df, video_names
+
+        self.df, self.video_names = process_df(self.path_to_csv)
+
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        if self.current_step < len(self):
+            self.current_step += 1
+            return self.df.iloc[self.current_step-1]
+        else:
+            raise StopIteration
+    
+    def __len__(self):
+        return len(self.df)
 
 
 class RawMatData:
@@ -128,37 +163,5 @@ class RawTiffData:
     def __len__(self):
         pass
 
-class RawCsvData:
-    def __init__(self, path_to_csv: str):
-        self.path_to_csv = path_to_csv
-        self.current_step = 0
-
-        def return_name_of_video_from_df(df:pd.core.frame.DataFrame, column:str) -> list:
-            x = df.loc[(df['cam_ID'] == 'Hypercam start point')]
-            x = x[column]
-            return x.values 
-    
-        def process_df(path_to_csv: str):
-            df = pd.read_csv(path_to_csv, sep=";")
-            video_names = return_name_of_video_from_df(df, "timing")
-            df = df[df["cam_ID"] == "Hypercam frame"]
-            return df, video_names
-
-        self.df, self.video_names = process_df(self.path_to_csv)
-
-    def __iter__(self):
-        return self
-    
-    def __next__(self):
-        if self.current_step < len(self):
-            self.current_step += 1
-            return self.df.iloc[self.current_step-1]
-        else:
-            raise StopIteration
-    
-    def __len__(self):
-        return len(self.df)
-
-        
 
 
