@@ -20,6 +20,11 @@ class HSBuilder:
             'images' -
             'video' -
 
+        device_type : str
+            'uav' -
+            'rotary' -
+            'rail' -
+
         Attributes
         ----------
         hsi :
@@ -29,7 +34,7 @@ class HSBuilder:
 
     """
 
-    def __init__(self, path_to_data, path_to_metadata=None, data_type=None):
+    def __init__(self, path_to_data, path_to_metadata=None, data_type=None, device_type=None):
         """
 
         """
@@ -45,25 +50,109 @@ class HSBuilder:
 
         if path_to_metadata:
             self.telemetry_iterator = RawCsvData(path_to_metadata)
+
+        if device_type == 'uav':
+            self.load_from_uav_dev()
+        elif device_type == 'rotary':
+            self.load_from_rot_dev()
+        elif device_type == 'rail':
+            self.load_from_rail_dev()
+        else:
+            # TODO other cases
+            pass
     # ------------------------------------------------------------------------------------------------------------------
 
     def get_roi(self, frame: np.ndarray) -> np.ndarray:
+        """
+
+        Parameters
+        ----------
+        frame :
+
+        Returns
+        -------
+
+        """
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
     def illumination_normalization(self, frame: np.ndarray) -> np.ndarray:
+        """
+
+        Parameters
+        ----------
+        frame
+
+        Returns
+        -------
+
+        """
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
-    def trapezoid_normalization(self, frame: np.ndarray) -> np.ndarray:
-        return frame
-    # ------------------------------------------------------------------------------------------------------------------
+    def geometry_normalization(self, frame: np.ndarray) -> np.ndarray:
 
-    def barrel_normalization(self, frame: np.ndarray) -> np.ndarray:
+        def rotate_frame(frame: np.ndarray) -> np.ndarray:
+            """
+
+            Parameters
+            ----------
+            self
+            frame
+
+            Returns
+            -------
+
+            """
+            return frame
+        # --------------------------------------------------------------------------------------------------------------
+
+        def trapezoid_normalization(frame: np.ndarray) -> np.ndarray:
+            """
+
+            Parameters
+            ----------
+            frame
+
+            Returns
+            -------
+
+            """
+            return frame
+        # --------------------------------------------------------------------------------------------------------------
+
+        def barrel_normalization(frame: np.ndarray) -> np.ndarray:
+            """
+
+            Parameters
+            ----------
+            frame
+
+            Returns
+            -------
+
+            """
+            return frame
+        # --------------------------------------------------------------------------------------------------------------
+
+        frame = barrel_normalization(frame=frame)
+        frame = trapezoid_normalization(frame=frame)
+        frame = rotate_frame(frame=frame)
+
         return frame
-    # ------------------------------------------------------------------------------------------------------------------
 
     def rotary_normalization(self, frame: np.ndarray, grad: float) -> np.ndarray:
+        """
+
+        Parameters
+        ----------
+        frame
+        grad
+
+        Returns
+        -------
+
+        """
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -95,14 +184,13 @@ class HSBuilder:
         hsi_tmp = []
         for frame in self.frame_iterator:
             tmp_layer = self.illumination_normalization(frame=frame)
-            tmp_layer = self.barrel_normalization(frame=tmp_layer)
-            tmp_layer = self.trapezoid_normalization(frame=tmp_layer)
+            tmp_layer = self.geometry_normalization(frame=tmp_layer)
             tmp_layer = self._some_preparation_on_frame(frame=tmp_layer)
             tmp_layer = self.get_roi(frame=tmp_layer)
             hsi_tmp.append(np.array(tmp_layer))
 
-        # this transpose is needed for replace axis for z-x-y to x-y-z
-        self.hsi = np.array(hsi_tmp).transpose((1, 2, 0))
+        data = np.array(hsi_tmp)
+        self.hsi = HSImage(hsi=data, metadata=None)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_uav_dev(self):
@@ -128,21 +216,26 @@ class HSBuilder:
         """
         hsi_tmp = []
         for frame, telem in (self.frame_iterator, self.telemetry_iterator):
-            tmp_layer = self.get_roi(frame=frame)
-            tmp_layer = self.barrel_normalization(frame=tmp_layer)
-            tmp_layer = self.trapezoid_normalization(frame=tmp_layer)
+            tmp_layer = self.geometry_normalization(frame=frame)
             tmp_layer = self.illumination_normalization(frame=tmp_layer)
             tmp_layer = self.rotary_normalization(frame=tmp_layer, grad=telem)
             tmp_layer = self._some_preparation_on_frame(frame=tmp_layer)
-            hsi_tmp.append(np.array(tmp_layer))
+            tmp_layer = self.get_roi(frame=tmp_layer)
+            hsi_tmp.append(tmp_layer)
 
-        # this transpose is needed for replace axis for z-x-y to x-y-z
-        self.hsi = np.array(hsi_tmp).transpose((1, 2, 0))
+        data = np.array(hsi_tmp)
+        self.hsi = HSImage(hsi=data, metadata=None)
     # ------------------------------------------------------------------------------------------------------------------
 
     def get_hsi(self) -> HSImage:
+        """
+
+        Returns
+        -------
+
+        """
         try:
-            return HSImage(self.hsi, metadata=None)
+            return self.hsi
         except:
             pass
     # ------------------------------------------------------------------------------------------------------------------
