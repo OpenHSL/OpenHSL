@@ -1,8 +1,10 @@
 import os
 import cv2
-from PIL import Image
 import numpy as np
 import pandas as pd
+
+from pathlib import Path
+from PIL import Image
 from typing import Tuple
 
 
@@ -45,12 +47,10 @@ class RawImagesData:
 
 class RawVideoData:
     """
-        RawVideoData(path_to_file_)
-
-            #TODO make with cv2.video_capture
+        RawVideoData(path_to_file: str)
 
             Create iterator for videoframes.
-            In each step return PIL.Image object # TODO maybe cv2 or np.array?
+            In each step return np.array object.
 
             Parameters
             ----------
@@ -59,26 +59,39 @@ class RawVideoData:
 
             Attributes
             ----------
-            path_to_file : str
+            path : pathlib.Path
+                Path to video file
+            format: str
+                Video format
+            current_step : int
+                Current step of iteration
+            cap : cv2.VideoCapture
+                Video capture object
+            frame: np.array
+                Current frame
+            length: int
+                Length of video
 
             Examples
             --------
             rvd = RawVideoData("./some_path")
 
+            len(rvd)
             for frame in rvd:
                 some_operation(frame)
-
+            
         """
 
-    def __init__(self, path_to_file:str):
-        self.path = path_to_file
-        self.format = self.path.split(".")[-1]
+    def __init__(self, path_to_file: str):
+        self.path = Path(path_to_file)
+        self.format = self.path.suffix
         self.current_step = 0
-        self.cap = cv2.VideoCapture(self.path)
+        self.cap = cv2.VideoCapture(str(self.path))
 
     def __iter__(self):
         while self.cap.isOpened():
             ret, frame = self.cap.read()
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             self.frame = frame
             if ret:
                 return self
@@ -101,24 +114,57 @@ class RawVideoData:
 
 class RawCsvData:
     """
+        RawCsvData(path_to_csv: str, video_name: str)
 
+            Create iterator for csv lines.
+            In each step return pandas.Series object.
+
+            Parameters
+            ----------
+            path_to_csv : str
+                Path to csv file
+
+            Attributes
+            ----------
+            path_to_csv : pathlib.Path
+                Path to csv file
+            video_name : str
+                Name of video file in csv file
+            current_step : int
+                Current step of iteration
+            df : pd.DataFrame
+                Dataframe for video with csv data
+
+            Examples
+            --------
+            video = "rec_2021.avi"
+            rvd = RawVideoData("./some_path.csv", video)
+
+            len(rcd)
+            for line in rcd:
+                some_operation(line)
+            
     """
-    def __init__(self, path_to_csv: str):
-        self.path_to_csv = path_to_csv
+    def __init__(self, path_to_csv: str, video_name: str):
+        self.path_to_csv = Path(path_to_csv)
+        self.video_name = str(video_name).split("_")[-1].split(".")[0]
         self.current_step = 0
 
-        def return_name_of_video_from_df(df: pd.DataFrame, column: str) -> list:
+        def if_video_not_in_df(df: pd.DataFrame, video_name: str):
             x = df.loc[(df['cam_ID'] == 'Hypercam start point')]
-            x = x[column]
-            return x.values
+            x = x["timing"]
+            if video_name not in x.values:
+                raise ValueError(f"Video with name {video_name} not found in {path_to_csv} file")
 
         def process_df(path_to_csv: str) -> Tuple[pd.DataFrame, list]:
             df = pd.read_csv(path_to_csv, sep=";")
-            video_names = return_name_of_video_from_df(df, "timing")
+            if_video_not_in_df(df, self.video_name)
+            df = df.fillna(method="ffill")
+            df = df[df["timing"] == self.video_name]
             df = df[df["cam_ID"] == "Hypercam frame"]
-            return df, video_names
+            return df
 
-        self.df, self.video_names = process_df(self.path_to_csv)
+        self.df = process_df(self.path_to_csv)
 
     def __iter__(self):
         return self
@@ -126,7 +172,7 @@ class RawCsvData:
     def __next__(self):
         if self.current_step < len(self):
             self.current_step += 1
-            return self.df.iloc[self.current_step-1]
+            return dict(self.df.iloc[self.current_step-1])
         else:
             raise StopIteration
     
