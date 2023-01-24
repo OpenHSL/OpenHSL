@@ -70,7 +70,7 @@ class RawVideoData:
             frame: np.array
                 Current frame
             length: int
-                Length of video
+                Count of videoframes
 
             Examples
             --------
@@ -117,7 +117,7 @@ class RawCsvData:
         RawCsvData(path_to_csv: str, video_name: str)
 
             Create iterator for csv lines.
-            In each step return pandas.Series object.
+            In each step return dict object.
 
             Parameters
             ----------
@@ -137,8 +137,8 @@ class RawCsvData:
 
             Examples
             --------
-            video = "rec_2021.avi"
-            rvd = RawVideoData("./some_path.csv", video)
+            video_name = "rec_2021.avi"
+            rvd = RawCsvData(path_to_csv="./some_path.csv", video_name=video_name)
 
             len(rcd)
             for line in rcd:
@@ -146,7 +146,7 @@ class RawCsvData:
             
     """
     def __init__(self, path_to_csv: str, video_name: str):
-        self.path_to_csv = Path(path_to_csv)
+        Path(path_to_csv)
         self.video_name = str(video_name).split("_")[-1].split(".")[0]
         self.current_step = 0
 
@@ -164,7 +164,7 @@ class RawCsvData:
             df = df[df["cam_ID"] == "Hypercam frame"]
             return df
 
-        self.df = process_df(self.path_to_csv)
+        self.df = process_df(path_to_csv)
 
     def __iter__(self):
         return self
