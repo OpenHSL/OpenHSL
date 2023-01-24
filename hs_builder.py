@@ -198,8 +198,13 @@ class HSBuilder:
             Creates HSI from uav-device
             #TODO REPLACE to here spectru CODE!
         """
+        # TODO get min-max coordinates
+        # TODO Create empy hsi by these coordinates
         for frame, telem in zip(self.frame_iterator, self.telemetry_iterator):
+            # TODO get coordinates of the line ends
+            # TODO add to hsi this line
             ...
+        # TODO interpolate empty spaces between lines
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_rot_dev(self):
