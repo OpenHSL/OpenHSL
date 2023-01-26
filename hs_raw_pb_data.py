@@ -79,7 +79,7 @@ class RawVideoData:
             len(rvd)
             for frame in rvd:
                 some_operation(frame)
-            
+
         """
 
     def __init__(self, path_to_file: str):
@@ -101,11 +101,32 @@ class RawVideoData:
                 self.current_step += 1
                 ret, self.frame = self.cap.read()
                 if ret:
-                    return cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+                    return cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY).T
                 else:
                     raise StopIteration
             else:
                 raise StopIteration
+
+
+class RawData:
+    """
+
+    """
+    def __init__(self, path_to_data: str, type_data: str):
+        if type_data == "images":
+            self.raw_data = RawImagesData(path_to_dir=path_to_data)
+        elif type_data == "video":
+            self.raw_data = RawVideoData(path_to_file=path_to_data)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.frame = next(self.raw_data)
+        return self.frame
+
+    def __len__(self):
+        pass
 
 
 class RawCsvData:
@@ -142,6 +163,7 @@ class RawCsvData:
             
     """
     def __init__(self, path_to_csv: str, video_name: str):
+        Path(path_to_csv)
         self.video_name = str(video_name).split("_")[-1].split(".")[0]
         self.current_step = 0
 

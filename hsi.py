@@ -4,7 +4,7 @@ from os import listdir, mkdir
 from os.path import isdir
 from PIL import Image
 from scipy.io import loadmat, savemat
-from typing import Optional, Dict
+from typing import Optional, List
 
 
 class HSImage:
@@ -24,34 +24,44 @@ class HSImage:
                 Y is constant resolution.
                 Z is a count of channels.
 
-        metadata: dict
-            contains # TODO what contains?
+        wavelengths: list
+            contains set of wavelengths for each layer HS
+            len(wavelengths) == hsi.shape[2] !!!
+
         Attributes
         ----------
         data: np.ndarray
 
-        metadata: dict
+        wavelengths: list
 
         Examples
         --------
             arr = np.zeros((100, 100, 250))
-            md = {'capturing place' : 'Samara'}
+            wavelengths = [400, 402, 404, ..., 980]
 
-            hsi = HSImage(hsi=arr, metadata=md)
+            hsi = HSImage(hsi=arr, wavelengths=wavelengths)
 
     """
 
-    def __init__(self, hsi: Optional[np.ndarray], metadata: Optional[Dict]):
+    def __init__(self, hsi: Optional[np.ndarray], wavelengths: Optional[List]):
         """
             Inits HSI object.
 
             Raises
             ------
-            ValueError
-                When type of his-object or metadata doesn't match np.ndarray and dict corresponding
         """
         self.data = hsi
-        self.metadata = metadata
+        self.wavelengths = wavelengths
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load_wavelengths(self, path_to_file: str):
+        # TODO
+        return []
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def save_wavelengths(self, path_to_file: str):
+        # TODO
+        pass
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_mat(self, path_to_file: str, mat_key: str):
@@ -73,6 +83,13 @@ class HSImage:
         """
         self.data = loadmat(path_to_file)[mat_key]
 
+        try:
+            wavelengths = loadmat(path_to_file)['wavelengths'][0]
+        except:
+            print('There isn\'t info about wavelengths')
+            wavelengths = []
+
+        self.wavelengths = wavelengths
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_tiff(self, path_to_file: str):
@@ -87,6 +104,8 @@ class HSImage:
                 Path to .tiff file
             """
             # TODO GDAL or what?
+        self.data = ...
+        self.wavelengths = ...
         pass
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -102,6 +121,7 @@ class HSImage:
                 Path to .npy file
         """
         self.data = np.load(path_to_file)
+        self.wavelengths = self.load_wavelengths(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_h5(self, path_to_file: str, h5_key: str = None):
@@ -118,9 +138,14 @@ class HSImage:
                 Key for field in .h5 file as dict object
         """
         self.data = h5py.File(path_to_file, 'r')[h5_key]
+        try:
+            wavelengths = list(h5py.File(path_to_file, 'r')['wavelengths'])
+        except:
+            wavelengths = []
+        self.wavelengths = wavelengths
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_from_images(self, path_to_dir: str):
+    def load_from_layer_images(self, path_to_dir: str):
         """
         load_from_images(path_to_dir)
 
@@ -136,7 +161,9 @@ class HSImage:
         for image_name in images_list:
             img = Image.open(f'{path_to_dir}/{image_name}').convert("L")
             hsi.append(np.array(img))
+
         self.data = np.array(hsi).transpose((1, 2, 0))
+        self.wavelengths = self.load_wavelengths('')
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_mat(self, path_to_file: str, mat_key: str):
@@ -152,7 +179,7 @@ class HSImage:
             mat_key: str
                 Key for dictionary
         """
-        temp_dict = {mat_key: self.data}
+        temp_dict = {mat_key: self.data, 'wavelengths': self.wavelengths}
         savemat(path_to_file, temp_dict)
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -186,6 +213,7 @@ class HSImage:
         """
         with h5py.File(path_to_file, 'w') as f:
             f.create_dataset(h5_key, data=self.data)
+            f.create_dataset("wavelengths", data=self.wavelengths)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_npy(self, path_to_file: str):
@@ -200,6 +228,7 @@ class HSImage:
                 Path to saving file
         """
         np.save(path_to_file, self.data)
+        self.save_wavelengths(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_images(self, path_to_dir: str, format: str = 'png'):
@@ -223,4 +252,3 @@ class HSImage:
             else:
                 raise Exception('Unexpected format')
     # ------------------------------------------------------------------------------------------------------------------
-
