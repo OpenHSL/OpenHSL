@@ -89,27 +89,23 @@ class RawVideoData:
         self.cap = cv2.VideoCapture(str(self.path))
 
     def __iter__(self):
-        while self.cap.isOpened():
-            ret, frame = self.cap.read()
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            self.frame = frame
-            if ret:
-                return self
-            else:
-                break
+        return self
 
     def __len__(self):
         self.length = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         return self.length
 
     def __next__(self):
-        self.current_step+=1
-        frame = self.frame
-        self.frame += 1
-        if self.current_step < len(self):
-            return frame
-        else:
-            raise StopIteration
+        while self.cap.isOpened():
+            if self.current_step < len(self):
+                self.current_step += 1
+                ret, self.frame = self.cap.read()
+                if ret:
+                    return cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+                else:
+                    raise StopIteration
+            else:
+                raise StopIteration
 
 
 class RawCsvData:
@@ -146,7 +142,6 @@ class RawCsvData:
             
     """
     def __init__(self, path_to_csv: str, video_name: str):
-        Path(path_to_csv)
         self.video_name = str(video_name).split("_")[-1].split(".")[0]
         self.current_step = 0
 
