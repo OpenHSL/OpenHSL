@@ -2,7 +2,7 @@ import numpy as np
 
 from hsi import HSImage
 from hs_raw_pb_data import RawImagesData, RawVideoData, RawCsvData
-
+from Gaidel_Legacy.build import build_hypercube_by_videos
 
 class HSBuilder:
     """
@@ -38,8 +38,9 @@ class HSBuilder:
         """
 
         """
+        self.path_to_data = path_to_data
+        self.path_to_metadata = path_to_metadata
         self.hsi = None
-
         if data_type == 'images':
             self.frame_iterator = RawImagesData(path_to_data)
         elif data_type == 'video':
@@ -48,8 +49,8 @@ class HSBuilder:
             # TODO other cases
             pass
 
-        if path_to_metadata:
-            self.telemetry_iterator = RawCsvData(path_to_metadata)
+        # if path_to_metadata:
+        #     self.telemetry_iterator = RawCsvData(path_to_metadata, path_to_data)
 
         if device_type == 'uav':
             self.load_from_uav_dev()
@@ -57,6 +58,8 @@ class HSBuilder:
             self.load_from_rot_dev()
         elif device_type == 'rail':
             self.load_from_rail_dev()
+        elif device_type == "gaidel_uav":
+            self.load_from_gaidel_uav_dev()
         else:
             # TODO other cases
             pass
@@ -198,8 +201,12 @@ class HSBuilder:
             Creates HSI from uav-device
             #TODO REPLACE to here spectru CODE!
         """
-        # Oh shit. here we go again
-        # TODO get min-max coordinates
+        x_min = self.telemetry_iterator.get_min('x')
+        x_max = self.telemetry_iterator.get_max('x')
+        y_min = self.telemetry_iterator.get_min('y')
+        y_max = self.telemetry_iterator.get_max('y')
+
+        print(x_min, x_max, y_min, y_max)
         # TODO Create empy hsi by these coordinates
         for frame, telem in zip(self.frame_iterator, self.telemetry_iterator):
             # TODO get coordinates of the line ends
@@ -207,6 +214,18 @@ class HSBuilder:
             ...
         # TODO interpolate empty spaces between lines
     # ------------------------------------------------------------------------------------------------------------------
+
+    def load_from_gaidel_uav_dev(self):
+        """
+
+        """
+        print("gerge")
+        data = build_hypercube_by_videos(self.path_to_data, "", self.path_to_metadata, "")
+        print(type(data))
+        print(f"before {data.shape}")
+        data = np.transpose(data, (1, 2, 0))
+        print(data.shape)
+        self.hsi = HSImage(hsi=data, metadata=None)
 
     def load_from_rot_dev(self):
         """

@@ -1,0 +1,16 @@
+# Daemon Modules
+enable_gps_log: false
+enable_mavros: false
+enable_picamera: false
+enable_rest_server: true
+enable_tiscam: true
+enable_web_interface: true
+enable_web_video_server: true
+
+#image_saving_mode: plain
+image_saving_mode: worker
+#image_saving_mode: video
+
+postprocessing_fix_vignetting: false
+postprocessing_scaling_gray_levels: false
+spectral_bands_number: 40
