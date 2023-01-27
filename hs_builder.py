@@ -35,7 +35,7 @@ class HSBuilder:
 
     """
 
-    def __init__(self, path_to_data, path_to_metadata=None, data_type=None, device_type=None):
+    def __init__(self, path_to_data, path_to_metadata=None, data_type=None):
         """
 
         """
@@ -47,18 +47,6 @@ class HSBuilder:
         # if path_to_metadata:
         #     self.telemetry_iterator = RawCsvData(path_to_metadata, path_to_data)
 
-        # TODO remake this
-        if device_type == 'uav':
-            self.load_from_uav_dev()
-        elif device_type == 'rotary':
-            self.load_from_rot_dev()
-        elif device_type == 'rail':
-            self.load_from_rail_dev()
-        elif device_type == "gaidel_uav":
-            self.load_from_gaidel_uav_dev()
-        else:
-            # TODO other cases
-            pass
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO must be realised
@@ -182,85 +170,27 @@ class HSBuilder:
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
-    def build(self):
+    def build(self, device_type: str, roi=False, gaidel=False):
         """
             Creates HSI from device-data
             # TODO must be realised from load_from_rail_dev, load_from_uav_dev and load_from_rot
         """
-        preproc_frames = []
+        if gaidel:
+            data = build_hypercube_by_videos(self.path_to_data, "", self.path_to_metadata, "")
+            data = np.transpose(data, (1, 2, 0))
+            self.hsi = HSImage(hsi=data, wavelengths=None)
+        else:
+            preproc_frames = []
 
-        for frame in self.frame_iterator:
-            frame = self.norm_frame_camera_illumination(frame=frame)
-            frame = self.norm_frame_camera_geometry(frame=frame)
-            preproc_frames.append(frame)
+            for frame in self.frame_iterator:
+                frame = self.norm_frame_camera_illumination(frame=frame)
+                frame = self.norm_frame_camera_geometry(frame=frame)
+                if roi:
+                    frame = self.get_roi(frame)
+                preproc_frames.append(frame)
 
-        data = np.array(preproc_frames)
-        self.hsi = HSImage(hsi=data, wavelengths=None)
-    # ------------------------------------------------------------------------------------------------------------------
-
-    # TODO unite load_from_rail_dev, load_from_uav_dev and load_from_rot to build
-    def load_from_rail_dev(self):
-        """
-            Creates HSI from rail-device
-            Steps:
-                1) Takes target area from raw-frame
-                2) Correction barrel distortion
-                3) Correction trapezoid distortion
-                4) Correction illuminate heterogeneity
-                5) Future corrections
-                6) Added to Y-Z layers set
-        """
-        hsi_tmp = []
-        for frame in self.frame_iterator:
-            tmp_layer = self.norm_frame_camera_illumination(frame=frame)
-            tmp_layer = self.get_roi(frame=tmp_layer)
-            hsi_tmp.append(np.array(tmp_layer))
-
-        data = np.array(hsi_tmp)
-        self.hsi = HSImage(hsi=data, wavelengths=None)
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def load_from_uav_dev(self):
-        """
-            Creates HSI from uav-device
-            #TODO REPLACE to here spectru CODE!
-        """
-        # TODO Create empy hsi by these coordinates
-        # for frame, telem in zip(self.frame_iterator, self.telemetry_iterator):
-            # TODO get coordinates of the line ends
-            # TODO add to hsi this line
-        # TODO interpolate empty spaces between lines
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def load_from_gaidel_uav_dev(self):
-        """
-
-        """
-        data = build_hypercube_by_videos(self.path_to_data, "", self.path_to_metadata, "")
-        data = np.transpose(data, (1, 2, 0))
-        self.hsi = HSImage(hsi=data, wavelengths=None)
-
-    def load_from_rot_dev(self):
-        """
-            Creates HSI from rotary-device
-            Steps:
-                1) Takes target area from raw-frame
-                2) Correction barrel distortion
-                3) Correction trapezoid distortion
-                4) Correction illuminate heterogeneity
-                5) Correction rotary distortion
-                6) Future corrections
-                7) Added to Y-Z layers set
-        """
-        hsi_tmp = []
-        for frame in self.frame_iterator:
-            tmp_layer = self.geometry_normalization(frame=frame)
-            tmp_layer = self._some_preparation_on_frame(frame=tmp_layer)
-            #tmp_layer = self.get_roi(frame=tmp_layer)
-            hsi_tmp.append(tmp_layer)
-
-        data = np.array(hsi_tmp)
-        self.hsi = HSImage(hsi=data, wavelengths=None)
+            data = np.array(preproc_frames)
+            self.hsi = HSImage(hsi=data, wavelengths=None)
     # ------------------------------------------------------------------------------------------------------------------
 
     def get_hsi(self) -> HSImage:
