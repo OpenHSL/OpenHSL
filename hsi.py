@@ -84,7 +84,7 @@ class HSImage:
         self.data = loadmat(path_to_file)[mat_key]
 
         try:
-            wavelengths = loadmat(path_to_file)['wavelengths'][0]
+            wavelengths = list(loadmat(path_to_file)['wavelengths'][0])
         except:
             print('There isn\'t info about wavelengths')
             wavelengths = []
@@ -142,6 +142,7 @@ class HSImage:
             wavelengths = list(h5py.File(path_to_file, 'r')['wavelengths'])
         except:
             wavelengths = []
+
         self.wavelengths = wavelengths
     # ------------------------------------------------------------------------------------------------------------------
 
