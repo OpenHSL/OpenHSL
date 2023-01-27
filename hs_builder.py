@@ -50,7 +50,7 @@ class HSBuilder:
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO must be realised
-    def norm_frame_camera_illumination(self, frame: np.ndarray) -> np.ndarray:
+    def __norm_frame_camera_illumination(self, frame: np.ndarray) -> np.ndarray:
         """
         Normalizes illumination on frame.
         Frame have heterogeneous illumination by slit defects. It must be solved
@@ -67,7 +67,7 @@ class HSBuilder:
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO must be realised
-    def norm_frame_camera_geometry(self, frame: np.ndarray) -> np.ndarray:
+    def __norm_frame_camera_geometry(self, frame: np.ndarray) -> np.ndarray:
         """
         Normalizes geometric distortions on frame.
 
@@ -104,59 +104,7 @@ class HSBuilder:
         return frame[x1: x2, left_bound_spectrum: right_bound_spectrum].T
     # ------------------------------------------------------------------------------------------------------------------
 
-    def geometry_normalization(self, frame: np.ndarray) -> np.ndarray:
-
-        def rotate_frame(frame: np.ndarray) -> np.ndarray:
-            """
-
-            Parameters
-            ----------
-            self
-            frame
-
-            Returns
-            -------
-
-            """
-            return frame
-        # --------------------------------------------------------------------------------------------------------------
-
-        def trapezoid_normalization(frame: np.ndarray) -> np.ndarray:
-            """
-
-            Parameters
-            ----------
-            frame
-
-            Returns
-            -------
-
-            """
-            return frame
-        # --------------------------------------------------------------------------------------------------------------
-
-        def barrel_normalization(frame: np.ndarray) -> np.ndarray:
-            """
-
-            Parameters
-            ----------
-            frame
-
-            Returns
-            -------
-
-            """
-            return frame
-        # --------------------------------------------------------------------------------------------------------------
-
-        frame = barrel_normalization(frame=frame)
-        frame = trapezoid_normalization(frame=frame)
-        frame = rotate_frame(frame=frame)
-
-        return frame
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def _some_preparation_on_frame(self, frame: np.ndarray) -> np.ndarray:
+    def __some_preparation_on_frame(self, frame: np.ndarray) -> np.ndarray:
         """
 
         Parameters
@@ -173,24 +121,24 @@ class HSBuilder:
     def build(self, device_type: str, roi=False, gaidel=False):
         """
             Creates HSI from device-data
-            # TODO must be realised from load_from_rail_dev, load_from_uav_dev and load_from_rot
         """
         if gaidel:
             data = build_hypercube_by_videos(self.path_to_data, "", self.path_to_metadata, "")
             data = np.transpose(data, (1, 2, 0))
-            self.hsi = HSImage(hsi=data, wavelengths=None)
         else:
             preproc_frames = []
 
             for frame in self.frame_iterator:
-                frame = self.norm_frame_camera_illumination(frame=frame)
-                frame = self.norm_frame_camera_geometry(frame=frame)
+                frame = self.__norm_frame_camera_illumination(frame=frame)
+                frame = self.__norm_frame_camera_geometry(frame=frame)
+                frame = self.__some_preparation_on_frame(frame=frame)
                 if roi:
                     frame = self.get_roi(frame)
                 preproc_frames.append(frame)
 
             data = np.array(preproc_frames)
-            self.hsi = HSImage(hsi=data, wavelengths=None)
+
+        self.hsi = HSImage(hsi=data, wavelengths=None)
     # ------------------------------------------------------------------------------------------------------------------
 
     def get_hsi(self) -> HSImage:
