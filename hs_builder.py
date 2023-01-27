@@ -2,7 +2,7 @@ import numpy as np
 from hsi import HSImage
 from hs_raw_pb_data import RawCsvData, RawData
 from Gaidel_Legacy.build import build_hypercube_by_videos
-
+from typing import Optional
 
 class HSBuilder:
     """
@@ -20,16 +20,11 @@ class HSBuilder:
             'images' -
             'video' -
 
-        device_type : str
-            'uav' -
-            'rotary' -
-            'rail' -
-            'gaidel_uav' -
-
         Attributes
         ----------
-        hsi :
-
+        hsi : HSImage
+        frame_iterator: RawData
+        telemetry_iterator: RawCsvData
         Examples
         --------
 
@@ -41,7 +36,7 @@ class HSBuilder:
         """
         self.path_to_data = path_to_data
         self.path_to_metadata = path_to_metadata
-        self.hsi = None
+        self.hsi: Optional[HSImage] = None
         self.frame_iterator = RawData(path_to_data=path_to_data, type_data=data_type)
 
         # if path_to_metadata:

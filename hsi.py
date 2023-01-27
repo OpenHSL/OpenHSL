@@ -142,6 +142,7 @@ class HSImage:
             wavelengths = list(h5py.File(path_to_file, 'r')['wavelengths'])
         except:
             wavelengths = []
+
         self.wavelengths = wavelengths
     # ------------------------------------------------------------------------------------------------------------------
 
