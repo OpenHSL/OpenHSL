@@ -1,5 +1,4 @@
 import os
-import Gaidel_Legacy.messages as messages
 import Gaidel_Legacy.settings as settings
 
 
@@ -16,11 +15,8 @@ def clear_path(path):
         os.makedirs(path)
     for filename in os.listdir(path):
         file_path = os.path.join(path, filename)
-        try:
-            if os.path.isfile(file_path):
-                os.unlink(file_path)
-        except NotImplementedError as exception:
-            print(messages.WARNING_PATTERN.format(str(exception)))
+        if os.path.isfile(file_path):
+            os.unlink(file_path)
 
 
 def change_extension(filename, extension):
