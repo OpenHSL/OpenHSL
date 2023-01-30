@@ -1,6 +1,7 @@
 from hs_builder import HSBuilder
 from matplotlib import pyplot as plt
 from hsi import HSImage
+from time import time
 
 test_wavelengths = [i for i in range(400, 650)]
 
@@ -67,8 +68,8 @@ def test_hs_builder_video_rotary():
 
 def test_hs_builder_video_uav():
     # Сборка из данных коптера
-    hsb = HSBuilder(path_to_data='./test_data/copter',
-                    path_to_metadata='./test_data/copter/gps_2021-03-30.csv',
+    hsb = HSBuilder(path_to_data='./test_data',
+                    path_to_metadata='./test_data/gps.csv',
                     data_type='imgs')
     hsb.build(device_type='gaidel_uav', gaidel=True)
     hsi = hsb.get_hsi()
@@ -87,3 +88,14 @@ def test_hs_builder_video_uav():
     plt.imshow(hsi.data[:, :, 20], cmap='gray')
     plt.show()
 # ----------------------------------------------------------------------------------------------------------------------
+start = time()
+test_hs_builder_video_uav()
+import matplotlib.pyplot as plt
+import numpy as np
+
+#check npy file
+a = np.load('out/uav.npy')
+plt.imshow(a[10, :, :], cmap="gray")
+plt.show()
+
+print("time: ", time() - start)

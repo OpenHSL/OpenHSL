@@ -118,7 +118,7 @@ class HSBuilder:
             Creates HSI from device-data
         """
         if gaidel:
-            data = build_hypercube_by_videos(self.path_to_data, "", self.path_to_metadata, "")
+            data = build_hypercube_by_videos(self.path_to_data, self.path_to_metadata)
             data = np.transpose(data, (1, 2, 0))
         else:
             preproc_frames = []
