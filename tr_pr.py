@@ -1,29 +1,13 @@
-from Firsov_Legacy.utils import get_device
-from Firsov_Legacy.train_model import train_model
-from Firsov_Legacy.test_model import test_model
-from Firsov_Legacy.utils import convert_to_color_
-
 from hsi import HSImage
 from hs_mask import HSMask
 from m3dcnn import M3DCNN
 import numpy as np
-import seaborn as sns
 from matplotlib import pyplot as plt
-from sklearn.metrics import classification_report as score
-from scipy.io import loadmat
 
 import torch
 
 print(torch.cuda.is_available())
 
-#WEIGHTS_PATH: str = 'checkpoints/short_he/he/2022_05_05_14_04_27_epoch15_0.96.pth' # путь до файла с весами (опционально)
-SAMPLE_PERCENTAGE: float = 0.1 # размер тренировочной выборки из куба
-CUDA_DEVICE = get_device(0) # подключение к доступному GPU, иначе подключается CPU
-
-# Указываем количество эпох, классов и устройство для вычисления
-hyperparams = {
-        'device': CUDA_DEVICE
-    }
 
 hsi = HSImage(None, None)
 mask = HSMask(None, None)
@@ -31,8 +15,14 @@ mask = HSMask(None, None)
 hsi.load_from_mat('test_data/tr_pr/PaviaU.mat', mat_key='paviaU')
 mask.load_mask('test_data/tr_pr/PaviaU_gt.mat', mat_key='paviaU_gt')
 
+cnn = M3DCNN(n_classes=len(np.unique(mask.data)),
+             n_bands=hsi.data.shape[-1],
+            # path_to_weights='checkpoints/he_et_al_bn/he/2023_02_01_17_41_49_epoch1_0.98.pth',
+             device='cuda')
 
-cnn = M3DCNN()
-cnn.fit(X=hsi, y=mask, epochs=3, hyperparams=hyperparams)
+cnn.fit(X=hsi, y=mask, epochs=1)
 
-cnn.predict(X=hsi, hyperparams=hyperparams)
+gt, pred, color_pred = cnn.predict(X=hsi)
+
+plt.imshow(pred)
+plt.show()

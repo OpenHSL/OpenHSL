@@ -21,7 +21,7 @@ class DataLoader(torch.utils.data.Dataset):
         super(DataLoader, self).__init__()
         self.data = data
         self.label = gt
-        self.name = hyperparams['net_name']
+        self.name = hyperparams["net_name"]
         self.patch_size = hyperparams["patch_size"]
         self.ignored_labels = set(hyperparams["ignored_labels"])
         self.flip_augmentation = hyperparams["flip_augmentation"]
