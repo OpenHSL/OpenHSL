@@ -1,11 +1,12 @@
 import scipy.io as io
 import numpy as np
 import seaborn as sns
+from typing import Optional
 from hsi import HSImage
 from hs_mask import HSMask
 
 
-def get_dataset(hsi: HSImage, mask: HSMask) -> tuple[np.array, np.array, list, list, dict]:
+def get_dataset(hsi: HSImage, mask: Optional[HSMask]) -> tuple[np.array, np.array, list, list, dict]:
     """
     return data from .mat files in tuple
 
