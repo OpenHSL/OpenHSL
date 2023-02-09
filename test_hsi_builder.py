@@ -71,7 +71,7 @@ def test_hs_builder_video_uav():
     hsb = HSBuilder(path_to_data='./test_data',
                     path_to_metadata='./test_data/gps.csv',
                     data_type='imgs')
-    hsb.build(device_type='gaidel_uav', gaidel=True)
+    hsb.build()
     hsi = hsb.get_hsi()
 
     # Проверка размерности ГСИ

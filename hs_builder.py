@@ -113,14 +113,11 @@ class HSBuilder:
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
-    def build(self, device_type: str, roi=False, gaidel=False):
+    def build(self, roi=False):
         """
             Creates HSI from device-data
         """
-        if gaidel:
-            data = build_hypercube_by_videos(self.path_to_data, self.path_to_metadata)
-            data = np.transpose(data, (1, 2, 0))
-        else:
+        if self.path_to_metadata == None:
             preproc_frames = []
 
             for frame in self.frame_iterator:
@@ -132,6 +129,10 @@ class HSBuilder:
                 preproc_frames.append(frame)
 
             data = np.array(preproc_frames)
+
+        else:
+            data = build_hypercube_by_videos(self.path_to_data, self.path_to_metadata)
+            data = np.transpose(data, (1, 2, 0))
 
         self.hsi = HSImage(hsi=data, wavelengths=None)
     # ------------------------------------------------------------------------------------------------------------------
