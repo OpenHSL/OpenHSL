@@ -136,7 +136,7 @@ def build_hypercube_by_videos(dir_input: str, gps_filename: str) -> np.ndarray:
     cubes = []
     for filename in load_data(dir_input, ".avi"): #filename = dir_input + "video_1.avi"
         cube: np.ndarray = save_slices(filename) 
-        print(cube.shape)
+        print(filename)
         cubes.append(cube) # every cube have a shape (40, num of frames, width)
     
     cube = np.concatenate(cubes, axis=1)

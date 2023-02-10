@@ -7,6 +7,10 @@ from pathlib import Path
 from PIL import Image
 from typing import Tuple
 
+from utils.file_helper import dir_exists, load_data
+import settings
+
+
 
 class RawImagesData:
     """
@@ -28,21 +32,23 @@ class RawImagesData:
             some_operation(frame)
     """
 
-    def __init__(self, path_to_dir: str):
-        self.path_to_dir = path_to_dir
-        self.imgs_list = iter(os.listdir(path_to_dir))
+    def __init__(self, path_to_files: list):
+        self.path_to_files = path_to_files
 
     def __iter__(self):
+        self.current_step = 0
         return self
 
     def __next__(self):
-        self.path_to_curr_img = next(self.imgs_list)
-        path_to_img = f'{self.path_to_dir}/{self.path_to_curr_img}'
-        #TODO maybe replace by cv2.imread?
-        return np.array(Image.open(path_to_img).convert("L"))
+        if self.current_step < len(self):
+            img = np.array(Image.open(self.path_to_files[self.current_step]).convert("L"))
+            self.current_step += 1
+            return img
+        else:
+            raise StopIteration
 
     def __len__(self):
-        return len(os.listdir(self.path_to_dir))
+        return len(self.path_to_files)
 
 
 class RawVideoData:
@@ -82,51 +88,63 @@ class RawVideoData:
 
         """
 
-    def __init__(self, path_to_file: str):
-        self.path = Path(path_to_file)
-        self.format = self.path.suffix
-        self.current_step = 0
-        self.cap = cv2.VideoCapture(str(self.path))
+    def __init__(self, path_to_files: list):
+        self.paths = path_to_files
+        self.caps = [cv2.VideoCapture(file) for file in self.paths]
 
     def __iter__(self):
+        self.current_step = 0
         return self
 
     def __len__(self):
-        self.length = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.length = 0
+        for cap in self.caps:
+            self.length += int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         return self.length
 
     def __next__(self):
-        while self.cap.isOpened():
-            if self.current_step < len(self):
-                self.current_step += 1
-                ret, self.frame = self.cap.read()
+        if self.current_step < len(self):
+            self.current_step += 1
+            for cap in self.caps:
+                ret, frame = cap.read()
                 if ret:
-                    return cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY).T
-                else:
-                    raise StopIteration
-            else:
-                raise StopIteration
-
-
+                    return frame
+        else:
+            raise StopIteration
+    
 class RawData:
     """
 
     """
     def __init__(self, path_to_data: str, type_data: str):
+        if path_to_data.split(".")[-1] not in settings.SUPPORTED_FORMATS:
+            if not dir_exists(path_to_data):
+                raise ValueError("Path {} not found or {} format not supported".format(path_to_data, path_to_data.split(".")[-1]))
+            if type_data == "images":
+                files = load_data(path_to_data, settings.SUPPORTED_IMG_FORMATS)
+            elif type_data == "video":
+                files = load_data(path_to_data, settings.SUPPORTED_VIDEO_FORMATS)
+        
+        else:
+            files = [path_to_data]
+
         if type_data == "images":
-            self.raw_data = RawImagesData(path_to_dir=path_to_data)
+            self.raw_data = RawImagesData(path_to_files=files)
+
         elif type_data == "video":
-            self.raw_data = RawVideoData(path_to_file=path_to_data)
+            self.raw_data = RawVideoData(path_to_files=files)
+
+        else:
+            raise ValueError("type_data must be 'images' or 'video'")
 
     def __iter__(self):
-        return self
+        return self.raw_data.__iter__()
 
     def __next__(self):
-        self.frame = next(self.raw_data)
-        return self.frame
+        return next(self.raw_data)
 
     def __len__(self):
-        pass
+        self.raw_data.__len__()
 
 
 class RawCsvData:
@@ -135,7 +153,7 @@ class RawCsvData:
 
             Create iterator for csv lines.
             In each step return dict object.
-
+            for filename in load_data(dir_input, ".avi"): #filename = dir_input + 
             Parameters
             ----------
             path_to_csv : str

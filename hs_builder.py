@@ -39,7 +39,7 @@ class HSBuilder:
         self.hsi: Optional[HSImage] = None
         self.frame_iterator = RawData(path_to_data=path_to_data, type_data=data_type)
 
-        # if path_to_metadata:
+        # if path_to_metadata != None:
         #     self.telemetry_iterator = RawCsvData(path_to_metadata, path_to_data)
 
     # ------------------------------------------------------------------------------------------------------------------

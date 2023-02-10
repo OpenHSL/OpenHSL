@@ -9,8 +9,7 @@ test_wavelengths = [i for i in range(400, 650)]
 def test_hs_builder_imgs_rail():
     hsb = HSBuilder(path_to_data='./test_data/imgs',
                     data_type='images')
-    hsb.build(device_type='rail',
-              roi=True)
+    hsb.build(roi=True)
     hsi = hsb.get_hsi()
 
     # Проверка размерности ГСИ
@@ -40,7 +39,7 @@ def test_hs_builder_video_rotary():
     # Сборка из штатива
     hsb = HSBuilder(path_to_data='./test_data/video/rec_2022-06-06-12-24-02.avi',
                     data_type='video')
-    hsb.build(device_type='rotary')
+    hsb.build()
     hsi = hsb.get_hsi()
 
     # Проверка размерности ГСИ
@@ -70,7 +69,7 @@ def test_hs_builder_video_uav():
     # Сборка из данных коптера
     hsb = HSBuilder(path_to_data='./test_data',
                     path_to_metadata='./test_data/gps.csv',
-                    data_type='imgs')
+                    data_type='video')
     hsb.build()
     hsi = hsb.get_hsi()
 
@@ -87,15 +86,21 @@ def test_hs_builder_video_uav():
 
     plt.imshow(hsi.data[:, :, 20], cmap='gray')
     plt.show()
+
+def test_iter_video_uav():
+    hsb_video_dir = HSBuilder(path_to_data='test_data',
+                    path_to_metadata='./test_data/gps.csv',
+                    data_type='video')
+
+    hsb_video_file = HSBuilder(path_to_data='test_data/rec_2021-03-30-15-59-42.avi',
+                               path_to_metadata='./test_data/gps.csv',
+                               data_type='video')
+    
+    hsb_image_dir = HSBuilder(path_to_data='test_data',
+                              data_type='images')
+    
+    hsb_image_file = HSBuilder(path_to_data='test_data/test.png',
+                               data_type='images')
+    
+
 # ----------------------------------------------------------------------------------------------------------------------
-start = time()
-test_hs_builder_video_uav()
-import matplotlib.pyplot as plt
-import numpy as np
-
-#check npy file
-a = np.load('out/uav.npy')
-plt.imshow(a[10, :, :], cmap="gray")
-plt.show()
-
-print("time: ", time() - start)
