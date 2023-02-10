@@ -4,6 +4,7 @@ from hs_raw_pb_data import RawCsvData, RawData
 from gaidel_legacy import build_hypercube_by_videos
 from typing import Optional
 
+
 class HSBuilder:
     """
     HSBuilder(path_to_data, path_to_metadata=None, data_type=None)
@@ -78,9 +79,10 @@ class HSBuilder:
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
+    # TODO must be realised
     def get_roi(self, frame: np.ndarray) -> np.ndarray:
         """
-
+        For this moment works to microscope rough settings
         Parameters
         ----------
         frame :
@@ -99,6 +101,7 @@ class HSBuilder:
         return frame[x1: x2, left_bound_spectrum: right_bound_spectrum].T
     # ------------------------------------------------------------------------------------------------------------------
 
+    # TODO must be realised
     def __some_preparation_on_frame(self, frame: np.ndarray) -> np.ndarray:
         """
 
@@ -128,13 +131,11 @@ class HSBuilder:
             
         data = np.array(preproc_frames)
 
-        if self.path_to_metadata is not None:
+        if self.path_to_metadata:
             data = build_hypercube_by_videos(data, self.path_to_metadata)
             data = np.transpose(data, (1, 2, 0))
-            self.hsi = HSImage(hsi=data, wavelengths=None)
-        
-        else:
-            self.hsi = HSImage(hsi=data, wavelengths=None)
+
+        self.hsi = HSImage(hsi=data, wavelengths=None)
     # ------------------------------------------------------------------------------------------------------------------
 
     def get_hsi(self) -> HSImage:

@@ -26,9 +26,18 @@ BLUR_SHAPE = (3, 3)
 
 def gaussian(length, mean, std):
     return np.exp(-((np.arange(0, length) - mean) ** 2) / 2.0 / (std ** 2)) / math.sqrt(2.0 * math.pi) / std
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def get_principal_slices(spectrum: np.ndarray) -> np.ndarray:
+    """
+    # TODO create doctring here!
+    Args:
+        spectrum:
+
+    Returns:
+
+    """
     n, m, k = spectrum.shape 
     # n: height of frame, m: width of frame, k = 1
 
@@ -51,10 +60,12 @@ def get_principal_slices(spectrum: np.ndarray) -> np.ndarray:
                                     gaussian_window,
                                     axes=([0], [0]),)
     return ans
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def blur_image(img):
     return cv2.blur(img, BLUR_SHAPE)
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def build_by_gps_log(spectrum: np.ndarray, gps_filename: str):
@@ -67,7 +78,7 @@ def build_by_gps_log(spectrum: np.ndarray, gps_filename: str):
                    longitude=gps[HEADER_Y].tolist(),
                    rel_alt=gps[HEADER_REL_ALT].tolist(),
                    angle=gps[HEADER_ANGLE].tolist(),)
-    
+    # TODO looks like not good, maybe replace by some lambda-function?
     for i in range(n):
         band = bands[i, :, :]
         if BLUR_AUTO:
@@ -75,12 +86,15 @@ def build_by_gps_log(spectrum: np.ndarray, gps_filename: str):
         bands[i, :, :] = band
 
     return np.array(bands)
+# ----------------------------------------------------------------------------------------------------------------------
 
 
-def save_slices(data: str) -> np.ndarray:
+# TODO This code makes some sense except getting get_principal_slices for each layer?
+def save_slices(data: np.ndarray) -> np.ndarray:
     deep, height, width = data.shape
     # create cube with shape (40, deep, width)
     cube: np.ndarray = np.zeros(shape=(BANDS_NUMBER, deep, width), dtype=np.uint8)
+    # Todo use enumerate() instead of index +=1
     index = 0 # index in this code also means frame counter
     for frame in data:
         # in get_principal_slices get np.ndarray with shape (height, width, 1), i guess it's specter
@@ -89,6 +103,7 @@ def save_slices(data: str) -> np.ndarray:
         cube[:, index, :] = s[:, :, 0]
         index += 1
     return cube
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def move_point(latitude, longitude, angle, length):
@@ -98,8 +113,10 @@ def move_point(latitude, longitude, angle, length):
         latitude + length * cos_a,
         longitude + length * sin_a,
     )
+# ----------------------------------------------------------------------------------------------------------------------
 
 
+# TODO can be split to any functions? Because here is too lot of code.
 def interp(lines: np.ndarray, latitude: list, longitude: list, rel_alt: list, angle: list) -> np.ndarray:
     """
         This code implements interpolation of 3D uav data.
@@ -151,9 +168,11 @@ def interp(lines: np.ndarray, latitude: list, longitude: list, rel_alt: list, an
     ans = np.flip(ans, axis=2)
     ans = np.transpose(ans, (2, 1, 0))
     return ans
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def build_hypercube_by_videos(data: np.ndarray, gps_filename: str) -> np.ndarray:
-    cube =  save_slices(data) 
+    cube = save_slices(data)
     cube = build_by_gps_log(cube, gps_filename)
     return cube
+# ----------------------------------------------------------------------------------------------------------------------
