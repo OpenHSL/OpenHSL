@@ -1,7 +1,6 @@
 from hs_builder import HSBuilder
 from matplotlib import pyplot as plt
 from hsi import HSImage
-from time import time
 
 test_wavelengths = [i for i in range(400, 650)]
 
@@ -88,14 +87,3 @@ def test_hs_builder_video_uav():
     plt.imshow(hsi.data[:, :, 20], cmap='gray')
     plt.show()
 # ----------------------------------------------------------------------------------------------------------------------
-# start = time()
-# test_hs_builder_video_uav()
-# import matplotlib.pyplot as plt
-# import numpy as np
-#
-# #check npy file
-# a = np.load('out/uav.npy')
-# plt.imshow(a[10, :, :], cmap="gray")
-# plt.show()
-#
-# print("time: ", time() - start)

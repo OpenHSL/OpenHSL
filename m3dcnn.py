@@ -1,25 +1,21 @@
 import model
-import os
+import model_utils
+from hsi import HSImage
+from hs_mask import HSMask
 from Firsov_Legacy.DataLoader import DataLoader
 from Firsov_Legacy.dataset import get_dataset
-from Firsov_Legacy.utils import sample_gt, convert_to_color_, camel_to_snake, grouper, \
-                                count_sliding_window, sliding_window
+from Firsov_Legacy.utils import sample_gt, convert_to_color_
+
+import numpy as np
+from typing import Any
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.nn import init
 import torch.utils.data as data
 import torch.optim
-
-import numpy as np
-from tqdm import tqdm
-import datetime
-
-from hsi import HSImage
-from hs_mask import HSMask
-import model_utils
+from torch.nn import init
 
 
 def get_model(kwargs: dict) -> tuple:
@@ -51,7 +47,7 @@ def get_model(kwargs: dict) -> tuple:
     #lr = kwargs.setdefault("learning_rate", 0.01)
     lr = kwargs['learning_rate']
     center_pixel = True
-    model = HeEtAl_bn(n_bands, n_classes, patch_size=kwargs["patch_size"])
+    model = M3DCNN_Net(n_bands, n_classes, patch_size=kwargs["patch_size"])
     # For Adagrad, we need to load the model on GPU before creating the optimizer
     model = model.to(device)
     optimizer = optim.Adagrad(model.parameters(), lr=lr, weight_decay=0.01)
@@ -72,15 +68,19 @@ def get_model(kwargs: dict) -> tuple:
     kwargs.setdefault("mixture_augmentation", False)
     kwargs["center_pixel"] = center_pixel
     return model, optimizer, criterion, kwargs
+# ----------------------------------------------------------------------------------------------------------------------
 
 
-class HeEtAl_bn(nn.Module):
+class M3DCNN_Net(nn.Module):
     """
     MULTI-SCALE 3D DEEP CONVOLUTIONAL NEURAL NETWORK FOR HYPERSPECTRAL
     IMAGE CLASSIFICATION
     Mingyi He, Bo Li, Huahui Chen
     IEEE International Conference on Image Processing (ICIP) 2017
     https://ieeexplore.ieee.org/document/8297014/
+
+    modified by N.A. Firsov, A.V. Nikonorov
+    DOI: 10.18287/2412-6179-CO-1038
     """
 
     @staticmethod
@@ -88,9 +88,10 @@ class HeEtAl_bn(nn.Module):
         if isinstance(m, nn.Linear) or isinstance(m, nn.Conv3d):
             init.kaiming_uniform(m.weight)
             init.zeros_(m.bias)
+    # ------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, input_channels, n_classes, patch_size=7):
-        super(HeEtAl_bn, self).__init__()
+        super(M3DCNN_Net, self).__init__()
         self.input_channels = input_channels
         self.patch_size = patch_size
 
@@ -121,6 +122,7 @@ class HeEtAl_bn(nn.Module):
         self.fc = nn.Linear(self.features_size, n_classes)
 
         self.apply(self.weight_init)
+    # ------------------------------------------------------------------------------------------------------------------
 
     def _get_final_flattened_size(self):
         with torch.no_grad():
@@ -162,6 +164,7 @@ class HeEtAl_bn(nn.Module):
 
             _, t, c, w, h = x.size()
         return t * c * w * h
+    # ------------------------------------------------------------------------------------------------------------------
 
     def forward(self, x):
 
@@ -202,6 +205,7 @@ class HeEtAl_bn(nn.Module):
         x = x.view(-1, self.features_size)
         x = self.fc(x)
         return x
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def create_loader(img: np.array,
@@ -210,6 +214,7 @@ def create_loader(img: np.array,
                   shuffle: bool = False):
     dataset = DataLoader(img, gt, **hyperparams)
     return data.DataLoader(dataset, batch_size=hyperparams["batch_size"], shuffle=shuffle)
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class M3DCNN:
@@ -220,7 +225,7 @@ class M3DCNN:
                  path_to_weights=None,
                  device='cpu'
                  ):
-        self.hyperparams = {}
+        self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = patch_size
         self.hyperparams['batch_size'] = 40
         self.hyperparams['learning_rate'] = 0.01
@@ -231,8 +236,10 @@ class M3DCNN:
         self.hyperparams['device'] = device
 
         self.model, self.optimizer, self.loss, self.hyperparams = get_model(self.hyperparams)
+
         if path_to_weights:
             self.model.load_state_dict(torch.load(path_to_weights))
+    # ------------------------------------------------------------------------------------------------------------------
 
     def fit(self,
             X: HSImage,
@@ -252,17 +259,13 @@ class M3DCNN:
         val_loader = create_loader(img, val_gt, self.hyperparams)
 
         self.model = model_utils.train(net=self.model,
-                          optimizer=self.optimizer,
-                          criterion=self.loss,
-                          data_loader=train_loader,
-                          epoch=epochs,
-                          val_loader=val_loader,
-                          device=self.hyperparams['device'])
-        """self.train(self, data_loader=train_loader,
-                   epoch=epochs,
-                   val_loader=val_loader,
-                   device=self.hyperparams['device']
-        )"""
+                                       optimizer=self.optimizer,
+                                       criterion=self.loss,
+                                       data_loader=train_loader,
+                                       epoch=epochs,
+                                       val_loader=val_loader,
+                                       device=self.hyperparams['device'])
+    # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
                 X: HSImage,
@@ -280,5 +283,5 @@ class M3DCNN:
         color_prediction = convert_to_color_(prediction, palette)
 
         return gt, prediction, color_prediction
-
+# ----------------------------------------------------------------------------------------------------------------------
 
