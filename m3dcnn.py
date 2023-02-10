@@ -5,6 +5,8 @@ from Firsov_Legacy.dataset import get_dataset
 from Firsov_Legacy.utils import sample_gt, convert_to_color_, camel_to_snake, grouper, \
                                 count_sliding_window, sliding_window
 
+
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -19,6 +21,7 @@ import datetime
 
 from hsi import HSImage
 from hs_mask import HSMask
+import model_utils
 
 
 def get_model(kwargs: dict) -> tuple:
@@ -250,11 +253,18 @@ class M3DCNN:
         train_loader = create_loader(img, train_gt, self.hyperparams, shuffle=True)
         val_loader = create_loader(img, val_gt, self.hyperparams)
 
-        self.train(data_loader=train_loader,
+        self.model = model_utils.train(net=self.model,
+                          optimizer=self.optimizer,
+                          criterion=self.loss,
+                          data_loader=train_loader,
+                          epoch=epochs,
+                          val_loader=val_loader,
+                          device=self.hyperparams['device'])
+        """self.train(self, data_loader=train_loader,
                    epoch=epochs,
                    val_loader=val_loader,
                    device=self.hyperparams['device']
-        )
+        )"""
 
     def predict(self,
                 X: HSImage,
@@ -265,7 +275,9 @@ class M3DCNN:
 
         self.model.eval()
 
-        probabilities = self.test(img, self.hyperparams)
+        probabilities = model_utils.test(net=self.model,
+                                         img=img,
+                                         hyperparams=self.hyperparams)
         prediction = np.argmax(probabilities, axis=-1)
         color_prediction = convert_to_color_(prediction, palette)
 

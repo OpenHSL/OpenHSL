@@ -17,8 +17,8 @@ mask.load_mask('test_data/tr_pr/PaviaU_gt.mat', mat_key='paviaU_gt')
 
 cnn = M3DCNN(n_classes=len(np.unique(mask.data)),
              n_bands=hsi.data.shape[-1],
-             # path_to_weights='checkpoints/he_et_al_bn/he/2023_02_01_17_41_49_epoch1_0.98.pth',
-             device='cpu')
+             path_to_weights='checkpoints/he_et_al_bn/he/2023_02_10_11_06_59_epoch1_0.98.pth',
+             device='cuda')
 
 cnn.fit(X=hsi, y=mask, epochs=1)
 
