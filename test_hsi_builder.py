@@ -1,7 +1,6 @@
 from hs_builder import HSBuilder
 from matplotlib import pyplot as plt
 from hsi import HSImage
-from time import time
 
 test_wavelengths = [i for i in range(400, 650)]
 
@@ -87,20 +86,26 @@ def test_hs_builder_video_uav():
     plt.imshow(hsi.data[:, :, 20], cmap='gray')
     plt.show()
 
-def test_iter_video_uav():
-    hsb_video_dir = HSBuilder(path_to_data='test_data',
-                    path_to_metadata='./test_data/gps.csv',
+def test_hs_builder_video_uav():
+    # Сборка из данных коптера
+    hsb = HSBuilder(path_to_data='test_data',
+                    path_to_metadata='test_data/gps.csv',
                     data_type='video')
+    
+    hsb.build()
+    hsi = hsb.get_hsi()
 
-    hsb_video_file = HSBuilder(path_to_data='test_data/rec_2021-03-30-15-59-42.avi',
-                               path_to_metadata='./test_data/gps.csv',
-                               data_type='video')
-    
-    hsb_image_dir = HSBuilder(path_to_data='test_data',
-                              data_type='images')
-    
-    hsb_image_file = HSBuilder(path_to_data='test_data/test.png',
-                               data_type='images')
-    
+    # Проверка размерности ГСИ
 
+    # Проверка возможности сохранения в npy
+    hsi.save_to_npy(path_to_file='./out/uav.npy')
+
+    hsi = HSImage(None, None)
+
+    # Проверка чтения из npy
+    hsi.load_from_npy(path_to_file='./out/uav.npy')
+
+    plt.imshow(hsi.data[:, :, 20], cmap='gray')
+    plt.show()
 # ----------------------------------------------------------------------------------------------------------------------
+test_hs_builder_video_uav()

@@ -1,4 +1,3 @@
-import os
 import cv2
 import numpy as np
 import pandas as pd
@@ -7,10 +6,11 @@ from pathlib import Path
 from PIL import Image
 from typing import Tuple
 
-from utils.file_helper import dir_exists, load_data
-import settings
+from utils import dir_exists, load_data
 
-
+SUPPORTED_VIDEO_FORMATS = ("mp4", "avi")
+SUPPORTED_IMG_FORMATS = ("jpg", "png", "bmp")
+SUPPORTED_FORMATS = SUPPORTED_VIDEO_FORMATS + SUPPORTED_IMG_FORMATS
 
 class RawImagesData:
     """
@@ -105,9 +105,11 @@ class RawVideoData:
     def __next__(self):
         if self.current_step < len(self):
             self.current_step += 1
+            #read in grayscale
             for cap in self.caps:
                 ret, frame = cap.read()
                 if ret:
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                     return frame
         else:
             raise StopIteration
@@ -117,13 +119,13 @@ class RawData:
 
     """
     def __init__(self, path_to_data: str, type_data: str):
-        if path_to_data.split(".")[-1] not in settings.SUPPORTED_FORMATS:
+        if path_to_data.split(".")[-1] not in SUPPORTED_FORMATS:
             if not dir_exists(path_to_data):
                 raise ValueError("Path {} not found or {} format not supported".format(path_to_data, path_to_data.split(".")[-1]))
             if type_data == "images":
-                files = load_data(path_to_data, settings.SUPPORTED_IMG_FORMATS)
+                files = load_data(path_to_data, SUPPORTED_IMG_FORMATS)
             elif type_data == "video":
-                files = load_data(path_to_data, settings.SUPPORTED_VIDEO_FORMATS)
+                files = load_data(path_to_data, SUPPORTED_VIDEO_FORMATS)
         
         else:
             files = [path_to_data]

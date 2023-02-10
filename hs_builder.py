@@ -1,7 +1,7 @@
 import numpy as np
 from hsi import HSImage
 from hs_raw_pb_data import RawCsvData, RawData
-from Gaidel_Legacy.build import build_hypercube_by_videos
+from gaidel_legacy import build_hypercube_by_videos
 from typing import Optional
 
 class HSBuilder:
@@ -117,24 +117,24 @@ class HSBuilder:
         """
             Creates HSI from device-data
         """
-        if self.path_to_metadata == None:
-            preproc_frames = []
+        preproc_frames = []
+        for frame in self.frame_iterator:
+            frame = self.__norm_frame_camera_illumination(frame=frame)
+            frame = self.__norm_frame_camera_geometry(frame=frame)
+            frame = self.__some_preparation_on_frame(frame=frame)
+            if roi:
+                frame = self.get_roi(frame)
+            preproc_frames.append(frame)
+            
+        data = np.array(preproc_frames)
 
-            for frame in self.frame_iterator:
-                frame = self.__norm_frame_camera_illumination(frame=frame)
-                frame = self.__norm_frame_camera_geometry(frame=frame)
-                frame = self.__some_preparation_on_frame(frame=frame)
-                if roi:
-                    frame = self.get_roi(frame)
-                preproc_frames.append(frame)
-
-            data = np.array(preproc_frames)
-
-        else:
-            data = build_hypercube_by_videos(self.path_to_data, self.path_to_metadata)
+        if self.path_to_metadata is not None:
+            data = build_hypercube_by_videos(data, self.path_to_metadata)
             data = np.transpose(data, (1, 2, 0))
-
-        self.hsi = HSImage(hsi=data, wavelengths=None)
+            self.hsi = HSImage(hsi=data, wavelengths=None)
+        
+        else:
+            self.hsi = HSImage(hsi=data, wavelengths=None)
     # ------------------------------------------------------------------------------------------------------------------
 
     def get_hsi(self) -> HSImage:

@@ -3,72 +3,93 @@ import math
 import numpy as np
 import pandas as pd
 import itertools
-
-import Gaidel_Legacy.settings as settings
-from Gaidel_Legacy.utils import load_data
-from Gaidel_Legacy.image import blur_image
 from sklearn import neighbors
 
-import Gaidel_Legacy.slices as slices
-
-
+CSV_DELIMITER = ';'
+GPS_HYPERCAM_FRAME = "Hypercam frame"
+HEADER_CAM_ID = "cam_ID"
+HEADER_X = "x"
+HEADER_Y = "y"
+HEADER_REL_ALT = "rel_alt"
+HEADER_ANGLE = "compass_hdg"
+BORDER_TOP = 0.0
+BORDER_BOTTOM = 1.0
+CAMERA_PITCH = 0.0
 SPECTRUM_BOX_COLOR = (255, 0, 0)
+BLUR_AUTO = True
+TARGET_RESOLUTION = 1080
+CAMERA_TANGENT = 0.30
+DISTANCE_LIMIT = 1.0
+BANDS_NUMBER = 40
+BLUR_SHAPE = (3, 3)
+
+
+def gaussian(length, mean, std):
+    return np.exp(-((np.arange(0, length) - mean) ** 2) / 2.0 / (std ** 2)) / math.sqrt(2.0 * math.pi) / std
+
+
+def get_principal_slices(spectrum: np.ndarray) -> np.ndarray:
+    n, m, k = spectrum.shape 
+    # n: height of frame, m: width of frame, k = 1
+
+    width = n // BANDS_NUMBER
+    gaussian_window = gaussian(width, width / 2.0, width / 6.0) 
+    # gaussian_window contain few float data
+    
+    mid = len(gaussian_window) // 2 
+    # center idx of gaussian_window list
+    
+    gaussian_window[mid] = 1.0 - gaussian_window[:mid].sum() - gaussian_window[mid+1:].sum()
+
+    ans = np.zeros((BANDS_NUMBER, m, k), dtype=np.uint8)
+    # create empty array with shape (40, width of frame, 1)
+
+    for j in range(BANDS_NUMBER):
+        left_bound = j * n // BANDS_NUMBER
+
+        ans[j, :, :] = np.tensordot(spectrum[left_bound:left_bound + len(gaussian_window), :, :],
+                                    gaussian_window,
+                                    axes=([0], [0]),)
+    return ans
+
+
+def blur_image(img):
+    return cv2.blur(img, BLUR_SHAPE)
+
 
 def build_by_gps_log(spectrum: np.ndarray, gps_filename: str):
     n, m, _ = spectrum.shape
-    gps = pd.read_csv(gps_filename, sep=settings.CSV_DELIMITER)
-    gps = gps.loc[gps[settings.HEADER_CAM_ID] == settings.GPS_HYPERCAM_FRAME].head(m)
+    gps = pd.read_csv(gps_filename, sep=CSV_DELIMITER)
+    gps = gps.loc[gps[HEADER_CAM_ID] == GPS_HYPERCAM_FRAME].head(m)
 
     bands = interp(spectrum,
-                   latitude=gps[settings.HEADER_X].tolist(),
-                   longitude=gps[settings.HEADER_Y].tolist(),
-                   rel_alt=gps[settings.HEADER_REL_ALT].tolist(),
-                   angle=gps[settings.HEADER_ANGLE].tolist(),)
+                   latitude=gps[HEADER_X].tolist(),
+                   longitude=gps[HEADER_Y].tolist(),
+                   rel_alt=gps[HEADER_REL_ALT].tolist(),
+                   angle=gps[HEADER_ANGLE].tolist(),)
     
     for i in range(n):
         band = bands[i, :, :]
-        settings.BLUR_AUTO = True
-        if settings.BLUR_AUTO:
+        if BLUR_AUTO:
             band = blur_image(band)
         bands[i, :, :] = band
 
     return np.array(bands)
 
-def save_slices(path: str) -> np.ndarray:
-    """
-        Args:
-            path: path to video file
-        Returns:
-            cube: ndarray with cube from video
-            
-    """
-    capture = cv2.VideoCapture(path)
-    width: int = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)) # width of video
-    height: int = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)) # height of video
-    deep: int = int(capture.get(cv2.CAP_PROP_FRAME_COUNT)) # count of frames in video
 
+def save_slices(data: str) -> np.ndarray:
+    deep, height, width = data.shape
     # create cube with shape (40, deep, width)
-    cube: np.ndarray = np.zeros(shape=(settings.config.spectral_bands_number, deep, width), dtype=np.uint8)
+    cube: np.ndarray = np.zeros(shape=(BANDS_NUMBER, deep, width), dtype=np.uint8)
     index = 0 # index in this code also means frame counter
-    while capture.isOpened():
-        result, frame = capture.read()
-        if not result:
-            break
-        else:
-            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
-
+    for frame in data:
         # in get_principal_slices get np.ndarray with shape (height, width, 1), i guess it's specter
-        s: np.ndarray = slices.get_principal_slices(frame[int(height * settings.BORDER_TOP):int(height * settings.BORDER_BOTTOM), :, np.newaxis])
-        
+        s: np.ndarray = get_principal_slices(frame[int(height * BORDER_TOP):int(height * BORDER_BOTTOM), :, np.newaxis])
         # in s return array with the same shape (height, width, 1)
-
         cube[:, index, :] = s[:, :, 0]
-        if cv2.waitKey(1) & 0xFF == ord(settings.EXIT_KEY):
-            break
         index += 1
-    capture.release()
-
     return cube
+
 
 def move_point(latitude, longitude, angle, length):
     sin_a = math.sin(angle)
@@ -96,12 +117,12 @@ def interp(lines: np.ndarray, latitude: list, longitude: list, rel_alt: list, an
     x = []
     y = []
     z = []
-    cos_pitch = math.cos(math.radians(settings.CAMERA_PITCH))
-    tan_pitch = math.tan(math.radians(settings.CAMERA_PITCH))
+    cos_pitch = math.cos(math.radians(CAMERA_PITCH))
+    tan_pitch = math.tan(math.radians(CAMERA_PITCH))
     pi_2 = math.pi / 2.0
     for j in range(m):
         rel_alt[j] /= cos_pitch
-        w = rel_alt[j] * settings.CAMERA_TANGENT
+        w = rel_alt[j] * CAMERA_TANGENT
         latitude[j] += rel_alt[j] * tan_pitch * math.cos(angle[j])
         longitude[j] += rel_alt[j] * tan_pitch * math.sin(angle[j])
         x_1, y_1 = move_point(latitude[j], longitude[j], angle[j] + pi_2, w / 2.0)
@@ -118,13 +139,13 @@ def interp(lines: np.ndarray, latitude: list, longitude: list, rel_alt: list, an
     x_max = np.max(x)
     y_min = np.min(y)
     y_max = np.max(y)
-    n_target = settings.TARGET_RESOLUTION
+    n_target = TARGET_RESOLUTION
     m_target = int(n_target * (y_max - y_min) / (x_max - x_min))
     test = list(itertools.product(np.linspace(x_min, x_max, n_target), np.linspace(y_min, y_max, m_target)))
     ans = model.predict(test)
     neigh_dist, _ = model.kneighbors(test, n_neighbors=1, return_distance=True)
     for i in range(ans.shape[0]):
-        if neigh_dist[i, 0] > settings.DISTANCE_LIMIT:
+        if neigh_dist[i, 0] > DISTANCE_LIMIT:
             ans[i, :] = np.zeros(n)
     ans = ans.reshape(n_target, m_target, n)
     ans = np.flip(ans, axis=2)
@@ -132,14 +153,7 @@ def interp(lines: np.ndarray, latitude: list, longitude: list, rel_alt: list, an
     return ans
 
 
-def build_hypercube_by_videos(dir_input: str, gps_filename: str) -> np.ndarray:
-    cubes = []
-    for filename in load_data(dir_input, ".avi"): #filename = dir_input + "video_1.avi"
-        cube: np.ndarray = save_slices(filename) 
-        print(filename)
-        cubes.append(cube) # every cube have a shape (40, num of frames, width)
-    
-    cube = np.concatenate(cubes, axis=1)
-
+def build_hypercube_by_videos(data: np.ndarray, gps_filename: str) -> np.ndarray:
+    cube =  save_slices(data) 
     cube = build_by_gps_log(cube, gps_filename)
     return cube
