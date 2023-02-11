@@ -26,12 +26,12 @@ def ndvi_mask(cube : np.ndarray, w_data : str):
         r1 = 633
         r2 = 650
         red_sps = sps(r1, r2, w_data)
-        print(red_sps)
+        
 
         n1 = 844
         n2 = 860
         nir_sps = sps(n1, n2, w_data)
-        print(nir_sps)
+        
 
         red = reduceMean(cube, red_sps[0], red_sps[1])
         nir = reduceMean(cube, nir_sps[0], nir_sps[1])
