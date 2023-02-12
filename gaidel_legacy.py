@@ -3,7 +3,6 @@ import math
 import numpy as np
 import pandas as pd
 import itertools
-from time import time
 from sklearn import neighbors
 
 CSV_DELIMITER = ';'
@@ -23,10 +22,16 @@ CAMERA_TANGENT = 0.30
 DISTANCE_LIMIT = 1.0
 BANDS_NUMBER = 40
 BLUR_SHAPE = (3, 3)
+COS_PITCH = math.cos(math.radians(CAMERA_PITCH))
+TAN_PITCH = math.tan(math.radians(CAMERA_PITCH))
+PI_2 = math.pi / 2.0
 
-
-def gaussian(length, mean, std):
+def gaussian(length: int, mean: float, std: float) -> np.ndarray:
     return np.exp(-((np.arange(0, length) - mean) ** 2) / 2.0 / (std ** 2)) / math.sqrt(2.0 * math.pi) / std
+# ----------------------------------------------------------------------------------------------------------------------
+
+def blur_image(img: np.ndarray) -> np.ndarray:
+    return cv2.blur(img, BLUR_SHAPE)
 # ----------------------------------------------------------------------------------------------------------------------
 
 def get_principal_slices(spectrum: np.ndarray) -> np.ndarray:
@@ -69,11 +74,7 @@ def save_slices(data: np.ndarray) -> np.ndarray:
     return cube
 # ----------------------------------------------------------------------------------------------------------------------
 
-def blur_image(img):
-    return cv2.blur(img, BLUR_SHAPE)
-# ----------------------------------------------------------------------------------------------------------------------
-
-def build_by_gps_log(spectrum: np.ndarray, gps_filename: str):
+def build_by_gps_log(spectrum: np.ndarray, gps_filename: str) -> np.ndarray:
     n, m, _ = spectrum.shape
     gps = pd.read_csv(gps_filename, sep=CSV_DELIMITER)
     gps = gps.loc[gps[HEADER_CAM_ID] == GPS_HYPERCAM_FRAME].head(m)
@@ -98,41 +99,53 @@ def move_point(latitude: float, longitude: float, angle: float, length: float):
         latitude + length * cos_a,
         longitude + length * sin_a,)
 # ----------------------------------------------------------------------------------------------------------------------
+def calculate_rel_alt(rel_alt: list, m: int) -> list:
+    for j in range(m):
+        rel_alt[j] /= COS_PITCH
+    return rel_alt
+
+def calculate_lat_lon(latitude: list, longitude: list, rel_alt: list, angle: list, m: int):
+    for j in range(m):
+        latitude[j] += rel_alt[j] * TAN_PITCH * math.cos(angle[j])
+        longitude[j] += rel_alt[j] * TAN_PITCH * math.sin(angle[j])
+    return (latitude, longitude)
 
 def interp(lines: np.ndarray, latitude: list, longitude: list, rel_alt: list, angle: list) -> np.ndarray:
+    """
+    
+    """
     n, m, k = lines.shape
-    x, y, z = calculate_points(latitude, longitude, rel_alt, angle, k, lines, m)
+    rel_alt = calculate_rel_alt(rel_alt, m)
+    latitude, longitude = calculate_lat_lon(latitude, longitude, rel_alt, angle, m)
+    x, y, z = calculate_coordinates(latitude, longitude, rel_alt, angle, k, lines, m)
     model = train_model(x, y, z)
     test, n_target, m_target = generate_test_points(x, y)
-    ans = model.predict(test)
-    neigh_dist, _ = model.kneighbors(test, n_neighbors=1, return_distance=True)
-    for i in range(ans.shape[0]):
-        if neigh_dist[i, 0] > DISTANCE_LIMIT:
-            ans[i, :] = np.zeros(n)
-    ans = ans.reshape(n_target, m_target, n)
-    ans = np.flip(ans, axis=2)
-    ans = np.transpose(ans, (2, 1, 0))
-    return ans
+    prediction = model.predict(test)
+    nearest_dist, _ = model.kneighbors(test, n_neighbors=1, return_distance=True)
 
-def calculate_points(latitude, longitude, rel_alt, angle, k, lines, m):
-    cos_pitch = math.cos(math.radians(CAMERA_PITCH))
-    tan_pitch = math.tan(math.radians(CAMERA_PITCH))
-    pi_2 = math.pi / 2.0
+    # Check if the nearest point is greater than the limit
+    for i in range(prediction.shape[0]):
+        if nearest_dist[i, 0] > DISTANCE_LIMIT:
+            prediction[i, :] = np.zeros(n)
+
+    # Reshape and rearrange the prediction array
+    prediction = prediction.reshape(n_target, m_target, n)
+    prediction = np.flip(prediction, axis=2)
+    prediction = np.transpose(prediction, (2, 1, 0))
+    return prediction
+
+def calculate_coordinates(latitude: list, longitude: list, rel_alt: list, angle: list, k: int, lines: np.ndarray, m: int):
     x = []
     y = []
     z = []
     for j in range(m):
-        rel_alt[j] /= cos_pitch
-        w = rel_alt[j] * CAMERA_TANGENT
-        latitude[j] += rel_alt[j] * tan_pitch * math.cos(angle[j])
-        longitude[j] += rel_alt[j] * tan_pitch * math.sin(angle[j])
-        x_1, y_1 = move_point(latitude[j], longitude[j], angle[j] + pi_2, w / 2.0)
-        x_2, y_2 = move_point(latitude[j], longitude[j], angle[j] - pi_2, w / 2.0)
+        x_1, y_1 = move_point(latitude[j], longitude[j], angle[j] + PI_2, rel_alt[j] * CAMERA_TANGENT / 2.0)
+        x_2, y_2 = move_point(latitude[j], longitude[j], angle[j] - PI_2, rel_alt[j] * CAMERA_TANGENT / 2.0)
         x.extend(np.linspace(x_1, x_2, k))
         y.extend(np.linspace(y_1, y_2, k))
         for index in range(k):
             z.append(np.flip(lines[:, j, index]))
-    return x, y, z
+    return (x, y, z)
 
 def train_model(x, y, z):
     model = neighbors.KNeighborsRegressor(n_neighbors=1)
@@ -153,9 +166,7 @@ def generate_test_points(x, y):
 #----------------------------------------------------------------------------------------------------------------------
 
 def build_hypercube_by_videos(data: np.ndarray, gps_filename: str) -> np.ndarray:
-    start = time()
     cube = save_slices(data)
     cube = build_by_gps_log(cube, gps_filename)
-    print(f'Hypercube built in {time() - start:.2f} seconds')
     return cube
 # ----------------------------------------------------------------------------------------------------------------------
