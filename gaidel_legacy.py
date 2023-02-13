@@ -58,7 +58,6 @@ def interpolate(cube: np.ndarray, latitude: list, longitude: list, rel_alt: list
             prediction[i, :] = np.zeros(k)
 
     prediction = prediction.reshape(m_target, n_target, k)
-    prediction = np.flip(prediction, axis=2) #####experiment here
     return prediction
 #-------------------------------------------------------------------------------------------------------------------------------
 
@@ -101,7 +100,7 @@ def move_point(latitude: float, longitude: float, angle: float, distance: float)
 
 def knn_for_interpolate(x, y, z):
     model = neighbors.KNeighborsRegressor(n_neighbors=1)
-    data = np.stack((np.array(x), np.array(y))).T #########here is the problem
+    data = np.stack((np.array(x), np.array(y))).T 
     model.fit(data, z)
     return model
 
@@ -115,7 +114,7 @@ def generate_test_points(x, y):
     n_target = TARGET_RESOLUTION
     m_target = int(n_target * (y_max - y_min) / (x_max - x_min))
     test_points = list(itertools.product(np.linspace(x_min, x_max, n_target), np.linspace(y_min, y_max, m_target)))
-    return (test_points, m_target, n_target) ##########here is the problem
+    return (test_points, m_target, n_target) 
 
 # ----------------------------------------------------------------------------------------------------------------------
 def blur_image(img: np.ndarray) -> np.ndarray:
