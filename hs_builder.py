@@ -3,6 +3,8 @@ from hsi import HSImage
 from hs_raw_pb_data import RawCsvData, RawData
 from gaidel_legacy import build_hypercube_by_videos
 from typing import Optional
+import settings
+from utils import gaussian
 
 
 class HSBuilder:
@@ -114,7 +116,29 @@ class HSBuilder:
 
         """
         return frame
-    # ------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------
+
+    def __principal_slices(self, frame: np.ndarray) -> np.ndarray:
+        """
+        Parameters
+        ----------
+        frame
+
+        Returns
+        -------
+
+        """
+        width, height = frame.shape # 744, 70
+        gaus_width = height // settings.BANDS_NUMBERS
+        gaussian_window = gaussian(gaus_width, gaus_width / 2.0, gaus_width / 6.0)
+        mid = len(gaussian_window) // 2
+        gaussian_window[mid] = 1.0 - gaussian_window[:mid].sum() - gaussian_window[mid+1:].sum()
+        result = np.zeros((width, settings.BANDS_NUMBERS), dtype=np.uint8)
+        for i in range(settings.BANDS_NUMBERS):
+            result[:, i] = np.sum(frame[:, i * gaus_width:(i + 1) * gaus_width] * gaussian_window, axis=1)
+
+        return result
+# ------------------------------------------------------------------------------------------------------------------
 
     def build(self, roi=False):
         """
@@ -125,16 +149,15 @@ class HSBuilder:
             frame = self.__norm_frame_camera_illumination(frame=frame)
             frame = self.__norm_frame_camera_geometry(frame=frame)
             frame = self.__some_preparation_on_frame(frame=frame)
+            frame = self.__principal_slices(frame = frame)
             if roi:
                 frame = self.get_roi(frame)
             preproc_frames.append(frame)
             
         data = np.array(preproc_frames)
-
         if self.path_to_metadata:
             data = build_hypercube_by_videos(data, self.path_to_metadata)
-            data = np.transpose(data, (1, 2, 0))
-
+            
         self.hsi = HSImage(hsi=data, wavelengths=None)
     # ------------------------------------------------------------------------------------------------------------------
 

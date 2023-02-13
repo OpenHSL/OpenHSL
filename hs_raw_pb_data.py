@@ -105,12 +105,11 @@ class RawVideoData:
     def __next__(self):
         if self.current_step < len(self):
             self.current_step += 1
-            #read in grayscale
             for cap in self.caps:
                 ret, frame = cap.read()
                 if ret:
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    return frame
+                    return frame.T
         else:
             raise StopIteration
     

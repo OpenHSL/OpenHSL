@@ -36,7 +36,7 @@ def test_hs_builder_imgs_rail():
 
 def test_hs_builder_video_rotary():
     # Сборка из штатива
-    hsb = HSBuilder(path_to_data='./test_data/video/rec_2022-06-06-12-24-02.avi',
+    hsb = HSBuilder(path_to_data='test_data/rotaty/rec_2022-06-06-12-24-02.avi',
                     data_type='video')
     hsb.build()
     hsi = hsb.get_hsi()
@@ -66,7 +66,7 @@ def test_hs_builder_video_rotary():
 
 def test_hs_builder_video_uav():
     # Сборка из данных коптера
-    hsb = HSBuilder(path_to_data='./test_data',
+    hsb = HSBuilder(path_to_data='test_data/uav',
                     path_to_metadata='./test_data/gps.csv',
                     data_type='video')
     hsb.build()
@@ -86,26 +86,5 @@ def test_hs_builder_video_uav():
     plt.imshow(hsi.data[:, :, 20], cmap='gray')
     plt.show()
 
-def test_hs_builder_video_uav():
-    # Сборка из данных коптера
-    hsb = HSBuilder(path_to_data='test_data',
-                    path_to_metadata='test_data/gps.csv',
-                    data_type='video')
-    
-    hsb.build()
-    hsi = hsb.get_hsi()
-
-    # Проверка размерности ГСИ
-
-    # Проверка возможности сохранения в npy
-    hsi.save_to_npy(path_to_file='./out/uav.npy')
-
-    hsi = HSImage(None, None)
-
-    # Проверка чтения из npy
-    hsi.load_from_npy(path_to_file='./out/uav.npy')
-
-    plt.imshow(hsi.data[:, :, 20], cmap='gray')
-    plt.show()
 # ----------------------------------------------------------------------------------------------------------------------
 test_hs_builder_video_uav()
