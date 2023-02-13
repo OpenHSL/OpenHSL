@@ -2,7 +2,6 @@ import model
 import model_utils
 from hsi import HSImage
 from hs_mask import HSMask
-from Firsov_Legacy.DataLoader import DataLoader
 from Firsov_Legacy.dataset import get_dataset
 from Firsov_Legacy.utils import sample_gt, convert_to_color_
 
@@ -13,12 +12,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-import torch.utils.data as data
-import torch.optim
 from torch.nn import init
 
 
-def get_model(kwargs: dict) -> tuple:
+def _get_model(kwargs: dict) -> tuple:
     """
     Instantiate and obtain a model with adequate hyperparameters
 
@@ -86,7 +83,7 @@ class M3DCNN_Net(nn.Module):
     @staticmethod
     def weight_init(m):
         if isinstance(m, nn.Linear) or isinstance(m, nn.Conv3d):
-            init.kaiming_uniform(m.weight)
+            init.kaiming_uniform_(m.weight)
             init.zeros_(m.bias)
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -208,15 +205,6 @@ class M3DCNN_Net(nn.Module):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def create_loader(img: np.array,
-                  gt: np.array,
-                  hyperparams: dict,
-                  shuffle: bool = False):
-    dataset = DataLoader(img, gt, **hyperparams)
-    return data.DataLoader(dataset, batch_size=hyperparams["batch_size"], shuffle=shuffle)
-# ----------------------------------------------------------------------------------------------------------------------
-
-
 class M3DCNN:
     def __init__(self,
                  n_classes=3,
@@ -235,7 +223,7 @@ class M3DCNN:
         self.hyperparams['ignored_labels'] = [0]
         self.hyperparams['device'] = device
 
-        self.model, self.optimizer, self.loss, self.hyperparams = get_model(self.hyperparams)
+        self.model, self.optimizer, self.loss, self.hyperparams = _get_model(self.hyperparams)
 
         if path_to_weights:
             self.model.load_state_dict(torch.load(path_to_weights))
@@ -255,8 +243,9 @@ class M3DCNN:
         train_gt, val_gt = sample_gt(train_gt, 0.95, mode="random")
 
         # Generate the dataset
-        train_loader = create_loader(img, train_gt, self.hyperparams, shuffle=True)
-        val_loader = create_loader(img, val_gt, self.hyperparams)
+
+        train_loader = model_utils.create_loader(img, train_gt, self.hyperparams, shuffle=True)
+        val_loader = model_utils.create_loader(img, val_gt, self.hyperparams)
 
         self.model = model_utils.train(net=self.model,
                                        optimizer=self.optimizer,

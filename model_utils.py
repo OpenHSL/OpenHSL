@@ -6,8 +6,9 @@ import torch.utils.data as data
 import numpy as np
 import datetime
 from tqdm import tqdm
-from Firsov_Legacy.utils import camel_to_snake, grouper, count_sliding_window, sliding_window
 
+from Firsov_Legacy.utils import camel_to_snake, grouper, count_sliding_window, sliding_window
+from Firsov_Legacy.DataLoader import DataLoader
 
 def train(
     net: nn.Module,
@@ -203,3 +204,11 @@ def save_model(model,
         torch.save(model.state_dict(), model_dir + filename + ".pth")
     else:
         print('Saving error')
+
+def create_loader(img: np.array,
+                  gt: np.array,
+                  hyperparams: dict,
+                  shuffle: bool = False):
+    dataset = DataLoader(img, gt, **hyperparams)
+    return data.DataLoader(dataset, batch_size=hyperparams["batch_size"], shuffle=shuffle)
+# ----------------------------------------------------------------------------------------------------------------------

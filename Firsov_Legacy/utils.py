@@ -121,8 +121,8 @@ def sample_gt(gt, train_size, mode='random'):
        train_indices, test_indices = sklearn.model_selection.train_test_split(X, test_size = 0.33, random_state = 42)
        train_indices = [list(t) for t in zip(*train_indices)]
        test_indices = [list(t) for t in zip(*test_indices)]
-       train_gt[train_indices] = gt[train_indices]
-       test_gt[test_indices] = gt[test_indices]
+       train_gt[tuple(train_indices)] = gt[tuple(train_indices)]
+       test_gt[tuple(test_indices)] = gt[tuple(test_indices)]
     elif mode == 'fixed':
        print("Sampling {} with train size = {}".format(mode, train_size))
        train_indices, test_indices = [], []
