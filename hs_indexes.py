@@ -1,12 +1,27 @@
 import numpy as np
 
 
-# TODO in docstring not exists parameters description
 def get_band_numbers(left_border: int, right_border: int, w_data: list) -> tuple:
     """
     get_band_numbers(left_border, right_border, w_data)
-        # TODO in docstring bad description of function. It not make sense
-        The input is supplied with wavelengths in the form of a list
+
+        Returns the minimum and maximum values for color averaging
+
+        Parameters
+        ----------
+        left_border: int
+           left border in nm
+
+        right_border: int
+            the right boundary in nm
+
+        w_data: list
+            list of wavelengths
+
+        Return 
+        ------
+            list     
+            
     """
     part_bands_list = [i for i, v in enumerate(w_data) if left_border < v < right_border]
 
@@ -19,7 +34,22 @@ def reduce_mean(hsi: np.ndarray, l_bound: int, r_bound: int) -> np.ndarray:
     reduceMean(HSI, l_bound, r_bound):
 
         Calculating average values from multiple channels
-    
+        
+        Parameters
+        ----------
+        hsi: np.ndarray
+           hyperspectral image
+
+        l_bound: int
+            channel number in the hyperspectral image, left border
+            
+        r_bound: int
+            channel number in the hyperspectral image, right border
+
+        Return 
+        ------
+            np.ndarray 
+
     """
     return np.mean(hsi[:, :, l_bound:r_bound], axis=2)
 
@@ -47,6 +77,7 @@ def ndvi_mask(cube: np.ndarray,
         Return 
         ------
             np.ndarray        
+
         """
 
     red_band_numbers = get_band_numbers(left_red, right_red, w_data)
@@ -57,7 +88,5 @@ def ndvi_mask(cube: np.ndarray,
 
     mask = (nir - red) / (nir + red) + 1
     mask[nir + red == 0] = 0
-    # TODO reason copying? Use only mask
-    mask_2 = np.copy(mask)
-    mask_2 = ((mask_2 - mask_2.min) / (mask_2.max - mask_2.min))
-    return mask_2
+    mask = ((mask - mask.min) / (mask.max - mask.min))
+    return mask
