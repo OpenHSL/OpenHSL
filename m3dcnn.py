@@ -4,6 +4,7 @@ from hsi import HSImage
 from hs_mask import HSMask
 from Firsov_Legacy.dataset import get_dataset
 from Firsov_Legacy.utils import sample_gt, convert_to_color_
+from model import Model
 
 import numpy as np
 from typing import Any
@@ -13,59 +14,6 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.nn import init
-
-
-def _get_model(kwargs: dict) -> tuple:
-    """
-    Instantiate and obtain a model with adequate hyperparameters
-
-    Args:
-        kwargs: hyperparameters
-    Returns:
-        model: PyTorch network
-        optimizer: PyTorch optimizer
-        criterion: PyTorch loss Function
-        kwargs: hyperparameters with sane defaults
-    """
-    device = kwargs.setdefault("device", torch.device("cpu"))
-    n_classes = kwargs["n_classes"]
-    n_bands = kwargs["n_bands"]
-    weights = torch.ones(n_classes)
-    weights[torch.LongTensor(kwargs["ignored_labels"])] = 0.0
-    weights = weights.to(device)
-    weights = kwargs.setdefault("weights", weights)
-
-    # We train our model by AdaGrad [18] algorithm, in which
-    # the base learning rate is 0.01. In addition, we set the batch
-    # as 40, weight decay as 0.01 for all the layers
-    # The input of our network is the HSI 3D patch in the size of 7×7×Band
-    #kwargs.setdefault("patch_size", 7)
-    #kwargs.setdefault("batch_size", 40)
-    #lr = kwargs.setdefault("learning_rate", 0.01)
-    lr = kwargs['learning_rate']
-    center_pixel = True
-    model = M3DCNN_Net(n_bands, n_classes, patch_size=kwargs["patch_size"])
-    # For Adagrad, we need to load the model on GPU before creating the optimizer
-    model = model.to(device)
-    optimizer = optim.Adagrad(model.parameters(), lr=lr, weight_decay=0.01)
-    criterion = nn.CrossEntropyLoss(weight=kwargs["weights"])
-
-    model = model.to(device)
-    epoch = kwargs.setdefault("epoch", 100)
-    kwargs.setdefault(
-        "scheduler",
-        optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, factor=0.1, patience=epoch // 4, verbose=True
-        ),
-    )
-    kwargs.setdefault('scheduler', None)
-    kwargs.setdefault("supervision", "full")
-    kwargs.setdefault("flip_augmentation", False)
-    kwargs.setdefault("radiation_augmentation", False)
-    kwargs.setdefault("mixture_augmentation", False)
-    kwargs["center_pixel"] = center_pixel
-    return model, optimizer, criterion, kwargs
-# ----------------------------------------------------------------------------------------------------------------------
 
 
 class M3DCNN_Net(nn.Module):
@@ -205,7 +153,7 @@ class M3DCNN_Net(nn.Module):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class M3DCNN:
+class M3DCNN(Model):
     def __init__(self,
                  n_classes=3,
                  n_bands=250,
@@ -222,8 +170,32 @@ class M3DCNN:
         self.hyperparams['n_classes'] = n_classes
         self.hyperparams['ignored_labels'] = [0]
         self.hyperparams['device'] = device
+        weights = torch.ones(n_classes)
+        weights[torch.LongTensor(self.hyperparams["ignored_labels"])] = 0.0
+        weights = weights.to(device)
+        self.hyperparams["weights"] = weights
 
-        self.model, self.optimizer, self.loss, self.hyperparams = _get_model(self.hyperparams)
+        #self.hyperparams.setdefault("weights", weights)
+
+        self.model = M3DCNN_Net(n_bands, n_classes, patch_size=self.hyperparams["patch_size"])
+        # For Adagrad, we need to load the model on GPU before creating the optimizer
+        self.model = self.model.to(device)
+        self.optimizer = optim.Adagrad(self.model.parameters(), lr=self.hyperparams['learning_rate'], weight_decay=0.01)
+        self.loss = nn.CrossEntropyLoss(weight=self.hyperparams["weights"])
+
+        epoch = self.hyperparams.setdefault("epoch", 100)
+
+        self.hyperparams["scheduler"] = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer,
+                                                                             factor=0.1,
+                                                                             patience=epoch // 4,
+                                                                             verbose=True)
+        self.hyperparams.setdefault("supervision", "full")
+        self.hyperparams.setdefault("flip_augmentation", False)
+        self.hyperparams.setdefault("radiation_augmentation", False)
+        self.hyperparams.setdefault("mixture_augmentation", False)
+        self.hyperparams["center_pixel"] = True
+
+        #self.model, self.optimizer, self.loss, self.hyperparams = _get_model(self.hyperparams)
 
         if path_to_weights:
             self.model.load_state_dict(torch.load(path_to_weights))

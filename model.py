@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import numpy as np
 
 
 class Model(ABC):
@@ -7,29 +8,17 @@ class Model(ABC):
 
         Abstract class for decorating machine learning algorithms
 
-        Parameters
-        ----------
-
-        Attributes
-        ----------
-
-        See Also
-        --------
-
-        Notes
-        -----
-
-        Examples
-        --------
-
     """
 
     @abstractmethod
-    def fit(self):
-        pass
+    def fit(self,
+            X,
+            y,
+            epochs):
+        raise NotImplemented("Method fit must be implemented!")
     # ------------------------------------------------------------------------------------------------------------------
 
     @abstractmethod
-    def predict(self):
-        pass
+    def predict(self, X) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        raise NotImplemented("Method predict must be implemented!")
     # ------------------------------------------------------------------------------------------------------------------
