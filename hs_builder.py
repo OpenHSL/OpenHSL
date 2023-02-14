@@ -41,10 +41,6 @@ class HSBuilder:
         self.path_to_metadata = path_to_metadata
         self.hsi: Optional[HSImage] = None
         self.frame_iterator = RawData(path_to_data=path_to_data, type_data=data_type)
-
-        # if path_to_metadata != None:
-        #     self.telemetry_iterator = RawCsvData(path_to_metadata, path_to_data)
-
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO must be realised
@@ -140,7 +136,7 @@ class HSBuilder:
         return result
 # ------------------------------------------------------------------------------------------------------------------
 
-    def build(self, roi=False):
+    def build(self, principal_slices=False, roi=False):
         """
             Creates HSI from device-data
         """
@@ -149,7 +145,8 @@ class HSBuilder:
             frame = self.__norm_frame_camera_illumination(frame=frame)
             frame = self.__norm_frame_camera_geometry(frame=frame)
             frame = self.__some_preparation_on_frame(frame=frame)
-            frame = self.__principal_slices(frame = frame)
+            if principal_slices:
+                frame = self.__principal_slices(frame=frame)
             if roi:
                 frame = self.get_roi(frame)
             preproc_frames.append(frame)

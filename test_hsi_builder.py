@@ -6,7 +6,7 @@ test_wavelengths = [i for i in range(400, 650)]
 
 
 def test_hs_builder_imgs_rail():
-    hsb = HSBuilder(path_to_data='./test_data/imgs',
+    hsb = HSBuilder(path_to_data='./test_data/builder/imgs',
                     data_type='images')
     hsb.build(roi=True)
     hsi = hsb.get_hsi()
@@ -36,7 +36,7 @@ def test_hs_builder_imgs_rail():
 
 def test_hs_builder_video_rotary():
     # Сборка из штатива
-    hsb = HSBuilder(path_to_data='test_data/rotaty/rec_2022-06-06-12-24-02.avi',
+    hsb = HSBuilder(path_to_data='./test_data/builder/video/rec_2022-06-06-12-24-02.avi',
                     data_type='video')
     hsb.build()
     hsi = hsb.get_hsi()
@@ -66,10 +66,10 @@ def test_hs_builder_video_rotary():
 
 def test_hs_builder_video_uav():
     # Сборка из данных коптера
-    hsb = HSBuilder(path_to_data='test_data/uav',
-                    path_to_metadata='./test_data/gps.csv',
+    hsb = HSBuilder(path_to_data='./test_data/builder/copter',
+                    path_to_metadata='./test_data/builder/copter/gps_2021-03-30.csv',
                     data_type='video')
-    hsb.build()
+    hsb.build(principal_slices=True)
     hsi = hsb.get_hsi()
 
     # Проверка размерности ГСИ
@@ -87,4 +87,3 @@ def test_hs_builder_video_uav():
     plt.show()
 
 # ----------------------------------------------------------------------------------------------------------------------
-test_hs_builder_video_uav()
