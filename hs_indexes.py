@@ -74,6 +74,18 @@ def ndvi_mask(cube: np.ndarray,
         w_data: list
             list of hyperspectral images wavelengths
 
+        left_red: int 
+            left border (nm)
+
+        right_red: int
+            right border (nm)
+
+        left_nir: int 
+            left border (nm)
+            
+        right_nir: int
+            right border (nm)
+
         Return 
         ------
             np.ndarray        
