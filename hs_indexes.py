@@ -99,4 +99,4 @@ def ndvi_mask(cube: np.ndarray,
     mask = (nir - red) / (nir + red) + 1
     mask[nir + red == 0] = 0
 
-    return (mask - mask.min) / (mask.max - mask.min)
+    return (mask - mask.min()) / (mask.max() - mask.min())
