@@ -145,10 +145,10 @@ class HSBuilder:
             frame = self.__norm_frame_camera_illumination(frame=frame)
             frame = self.__norm_frame_camera_geometry(frame=frame)
             frame = self.__some_preparation_on_frame(frame=frame)
+            if roi:
+                frame = self.get_roi(frame=frame)
             if principal_slices:
                 frame = self.__principal_slices(frame=frame)
-            if roi:
-                frame = self.get_roi(frame)
             preproc_frames.append(frame)
             
         data = np.array(preproc_frames)
