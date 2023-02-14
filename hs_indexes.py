@@ -28,7 +28,6 @@ def get_band_numbers(left_border: int, right_border: int, w_data: list) -> tuple
     return min(part_bands_list), max(part_bands_list)
 
 
-# TODO in docstring not exists parameters description
 def reduce_mean(hsi: np.ndarray, l_bound: int, r_bound: int) -> np.ndarray:
     """
     reduceMean(HSI, l_bound, r_bound):
@@ -54,13 +53,12 @@ def reduce_mean(hsi: np.ndarray, l_bound: int, r_bound: int) -> np.ndarray:
     return np.mean(hsi[:, :, l_bound:r_bound], axis=2)
 
 
-# TODO in docstring not exists all parameters
 def ndvi_mask(cube: np.ndarray,
               w_data: list,
-              left_red = 633,
-              right_red = 650,
-              left_nir = 844,
-              right_nir = 860) -> np.ndarray:
+              left_red=633,
+              right_red=650,
+              left_nir=844,
+              right_nir=860) -> np.ndarray:
     """
     ndvi_mask(cube: np.ndarray, w_data: list)
     
@@ -100,5 +98,5 @@ def ndvi_mask(cube: np.ndarray,
 
     mask = (nir - red) / (nir + red) + 1
     mask[nir + red == 0] = 0
-    mask = ((mask - mask.min) / (mask.max - mask.min))
-    return mask
+
+    return (mask - mask.min) / (mask.max - mask.min)
