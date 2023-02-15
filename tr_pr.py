@@ -14,7 +14,7 @@ mask = HSMask(None, None)
 hsi.load_from_mat('test_data/tr_pr/PaviaU.mat', mat_key='paviaU')
 mask.load_mask('test_data/tr_pr/PaviaU_gt.mat', mat_key='paviaU_gt')
 
-cnn = M1DCNN(n_classes=len(np.unique(mask.data)),
+cnn = M1DCNN(n_classes=mask.n_classes,
              n_bands=hsi.data.shape[-1],
              #path_to_weights='checkpoints/m3_dcnn__net/m3dcnn/2023_02_15_11_30_49_epoch1_0.98.pth',
              device='cuda')
