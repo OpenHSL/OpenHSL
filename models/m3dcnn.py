@@ -1,13 +1,13 @@
-import model
-import model_utils
+from models import model_utils
 from hsi import HSImage
 from hs_mask import HSMask
 from Firsov_Legacy.dataset import get_dataset
 from Firsov_Legacy.utils import sample_gt, convert_to_color_
-from model import Model
+from models.model import Model
 
 import numpy as np
 from typing import Any
+from matplotlib import pyplot as plt
 
 import torch
 import torch.nn as nn
@@ -166,7 +166,7 @@ class M3DCNN(Model):
         self.hyperparams['batch_size'] = 40
         self.hyperparams['learning_rate'] = 0.01
         self.hyperparams['n_bands'] = n_bands
-        self.hyperparams['net_name'] = 'he'
+        self.hyperparams['net_name'] = 'm3dcnn'
         self.hyperparams['n_classes'] = n_classes
         self.hyperparams['ignored_labels'] = [0]
         self.hyperparams['device'] = device
@@ -174,8 +174,6 @@ class M3DCNN(Model):
         weights[torch.LongTensor(self.hyperparams["ignored_labels"])] = 0.0
         weights = weights.to(device)
         self.hyperparams["weights"] = weights
-
-        #self.hyperparams.setdefault("weights", weights)
 
         self.model = M3DCNN_Net(n_bands, n_classes, patch_size=self.hyperparams["patch_size"])
         # For Adagrad, we need to load the model on GPU before creating the optimizer
@@ -195,8 +193,6 @@ class M3DCNN(Model):
         self.hyperparams.setdefault("mixture_augmentation", False)
         self.hyperparams["center_pixel"] = True
 
-        #self.model, self.optimizer, self.loss, self.hyperparams = _get_model(self.hyperparams)
-
         if path_to_weights:
             self.model.load_state_dict(torch.load(path_to_weights))
     # ------------------------------------------------------------------------------------------------------------------
@@ -205,14 +201,18 @@ class M3DCNN(Model):
             X: HSImage,
             y: HSMask,
             epochs: int = 5,
-            sample_percentage: float = 0.5):
+            train_sample_percentage: float = 0.5):
 
-        img, gt, IGNORED_LABELS, LABEL_VALUES, palette = get_dataset(hsi=X, mask=y)
+        img, gt, ignored_labels, label_values, palette = get_dataset(hsi=X, mask=y)
 
         self.hyperparams['epoch'] = epochs
 
-        train_gt, _ = sample_gt(gt, sample_percentage, mode='random')
-        train_gt, val_gt = sample_gt(train_gt, 0.95, mode="random")
+        train_gt, _ = sample_gt(gt, train_sample_percentage, mode='random')
+        train_gt, val_gt = sample_gt(train_gt, 0.9, mode="random")
+
+        print(f'Full size: {np.sum(gt > 0)}')
+        print(f'Train size: {np.sum(train_gt > 0)}')
+        print(f'Val size: {np.sum(val_gt > 0)}')
 
         # Generate the dataset
 
@@ -230,10 +230,10 @@ class M3DCNN(Model):
 
     def predict(self,
                 X: HSImage,
-                ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+                ) -> tuple[np.ndarray, np.ndarray]:
 
         self.hyperparams["test_stride"] = 1
-        img, gt, IGNORED_LABELS, LABEL_VALUES, palette = get_dataset(X, mask=None)
+        img, gt, ignored_labels, label_values, palette = get_dataset(X, mask=None)
 
         self.model.eval()
 
@@ -243,6 +243,6 @@ class M3DCNN(Model):
         prediction = np.argmax(probabilities, axis=-1)
         color_prediction = convert_to_color_(prediction, palette)
 
-        return gt, prediction, color_prediction
+        return prediction, color_prediction
 # ----------------------------------------------------------------------------------------------------------------------
 

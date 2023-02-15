@@ -3,7 +3,7 @@ import torch
 import itertools
 import numpy as np
 import sklearn.model_selection
-from sklearn.neighbors import KNeighborsClassifier
+
 
 def get_device(ordinal: int):
     # Use GPU ?
@@ -97,6 +97,7 @@ def grouper(n, iterable):
             return
         yield chunk
 
+
 def sample_gt(gt, train_size, mode='random'):
     """Extract a fixed percentage of samples from an array of labels.
 
@@ -110,15 +111,13 @@ def sample_gt(gt, train_size, mode='random'):
     indices = np.nonzero(gt)
     X = list(zip(*indices)) # x,y features
     y = gt[indices].ravel() # classes
-    print(np.shape(y))
     train_gt = np.zeros_like(gt)
     test_gt = np.zeros_like(gt)
     if train_size > 1:
        train_size = int(train_size)
 
     if mode == 'random':
-       #train_indices, test_indices = sklearn.model_selection.train_test_split(X, train_size=train_size, stratify=y)
-       train_indices, test_indices = sklearn.model_selection.train_test_split(X, test_size = 0.33, random_state = 42)
+       train_indices, test_indices = sklearn.model_selection.train_test_split(X, train_size=train_size, random_state=42)
        train_indices = [list(t) for t in zip(*train_indices)]
        test_indices = [list(t) for t in zip(*test_indices)]
        train_gt[tuple(train_indices)] = gt[tuple(train_indices)]
@@ -131,7 +130,6 @@ def sample_gt(gt, train_size, mode='random'):
               continue
            indices = np.nonzero(gt == c)
            X = list(zip(*indices)) # x,y features
-
            train, test = sklearn.model_selection.train_test_split(X, train_size=train_size)
            train_indices += train
            test_indices += test
@@ -161,6 +159,7 @@ def sample_gt(gt, train_size, mode='random'):
     else:
         raise ValueError("{} sampling is not implemented yet.".format(mode))
     return train_gt, test_gt
+
 
 def camel_to_snake(name):
     s = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
