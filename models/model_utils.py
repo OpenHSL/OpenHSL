@@ -10,6 +10,7 @@ from tqdm import tqdm
 from Firsov_Legacy.utils import camel_to_snake, grouper, count_sliding_window, sliding_window
 from Firsov_Legacy.DataLoader import DataLoader
 
+
 def train(
     net: nn.Module,
     optimizer: torch.optim,
@@ -76,8 +77,8 @@ def train(
                     100.0 * batch_idx / len(data_loader),
                     mean_losses[iter_],
                 )
-
-                tqdm.write(string)
+                #TODO remake it
+                #tqdm.write(string)
 
             iter_ += 1
             del (data, target, loss, output)
@@ -185,6 +186,7 @@ def test(net: nn.Module,
                     probs[x: x + w, y: y + h] += out
     return probs
 
+
 def save_model(model,
                model_name,
                dataset_name,
@@ -200,10 +202,12 @@ def save_model(model,
         filename = time_str + "_epoch{epoch}_{metric:.2f}".format(
             **kwargs
         )
-        tqdm.write("Saving neural network weights in {}".format(filename))
+        #TODO remake it
+        #tqdm.write("Saving neural network weights in {}".format(filename))
         torch.save(model.state_dict(), model_dir + filename + ".pth")
     else:
         print('Saving error')
+
 
 def create_loader(img: np.array,
                   gt: np.array,

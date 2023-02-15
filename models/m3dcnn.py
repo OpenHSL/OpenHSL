@@ -202,7 +202,7 @@ class M3DCNN(Model):
             y: HSMask,
             epochs: int = 5,
             train_sample_percentage: float = 0.5):
-
+        # TODO ignored_labels and label_values for what?
         img, gt, ignored_labels, label_values, palette = get_dataset(hsi=X, mask=y)
 
         self.hyperparams['epoch'] = epochs
@@ -228,9 +228,7 @@ class M3DCNN(Model):
                                        device=self.hyperparams['device'])
     # ------------------------------------------------------------------------------------------------------------------
 
-    def predict(self,
-                X: HSImage,
-                ) -> tuple[np.ndarray, np.ndarray]:
+    def predict(self, X: HSImage) -> tuple[np.ndarray, np.ndarray]:
 
         self.hyperparams["test_stride"] = 1
         img, gt, ignored_labels, label_values, palette = get_dataset(X, mask=None)

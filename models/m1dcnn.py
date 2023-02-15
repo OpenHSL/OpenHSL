@@ -1,4 +1,6 @@
 from models.model import Model
+from hsi import HSImage
+from hs_mask import HSMask
 
 import numpy as np
 import math
@@ -109,10 +111,11 @@ class M1DCNN(Model):
     # ------------------------------------------------------------------------------------------------------------------
 
     def fit(self,
-            X,
-            y,
-            epochs,
-            train_sample_percentage=0.5):
+            X: HSImage,
+            y: HSMask,
+            epochs: int = 10,
+            train_sample_percentage: float = 0.5):
+        # TODO ignored_labels and label_values for what?
         img, gt, ignored_labels, label_values, palette = get_dataset(hsi=X, mask=y)
 
         self.hyperparams['epoch'] = epochs
@@ -136,9 +139,9 @@ class M1DCNN(Model):
                                        device=self.hyperparams['device'])
     # ------------------------------------------------------------------------------------------------------------------
 
-    def predict(self, X) -> tuple[np.ndarray, np.ndarray]:
+    def predict(self, X: HSImage) -> tuple[np.ndarray, np.ndarray]:
         self.hyperparams["test_stride"] = 1
-        img, gt, IGNORED_LABELS, LABEL_VALUES, palette = get_dataset(X, mask=None)
+        img, gt, ignored_labels, label_values, palette = get_dataset(X, mask=None)
 
         self.model.eval()
 
