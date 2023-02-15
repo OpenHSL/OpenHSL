@@ -3,7 +3,7 @@ import torch
 import itertools
 import numpy as np
 import sklearn.model_selection
-
+import seaborn as sns
 
 def get_device(ordinal: int):
     # Use GPU ?
@@ -179,10 +179,18 @@ def convert_to_color_(arr_2d, palette=None):
     """
     arr_3d = np.zeros((arr_2d.shape[0], arr_2d.shape[1], 3), dtype=np.uint8)
     if palette is None:
-        raise Exception("Unknown color palette")
+        palette = get_palette(len(np.unique(arr_2d)))
 
     for c, i in palette.items():
         m = arr_2d == c
         arr_3d[m] = i
 
     return arr_3d
+
+
+def get_palette(num_classes):
+    palette = {0: (0, 0, 0)}
+    for k, color in enumerate(sns.color_palette("hls", num_classes - 1)):
+        palette[k + 1] = tuple(np.asarray(255 * np.array(color), dtype="uint8"))
+
+    return palette

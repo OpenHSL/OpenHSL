@@ -1,5 +1,4 @@
 import numpy as np
-import seaborn as sns
 from typing import Optional
 from hsi import HSImage
 from hs_mask import HSMask
@@ -35,8 +34,4 @@ def get_dataset(hsi: HSImage, mask: Optional[HSMask]) -> tuple[np.ndarray, np.nd
     img = img.astype("float32")
     img = (img - np.min(img)) / (np.max(img) - np.min(img))
 
-    palette = {0: (0, 0, 0)}
-    for k, color in enumerate(sns.color_palette("hls", len(label_values) - 1)):
-        palette[k + 1] = tuple(np.asarray(255 * np.array(color), dtype="uint8"))
-
-    return img, gt, ignored_labels, label_values, palette
+    return img, gt, ignored_labels, label_values

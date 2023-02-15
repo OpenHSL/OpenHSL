@@ -2,7 +2,7 @@ from models import model_utils
 from hsi import HSImage
 from hs_mask import HSMask
 from Firsov_Legacy.dataset import get_dataset
-from Firsov_Legacy.utils import sample_gt, convert_to_color_
+from Firsov_Legacy.utils import sample_gt, convert_to_color_, get_palette
 from models.model import Model
 
 import numpy as np
@@ -203,7 +203,7 @@ class M3DCNN(Model):
             epochs: int = 5,
             train_sample_percentage: float = 0.5):
         # TODO ignored_labels and label_values for what?
-        img, gt, ignored_labels, label_values, palette = get_dataset(hsi=X, mask=y)
+        img, gt, ignored_labels, label_values = get_dataset(hsi=X, mask=y)
 
         self.hyperparams['epoch'] = epochs
 
@@ -228,10 +228,10 @@ class M3DCNN(Model):
                                        device=self.hyperparams['device'])
     # ------------------------------------------------------------------------------------------------------------------
 
-    def predict(self, X: HSImage) -> tuple[np.ndarray, np.ndarray]:
+    def predict(self, X: HSImage) -> np.ndarray:
 
         self.hyperparams["test_stride"] = 1
-        img, gt, ignored_labels, label_values, palette = get_dataset(X, mask=None)
+        img, gt, ignored_labels, label_values = get_dataset(X, mask=None)
 
         self.model.eval()
 
@@ -239,8 +239,7 @@ class M3DCNN(Model):
                                          img=img,
                                          hyperparams=self.hyperparams)
         prediction = np.argmax(probabilities, axis=-1)
-        color_prediction = convert_to_color_(prediction, palette)
 
-        return prediction, color_prediction
+        return prediction
 # ----------------------------------------------------------------------------------------------------------------------
 

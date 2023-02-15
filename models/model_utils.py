@@ -149,7 +149,7 @@ def test(net: nn.Module,
         "window_size": (patch_size, patch_size),
     }
     probs = np.zeros(img.shape[:2] + (n_classes,))
-
+    net.to(device)
     iterations = count_sliding_window(img, **kwargs) // batch_size
     for batch in tqdm(
             grouper(batch_size, sliding_window(img, **kwargs)),

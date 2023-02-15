@@ -5,7 +5,7 @@ from hs_mask import HSMask
 import numpy as np
 import math
 from typing import Any
-from matplotlib import pyplot as plt
+import seaborn as sns
 
 import torch
 import torch.nn as nn
@@ -14,7 +14,7 @@ from torch.nn import init
 
 from models import model_utils
 from Firsov_Legacy.dataset import get_dataset
-from Firsov_Legacy.utils import sample_gt, convert_to_color_
+from Firsov_Legacy.utils import sample_gt, convert_to_color_, get_palette
 
 
 class M1DCNN_Net(nn.Module):
@@ -116,7 +116,7 @@ class M1DCNN(Model):
             epochs: int = 10,
             train_sample_percentage: float = 0.5):
         # TODO ignored_labels and label_values for what?
-        img, gt, ignored_labels, label_values, palette = get_dataset(hsi=X, mask=y)
+        img, gt, ignored_labels, label_values = get_dataset(hsi=X, mask=y)
 
         self.hyperparams['epoch'] = epochs
 
@@ -139,9 +139,9 @@ class M1DCNN(Model):
                                        device=self.hyperparams['device'])
     # ------------------------------------------------------------------------------------------------------------------
 
-    def predict(self, X: HSImage) -> tuple[np.ndarray, np.ndarray]:
+    def predict(self, X: HSImage) -> np.ndarray:
         self.hyperparams["test_stride"] = 1
-        img, gt, ignored_labels, label_values, palette = get_dataset(X, mask=None)
+        img, gt, ignored_labels, label_values = get_dataset(X, mask=None)
 
         self.model.eval()
 
@@ -149,7 +149,6 @@ class M1DCNN(Model):
                                          img=img,
                                          hyperparams=self.hyperparams)
         prediction = np.argmax(probabilities, axis=-1)
-        color_prediction = convert_to_color_(prediction, palette)
 
-        return prediction, color_prediction
+        return prediction
 # ----------------------------------------------------------------------------------------------------------------------
