@@ -3,7 +3,6 @@ from hsi import HSImage
 from hs_raw_pb_data import RawCsvData, RawData
 from gaidel_legacy import build_hypercube_by_videos
 from typing import Optional
-import settings
 from utils import gaussian
 
 
@@ -114,23 +113,30 @@ class HSBuilder:
         return frame
 # ------------------------------------------------------------------------------------------------------------------
 
-    def __principal_slices(self, frame: np.ndarray) -> np.ndarray:
+    def __principal_slices(self, frame: np.ndarray, nums_bands: int) -> np.ndarray:
         """
+        Compresses the frame by number of channels
+        
         Parameters
         ----------
-        frame
+        frame: np.ndarray
+            2D frame which we wanna compress from shape (W, H) ---> (W, nums_bands) 
+        
+        nums_bands: int
+            Final numbers of channels 
 
         Returns
         -------
+        Compress np.ndarray
 
         """
-        width, height = frame.shape # 744, 70
-        gaus_width = height // settings.BANDS_NUMBERS
+        width, height = frame.shape 
+        gaus_width = height // nums_bands
         gaussian_window = gaussian(gaus_width, gaus_width / 2.0, gaus_width / 6.0)
         mid = len(gaussian_window) // 2
         gaussian_window[mid] = 1.0 - gaussian_window[:mid].sum() - gaussian_window[mid+1:].sum()
-        result = np.zeros((width, settings.BANDS_NUMBERS), dtype=np.uint8)
-        for i in range(settings.BANDS_NUMBERS):
+        result = np.zeros((width, nums_bands), dtype=np.uint8)
+        for i in range(nums_bands):
             result[:, i] = np.sum(frame[:, i * gaus_width:(i + 1) * gaus_width] * gaussian_window, axis=1)
 
         return result
@@ -148,7 +154,7 @@ class HSBuilder:
             if roi:
                 frame = self.get_roi(frame=frame)
             if principal_slices:
-                frame = self.__principal_slices(frame=frame)
+                frame = self.__principal_slices(frame=frame, nums_bands=40)
             preproc_frames.append(frame)
             
         data = np.array(preproc_frames)
