@@ -2,7 +2,7 @@ from models import model_utils
 from hsi import HSImage
 from hs_mask import HSMask
 from Firsov_Legacy.dataset import get_dataset
-from Firsov_Legacy.utils import sample_gt, convert_to_color_, get_palette
+from Firsov_Legacy.utils import sample_gt
 from models.model import Model
 
 import numpy as np
@@ -202,43 +202,26 @@ class M3DCNN(Model):
             y: HSMask,
             epochs: int = 5,
             train_sample_percentage: float = 0.5):
-        # TODO ignored_labels and label_values for what?
-        img, gt, ignored_labels, label_values = get_dataset(hsi=X, mask=y)
 
-        self.hyperparams['epoch'] = epochs
+        self.model = model_utils.fit_nn(X=X,
+                                        y=y,
+                                        hyperparams=self.hyperparams,
+                                        epochs=epochs,
+                                        model=self.model,
+                                        optimizer=self.optimizer,
+                                        loss=self.loss,
+                                        train_sample_percentage=train_sample_percentage)
 
-        train_gt, _ = sample_gt(gt, train_sample_percentage, mode='random')
-        train_gt, val_gt = sample_gt(train_gt, 0.9, mode="random")
-
-        print(f'Full size: {np.sum(gt > 0)}')
-        print(f'Train size: {np.sum(train_gt > 0)}')
-        print(f'Val size: {np.sum(val_gt > 0)}')
-
-        # Generate the dataset
-
-        train_loader = model_utils.create_loader(img, train_gt, self.hyperparams, shuffle=True)
-        val_loader = model_utils.create_loader(img, val_gt, self.hyperparams)
-
-        self.model = model_utils.train(net=self.model,
-                                       optimizer=self.optimizer,
-                                       criterion=self.loss,
-                                       data_loader=train_loader,
-                                       epoch=epochs,
-                                       val_loader=val_loader,
-                                       device=self.hyperparams['device'])
     # ------------------------------------------------------------------------------------------------------------------
 
-    def predict(self, X: HSImage) -> np.ndarray:
+    def predict(self,
+                X: HSImage,
+                y: HSMask = None) -> np.ndarray:
 
-        self.hyperparams["test_stride"] = 1
-        img, gt, ignored_labels, label_values = get_dataset(X, mask=None)
-
-        self.model.eval()
-
-        probabilities = model_utils.test(net=self.model,
-                                         img=img,
-                                         hyperparams=self.hyperparams)
-        prediction = np.argmax(probabilities, axis=-1)
+        prediction = model_utils.predict_nn(X=X,
+                                            y=y,
+                                            model=self.model,
+                                            hyperparams=self.hyperparams)
 
         return prediction
 # ----------------------------------------------------------------------------------------------------------------------

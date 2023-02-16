@@ -9,7 +9,8 @@ from tqdm import tqdm
 
 from Firsov_Legacy.utils import camel_to_snake, grouper, count_sliding_window, sliding_window
 from Firsov_Legacy.DataLoader import DataLoader
-
+from Firsov_Legacy.dataset import get_dataset
+from Firsov_Legacy.utils import sample_gt
 
 def train(
     net: nn.Module,
@@ -107,7 +108,7 @@ def train(
                 metric=abs(metric),
             )
     return net
-
+# ----------------------------------------------------------------------------------------------------------------------
 
 def val(net: nn.Module,
         data_loader: data.DataLoader,
@@ -128,6 +129,7 @@ def val(net: nn.Module,
                     accuracy += out.item() == pred.item()
                     total += 1
     return accuracy / total
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def test(net: nn.Module,
@@ -151,11 +153,9 @@ def test(net: nn.Module,
     probs = np.zeros(img.shape[:2] + (n_classes,))
     net.to(device)
     iterations = count_sliding_window(img, **kwargs) // batch_size
-    for batch in tqdm(
-            grouper(batch_size, sliding_window(img, **kwargs)),
-            total=iterations,
-            desc="Inference on the image",
-    ):
+    for batch in tqdm(grouper(batch_size, sliding_window(img, **kwargs)),
+                      total=iterations,
+                      desc="Inference on the image"):
         with torch.no_grad():
             if patch_size == 1:
                 data = [b[0][0, 0] for b in batch]
@@ -185,6 +185,7 @@ def test(net: nn.Module,
                 else:
                     probs[x: x + w, y: y + h] += out
     return probs
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def save_model(model,
@@ -207,6 +208,7 @@ def save_model(model,
         torch.save(model.state_dict(), model_dir + filename + ".pth")
     else:
         print('Saving error')
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def create_loader(img: np.array,
@@ -216,3 +218,48 @@ def create_loader(img: np.array,
     dataset = DataLoader(img, gt, **hyperparams)
     return data.DataLoader(dataset, batch_size=hyperparams["batch_size"], shuffle=shuffle)
 # ----------------------------------------------------------------------------------------------------------------------
+
+
+def fit_nn(X, y, hyperparams, model, optimizer, loss, epochs, train_sample_percentage):
+    # TODO ignored_labels and label_values for what?
+    img, gt = get_dataset(hsi=X, mask=y)
+
+    hyperparams['epoch'] = epochs
+
+    train_gt, _ = sample_gt(gt, train_sample_percentage, mode='random')
+    train_gt, val_gt = sample_gt(train_gt, 0.9, mode="random")
+
+    print(f'Full size: {np.sum(gt > 0)}')
+    print(f'Train size: {np.sum(train_gt > 0)}')
+    print(f'Val size: {np.sum(val_gt > 0)}')
+
+    # Generate the dataset
+
+    train_loader = create_loader(img, train_gt, hyperparams, shuffle=True)
+    val_loader = create_loader(img, val_gt, hyperparams)
+
+    model = train(net=model,
+                  optimizer=optimizer,
+                  criterion=loss,
+                  data_loader=train_loader,
+                  epoch=epochs,
+                  val_loader=val_loader,
+                  device=hyperparams['device'])
+    return model
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def predict_nn(X, y, hyperparams, model):
+    hyperparams["test_stride"] = 1
+    img, gt = get_dataset(X, mask=None)
+
+    model.eval()
+
+    probabilities = test(net=model,
+                         img=img,
+                         hyperparams=hyperparams)
+    prediction = np.argmax(probabilities, axis=-1)
+    # fill void areas in result with zeros
+    if y:
+        prediction[y.data == 0] = 0
+    return prediction

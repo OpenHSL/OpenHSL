@@ -4,7 +4,7 @@ from hsi import HSImage
 from hs_mask import HSMask
 
 
-def get_dataset(hsi: HSImage, mask: Optional[HSMask]) -> tuple[np.ndarray, np.ndarray, list, list, dict]:
+def get_dataset(hsi: HSImage, mask: Optional[HSMask]) -> tuple[np.ndarray, np.ndarray]:
     """
     return data from .mat files in tuple
 
@@ -16,10 +16,9 @@ def get_dataset(hsi: HSImage, mask: Optional[HSMask]) -> tuple[np.ndarray, np.nd
     ----------
     img : np.array
         hyperspectral image
-    gt : np.array
+    gt : np.darray
         mask of hyperspectral image
-    palette : dict
-        palette for colorizing  predicted image
+
     """
     ignored_labels = [0]
     img = hsi.data
@@ -34,4 +33,4 @@ def get_dataset(hsi: HSImage, mask: Optional[HSMask]) -> tuple[np.ndarray, np.nd
     img = img.astype("float32")
     img = (img - np.min(img)) / (np.max(img) - np.min(img))
 
-    return img, gt, ignored_labels, label_values
+    return img, gt

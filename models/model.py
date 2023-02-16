@@ -19,6 +19,8 @@ class Model(ABC):
     # ------------------------------------------------------------------------------------------------------------------
 
     @abstractmethod
-    def predict(self, X) -> tuple[np.ndarray, np.ndarray]:
+    def predict(self,
+                X,
+                y) -> tuple[np.ndarray, np.ndarray]:
         raise NotImplemented("Method predict must be implemented!")
     # ------------------------------------------------------------------------------------------------------------------

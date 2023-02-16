@@ -5,7 +5,6 @@ from hs_mask import HSMask
 import numpy as np
 import math
 from typing import Any
-import seaborn as sns
 
 import torch
 import torch.nn as nn
@@ -13,8 +12,6 @@ import torch.optim as optim
 from torch.nn import init
 
 from models import model_utils
-from Firsov_Legacy.dataset import get_dataset
-from Firsov_Legacy.utils import sample_gt, convert_to_color_, get_palette
 
 
 class M1DCNN_Net(nn.Module):
@@ -115,40 +112,20 @@ class M1DCNN(Model):
             y: HSMask,
             epochs: int = 10,
             train_sample_percentage: float = 0.5):
-        # TODO ignored_labels and label_values for what?
-        img, gt, ignored_labels, label_values = get_dataset(hsi=X, mask=y)
 
-        self.hyperparams['epoch'] = epochs
-
-        train_gt, _ = sample_gt(gt, train_sample_percentage, mode='random')
-        train_gt, val_gt = sample_gt(train_gt, 0.9, mode="random")
-
-        print(f'Full size: {np.sum(gt > 0)}')
-        print(f'Train size: {np.sum(train_gt > 0)}')
-        print(f'Val size: {np.sum(val_gt > 0)}')
-
-        train_loader = model_utils.create_loader(img, train_gt, self.hyperparams, shuffle=True)
-        val_loader = model_utils.create_loader(img, val_gt, self.hyperparams)
-
-        self.model = model_utils.train(net=self.model,
-                                       optimizer=self.optimizer,
-                                       criterion=self.loss,
-                                       data_loader=train_loader,
-                                       epoch=epochs,
-                                       val_loader=val_loader,
-                                       device=self.hyperparams['device'])
+        self.model = model_utils.fit_nn(X=X,
+                                        y=y,
+                                        hyperparams=self.hyperparams,
+                                        epochs=epochs,
+                                        model=self.model,
+                                        optimizer=self.optimizer,
+                                        loss=self.loss,
+                                        train_sample_percentage=train_sample_percentage)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def predict(self, X: HSImage) -> np.ndarray:
-        self.hyperparams["test_stride"] = 1
-        img, gt, ignored_labels, label_values = get_dataset(X, mask=None)
-
-        self.model.eval()
-
-        probabilities = model_utils.test(net=self.model,
-                                         img=img,
-                                         hyperparams=self.hyperparams)
-        prediction = np.argmax(probabilities, axis=-1)
-
+    def predict(self,
+                X: HSImage,
+                y: HSMask = None) -> np.ndarray:
+        prediction = model_utils.predict_nn(X=X, y=y, model=self.model, hyperparams=self.hyperparams)
         return prediction
 # ----------------------------------------------------------------------------------------------------------------------
