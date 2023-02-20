@@ -1,6 +1,6 @@
 from hsi import HSImage
 from hs_mask import HSMask
-from models.m3dcnn import M3DCNN
+from models.m1dcnn import M1DCNN
 from matplotlib import pyplot as plt
 from Firsov_Legacy.utils import convert_to_color_
 
@@ -16,12 +16,12 @@ mask = HSMask(None, None)
 hsi.load_from_mat('test_data/tr_pr/PaviaU.mat', mat_key='paviaU')
 mask.load_mask('test_data/tr_pr/PaviaU_gt.mat', mat_key='paviaU_gt')
 
-cnn = M3DCNN(n_classes=mask.n_classes,
+cnn = M1DCNN(n_classes=mask.n_classes,
              n_bands=hsi.data.shape[-1],
-             path_to_weights='checkpoints/m3_dcnn__net/m3dcnn/2023_02_15_15_30_07_epoch8_1.00.pth',
+             #path_to_weights='checkpoints/m3_dcnn__net/m3dcnn/2023_02_15_15_30_07_epoch8_1.00.pth',
              device='cuda')
 
-cnn.fit(X=hsi, y=mask, train_sample_percentage=0.5, epochs=2)
+cnn.fit(X=hsi, y=mask, train_sample_percentage=0.5, epochs=20)
 
 pred = cnn.predict(X=hsi, y=mask)
 

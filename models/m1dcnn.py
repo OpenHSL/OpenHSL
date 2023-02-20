@@ -11,8 +11,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.nn import init
 
-from models import model_utils
-
 
 class M1DCNN_Net(nn.Module):
     """
@@ -113,19 +111,19 @@ class M1DCNN(Model):
             epochs: int = 10,
             train_sample_percentage: float = 0.5):
 
-        self.model = model_utils.fit_nn(X=X,
-                                        y=y,
-                                        hyperparams=self.hyperparams,
-                                        epochs=epochs,
-                                        model=self.model,
-                                        optimizer=self.optimizer,
-                                        loss=self.loss,
-                                        train_sample_percentage=train_sample_percentage)
+        self.model = super().fit_nn(X=X,
+                                    y=y,
+                                    hyperparams=self.hyperparams,
+                                    epochs=epochs,
+                                    model=self.model,
+                                    optimizer=self.optimizer,
+                                    loss=self.loss,
+                                    train_sample_percentage=train_sample_percentage)
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
                 X: HSImage,
                 y: HSMask = None) -> np.ndarray:
-        prediction = model_utils.predict_nn(X=X, y=y, model=self.model, hyperparams=self.hyperparams)
+        prediction = super().predict_nn(X=X, y=y, model=self.model, hyperparams=self.hyperparams)
         return prediction
 # ----------------------------------------------------------------------------------------------------------------------

@@ -2,6 +2,15 @@ import torch
 import torch.utils
 import torch.utils.data
 import numpy as np
+import torch.utils.data as data
+
+
+def create_loader(img: np.array,
+                  gt: np.array,
+                  hyperparams: dict,
+                  shuffle: bool = False):
+    dataset = DataLoader(img, gt, **hyperparams)
+    return data.DataLoader(dataset, batch_size=hyperparams["batch_size"], shuffle=shuffle)
 
 
 class DataLoader(torch.utils.data.Dataset):

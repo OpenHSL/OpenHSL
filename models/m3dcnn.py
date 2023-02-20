@@ -203,14 +203,14 @@ class M3DCNN(Model):
             epochs: int = 5,
             train_sample_percentage: float = 0.5):
 
-        self.model = model_utils.fit_nn(X=X,
-                                        y=y,
-                                        hyperparams=self.hyperparams,
-                                        epochs=epochs,
-                                        model=self.model,
-                                        optimizer=self.optimizer,
-                                        loss=self.loss,
-                                        train_sample_percentage=train_sample_percentage)
+        self.model = super().fit_nn(X=X,
+                                    y=y,
+                                    hyperparams=self.hyperparams,
+                                    epochs=epochs,
+                                    model=self.model,
+                                    optimizer=self.optimizer,
+                                    loss=self.loss,
+                                    train_sample_percentage=train_sample_percentage)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -218,10 +218,10 @@ class M3DCNN(Model):
                 X: HSImage,
                 y: HSMask = None) -> np.ndarray:
 
-        prediction = model_utils.predict_nn(X=X,
-                                            y=y,
-                                            model=self.model,
-                                            hyperparams=self.hyperparams)
+        prediction = super().predict_nn(X=X,
+                                        y=y,
+                                        model=self.model,
+                                        hyperparams=self.hyperparams)
 
         return prediction
 # ----------------------------------------------------------------------------------------------------------------------
