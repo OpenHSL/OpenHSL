@@ -61,16 +61,13 @@ class SharmaEtAl(nn.Module):
             )
             x = F.relu(self.conv1_bn(self.conv1(x)))
             x = self.pool1(x)
-            print(x.size())
             b, t, c, w, h = x.size()
             x = x.view(b, 1, t * c, w, h)
             x = F.relu(self.conv2_bn(self.conv2(x)))
             x = self.pool2(x)
-            print(x.size())
             b, t, c, w, h = x.size()
             x = x.view(b, 1, t * c, w, h)
             x = F.relu(self.conv3(x))
-            print(x.size())
             _, t, c, w, h = x.size()
         return t * c * w * h
 
