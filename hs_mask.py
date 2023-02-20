@@ -38,6 +38,7 @@ class HSMask:
     def __init__(self, mask: Optional[np.array], label_class: Optional[Dict]):
         self.data = mask
         self.label_class = label_class
+        self.n_classes = len(np.unique(mask))
         
     # ------------------------------------------------------------------------------------------------------------------
     def load_mask(self, path_to_file: str, mat_key: str = None,  h5_key: str = None):
@@ -106,6 +107,9 @@ class HSMask:
             loading a mask from h5 file
             '''
             self.data = h5py.File(path_to_file, 'r')[h5_key]
+
+        # updates number of classes after loading mask
+        self.n_classes = len(np.unique(self.data))
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_mat(self, path_to_file: str, mat_key: str):
