@@ -113,6 +113,7 @@ class HSBuilder:
         return frame
 # ------------------------------------------------------------------------------------------------------------------
 
+    # TODO works not correct!
     def __principal_slices(self, frame: np.ndarray, nums_bands: int) -> np.ndarray:
         """
         Compresses the frame by number of channels
