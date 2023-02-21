@@ -108,7 +108,6 @@ class HSBuilder:
 
         Returns
         -------
-
         """
         return frame
 # ------------------------------------------------------------------------------------------------------------------
@@ -131,16 +130,21 @@ class HSBuilder:
         Compress np.ndarray
 
         """
-        width, height = frame.shape 
-        gaus_width = height // nums_bands
-        gaussian_window = gaussian(gaus_width, gaus_width / 2.0, gaus_width / 6.0)
-        mid = len(gaussian_window) // 2
-        gaussian_window[mid] = 1.0 - gaussian_window[:mid].sum() - gaussian_window[mid+1:].sum()
-        result = np.zeros((width, nums_bands), dtype=np.uint8)
-        for i in range(nums_bands):
-            result[:, i] = np.sum(frame[:, i * gaus_width:(i + 1) * gaus_width] * gaussian_window, axis=1)
+        n, m = frame.shape 
 
-        return result
+        width = m // nums_bands 
+        gaussian_window = gaussian(width, width / 2.0, width / 6.0) 
+        mid = len(gaussian_window) // 2 
+        gaussian_window[mid] = 1.0 - np.sum(gaussian_window) + gaussian_window[mid] 
+        ans = np.zeros(shape=(n, nums_bands), dtype=np.uint8) 
+        for j in range(nums_bands): 
+            left_bound = j * m // nums_bands 
+            ans[:, j] = np.tensordot( 
+                frame[:, left_bound:left_bound + len(gaussian_window)], 
+                gaussian_window, 
+                axes=([1], [0]), 
+            )
+        return ans
 # ------------------------------------------------------------------------------------------------------------------
 
     def build(self, principal_slices=False, roi=False):
@@ -155,7 +159,7 @@ class HSBuilder:
             if roi:
                 frame = self.get_roi(frame=frame)
             if principal_slices:
-                frame = self.__principal_slices(frame=frame, nums_bands=40)
+                frame = self.__principal_slices(frame, 40)
             preproc_frames.append(frame)
             
         data = np.array(preproc_frames)
