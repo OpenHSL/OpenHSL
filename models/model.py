@@ -32,12 +32,19 @@ class Model(ABC):
     @abstractmethod
     def predict(self,
                 X,
-                y) -> tuple[np.ndarray, np.ndarray]:
+                y) -> np.ndarray:
         raise NotImplemented("Method predict must be implemented!")
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def fit_nn(X, y, hyperparams, model, optimizer, loss, epochs, train_sample_percentage):
+    def fit_nn(X,
+               y,
+               hyperparams,
+               model,
+               optimizer,
+               loss,
+               epochs,
+               train_sample_percentage):
         # TODO ignored_labels and label_values for what?
         img, gt = get_dataset(hsi=X, mask=y)
 
@@ -99,17 +106,26 @@ class Model(ABC):
         Training loop to optimize a network for several epochs and a specified loss
         Parameters
         ----------
-            net: a PyTorch model
-            optimizer: a PyTorch optimizer
-            data_loader: a PyTorch dataset loader
-            epoch: int specifying the number of training epochs
-            criterion: a PyTorch-compatible loss function, e.g. nn.CrossEntropyLoss
-            device (optional): torch device to use (defaults to CPU)
-            display_iter (optional): number of iterations before refreshing the
-            display (False/None to switch off).
-            scheduler (optional): PyTorch scheduler
-            val_loader (optional): validation dataset
-            supervision (optional): 'full' or 'semi'
+            net:
+                a PyTorch model
+            optimizer:
+                a PyTorch optimizer
+            data_loader:
+                a PyTorch dataset loader
+            epoch:
+                int specifying the number of training epochs
+            criterion:
+                a PyTorch-compatible loss function, e.g. nn.CrossEntropyLoss
+            device (optional):
+                torch device to use (defaults to CPU)
+            display_iter (optional):
+                number of iterations before refreshing the display (False/None to switch off).
+            scheduler (optional):
+                PyTorch scheduler
+            val_loader (optional):
+                validation dataset
+            supervision (optional):
+                'full' or 'semi'
         """
         net.to(device)
 

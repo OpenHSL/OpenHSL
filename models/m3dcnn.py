@@ -1,13 +1,10 @@
-from models import model_utils
 from hsi import HSImage
 from hs_mask import HSMask
-from Firsov_Legacy.dataset import get_dataset
-from Firsov_Legacy.utils import sample_gt
+
 from models.model import Model
 
 import numpy as np
 from typing import Any
-from matplotlib import pyplot as plt
 
 import torch
 import torch.nn as nn
@@ -216,7 +213,7 @@ class M3DCNN(Model):
 
     def predict(self,
                 X: HSImage,
-                y: HSMask = None) -> np.ndarray:
+                y: Optional[HSMask] = None) -> np.ndarray:
 
         prediction = super().predict_nn(X=X,
                                         y=y,

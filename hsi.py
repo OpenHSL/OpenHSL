@@ -43,7 +43,9 @@ class HSImage:
 
     """
 
-    def __init__(self, hsi: Optional[np.ndarray], wavelengths: Optional[List]):
+    def __init__(self,
+                 hsi: Optional[np.ndarray],
+                 wavelengths: Optional[List]):
         """
             Inits HSI object.
 
@@ -54,17 +56,21 @@ class HSImage:
         self.wavelengths = wavelengths
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_wavelengths(self, path_to_file: str):
+    def load_wavelengths(self,
+                         path_to_file: str):
         # TODO
         return []
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_wavelengths(self, path_to_file: str):
+    def save_wavelengths(self,
+                         path_to_file: str):
         # TODO
         pass
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_from_mat(self, path_to_file: str, mat_key: str):
+    def load_from_mat(self,
+                      path_to_file: str,
+                      mat_key: str):
         """
         load_from_mat(path_to_file, mat_key)
 
@@ -92,7 +98,8 @@ class HSImage:
         self.wavelengths = wavelengths
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_from_tiff(self, path_to_file: str):
+    def load_from_tiff(self,
+                       path_to_file: str):
         """
         load_from_tiff(path_to_file)
 
@@ -109,7 +116,8 @@ class HSImage:
         pass
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_from_npy(self, path_to_file: str):
+    def load_from_npy(self,
+                      path_to_file: str):
         """
         load_from_npy(path_to_file)
 
@@ -124,7 +132,9 @@ class HSImage:
         self.wavelengths = self.load_wavelengths(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_from_h5(self, path_to_file: str, h5_key: str = None):
+    def load_from_h5(self,
+                     path_to_file: str,
+                     h5_key: Optional[str] = None):
         """
         load_from_h5(path_to_file, h5_key)
 
@@ -146,7 +156,8 @@ class HSImage:
         self.wavelengths = wavelengths
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_from_layer_images(self, path_to_dir: str):
+    def load_from_layer_images(self,
+                               path_to_dir: str):
         """
         load_from_images(path_to_dir)
 
@@ -167,7 +178,9 @@ class HSImage:
         self.wavelengths = self.load_wavelengths('')
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_to_mat(self, path_to_file: str, mat_key: str):
+    def save_to_mat(self,
+                    path_to_file: str,
+                    mat_key: str):
         """
         save_to_mat(path_to_file, mat_key)
 
@@ -184,7 +197,8 @@ class HSImage:
         savemat(path_to_file, temp_dict)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_to_tiff(self, path_to_file: str):
+    def save_to_tiff(self,
+                     path_to_file: str):
         """
         save_to_tiff(path_to_file)
 
@@ -199,7 +213,9 @@ class HSImage:
         ...
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_to_h5(self, path_to_file: str, h5_key: str):
+    def save_to_h5(self,
+                   path_to_file: str,
+                   h5_key: str):
         """
         save_to_h5(path_to_file, h5_key)
 
@@ -217,7 +233,8 @@ class HSImage:
             f.create_dataset("wavelengths", data=self.wavelengths)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_to_npy(self, path_to_file: str):
+    def save_to_npy(self,
+                    path_to_file: str):
         """
         save_to_npy(path_to_file)
 
@@ -232,7 +249,9 @@ class HSImage:
         self.save_wavelengths(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_to_images(self, path_to_dir: str, format: str = 'png'):
+    def save_to_images(self,
+                       path_to_dir: str,
+                       format: str = 'png'):
         """
         save_to_images(path_to_dir, format)
 

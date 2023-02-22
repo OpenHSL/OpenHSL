@@ -35,13 +35,18 @@ class HSMask:
             hsi = HSMask(hsi=arr, metadata=md)
     """
 
-    def __init__(self, mask: Optional[np.array], label_class: Optional[Dict]):
+    def __init__(self,
+                 mask: Optional[np.array],
+                 label_class: Optional[Dict]):
         self.data = mask
         self.label_class = label_class
         self.n_classes = len(np.unique(mask))
         
     # ------------------------------------------------------------------------------------------------------------------
-    def load_mask(self, path_to_file: str, mat_key: str = None,  h5_key: str = None):
+    def load_mask(self,
+                  path_to_file: str,
+                  mat_key: str = None,
+                  h5_key: str = None):
 
         """
         load_mask(path_to_file, mat_key, h5_key)
@@ -66,7 +71,7 @@ class HSMask:
                 Key for field in .h5 file as 5h object
 
         """
-        def load_img(path_to_file):
+        def load_img(path_to_file: str):
             """
             ____________
             necessary for reading 3-dimensional images
@@ -112,7 +117,9 @@ class HSMask:
         self.n_classes = len(np.unique(self.data))
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_to_mat(self, path_to_file: str, mat_key: str):
+    def save_to_mat(self,
+                    path_to_file: str,
+                    mat_key: str):
         """
         save_to_mat(path_to_file, mat_key)
 
@@ -132,7 +139,9 @@ class HSMask:
         savemat(path_to_file, temp_dict)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_to_h5(self, path_to_file: str, h5_key: str):
+    def save_to_h5(self,
+                   path_to_file: str,
+                   h5_key: str):
         """
         save_to_h5(path_to_file, h5_key)
 
@@ -155,8 +164,9 @@ class HSMask:
             f.create_dataset(h5_key, data=self.data)
     # ------------------------------------------------------------------------------------------------------------------
     
-    def save_to_npy(self, path_to_file: str):
-        '''
+    def save_to_npy(self,
+                    path_to_file: str):
+        """
         save_to_npy(path_to_file)
 
         ____________
@@ -167,12 +177,13 @@ class HSMask:
         ----------
         path_to_file: str
             Path to file
-        '''
+        """
         np.save(path_to_file, self.data)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_image(self, path_to_save_file: str):
-        '''
+    def save_image(self,
+                   path_to_save_file: str):
+        """
         save_image(path_to_save_file)
 
         ____________
@@ -181,10 +192,10 @@ class HSMask:
 
         Parameters
         ----------
-        path_to_file: str
+        path_to_save_file: str
             Path to file
-        '''
-        img = Image.fromarray(self.data[:,:,0])
+        """
+        img = Image.fromarray(self.data[:, :, 0])
         img.save(path_to_save_file)
     # ------------------------------------------------------------------------------------------------------------------
 

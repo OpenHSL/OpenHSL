@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 import numpy as np
 
 from models.model import Model
@@ -27,7 +27,11 @@ class HamidaEtAl(nn.Module):
             init.zeros_(m.bias)
 # ------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, input_channels, n_classes, patch_size=5, dilation=1):
+    def __init__(self,
+                 input_channels,
+                 n_classes,
+                 patch_size=5,
+                 dilation=1):
         super(HamidaEtAl, self).__init__()
         # The first layer is a (3,3,3) kernel sized Conv characterized
         # by a stride equal to 1 and number of neurons equal to 20
@@ -158,6 +162,6 @@ class M3D_HAMIDA(Model):
 
     def predict(self,
                 X: HSImage,
-                y: HSMask = None) -> np.ndarray:
+                y: Optional[HSMask] = None) -> np.ndarray:
         prediction = super().predict_nn(X=X, y=y, model=self.model, hyperparams=self.hyperparams)
         return prediction
