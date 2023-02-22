@@ -122,14 +122,14 @@ class HSICNN(Model):
             epochs: int = 10,
             train_sample_percentage: float = 0.5):
 
-        self.model = super().fit_nn(X=X,
-                                    y=y,
-                                    hyperparams=self.hyperparams,
-                                    epochs=epochs,
-                                    model=self.model,
-                                    optimizer=self.optimizer,
-                                    loss=self.loss,
-                                    train_sample_percentage=train_sample_percentage)
+        self.model, self.losses = super().fit_nn(X=X,
+                                                 y=y,
+                                                 hyperparams=self.hyperparams,
+                                                 epochs=epochs,
+                                                 model=self.model,
+                                                 optimizer=self.optimizer,
+                                                 loss=self.loss,
+                                                 train_sample_percentage=train_sample_percentage)
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,

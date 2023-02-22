@@ -20,13 +20,14 @@ mask = HSMask(None, None)
 hsi.load_from_mat('test_data/tr_pr/PaviaU.mat', mat_key='paviaU')
 mask.load_mask('test_data/tr_pr/PaviaU_gt.mat', mat_key='paviaU_gt')
 
-cnn = BASELINE(n_classes=mask.n_classes,
+cnn = M1DCNN(n_classes=mask.n_classes,
              n_bands=hsi.data.shape[-1],
              #path_to_weights='checkpoints/m3_dcnn__net/m3dcnn/2023_02_15_15_30_07_epoch8_1.00.pth',
              device='cpu')
 
-cnn.fit(X=hsi, y=mask, train_sample_percentage=0.5, epochs=5)
+cnn.fit(X=hsi, y=mask, train_sample_percentage=0.5, epochs=10)
 
+print(cnn.losses)
 pred = cnn.predict(X=hsi, y=mask)
 
 plt.imshow(pred)
