@@ -100,7 +100,7 @@ class Model(ABC):
               epoch,
               scheduler=None,
               display_iter=100,
-              device=torch.device("cpu"),
+              device=None,
               val_loader=None):
         """
         Training loop to optimize a network for several epochs and a specified loss
