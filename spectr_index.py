@@ -16,6 +16,7 @@ def normalization(mask: np.ndarrya) -> np.ndarray:
     """
     return (mask - mask.min())/(mask.max() - mask.min())
 
+
 def get_band_numbers(left_border: int, right_border: int, w_data: list) -> tuple:
     """
     get_band_numbers(left_border, right_border, w_data)
@@ -162,6 +163,7 @@ def dvi_mask(cube: np.ndarray,
     mask = channel_800 - channel_700
 
     return normalization(mask)
+
 
 def osavi_mask(cube: np.ndarray,
             w_data: list,
