@@ -94,7 +94,7 @@ def ndvi_mask(cube: np.ndarray,
 
     mask = (nir - red) / (nir + red) + 1
     mask[nir + red == 0] = 0
-    
+
     #Значения сделаю пока от 0 до 1
     return (mask - mask.min())/(mask.max() - mask.min())
 
@@ -189,12 +189,6 @@ def osavi_mask(cube: np.ndarray,
     channel_670 = reduce_mean(cube, band_numbers_670[0], band_numbers_670[1])
     channel_800 = reduce_mean(cube, band_numbers_800[0], band_numbers_800[1])
     
-    print("-----wdrvi_mask-----") 
-    print('channel_670 :',np.unique(channel_670))
-    print("")
-    print('channel_800 :',np.unique(channel_800))
-    print("")
-
     mask = 1.16*(channel_800 - channel_670)/(channel_800 + channel_670 +0.16)
     mask[channel_800 + channel_670 +0.16 == 0] = 0
 
@@ -240,12 +234,6 @@ def sr_mask(cube: np.ndarray,
     
     band_numbers_680 = get_band_numbers(left_680, right_680, w_data)
     band_numbers_800 = get_band_numbers(left_800, right_800, w_data)
-
-    print("-----band_numbers-----") 
-    print('band_numbers_700 :',np.unique(band_numbers_680))
-    print("")
-    print('band_numbers_800 :',np.unique(band_numbers_800))
-    print("")
 
     channel_680 = reduce_mean(cube, band_numbers_680[0], band_numbers_680[1])
     channel_800 = reduce_mean(cube, band_numbers_800[0], band_numbers_800[1])
