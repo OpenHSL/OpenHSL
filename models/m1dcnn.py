@@ -4,7 +4,7 @@ from hs_mask import HSMask
 
 import numpy as np
 import math
-from typing import Any
+from typing import Any, Optional
 
 import torch
 import torch.nn as nn
@@ -36,7 +36,11 @@ class M1DCNN_Net(nn.Module):
         return x.numel()
     # ------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, input_channels, n_classes, kernel_size=None, pool_size=None):
+    def __init__(self,
+                 input_channels,
+                 n_classes,
+                 kernel_size=None,
+                 pool_size=None):
         super(M1DCNN_Net, self).__init__()
         if kernel_size is None:
             # [In our experiments, k1 is better to be [ceil](n1/9)]
@@ -111,19 +115,19 @@ class M1DCNN(Model):
             epochs: int = 10,
             train_sample_percentage: float = 0.5):
 
-        self.model = super().fit_nn(X=X,
-                                    y=y,
-                                    hyperparams=self.hyperparams,
-                                    epochs=epochs,
-                                    model=self.model,
-                                    optimizer=self.optimizer,
-                                    loss=self.loss,
-                                    train_sample_percentage=train_sample_percentage)
+        self.model, self.losses = super().fit_nn(X=X,
+                                                 y=y,
+                                                 hyperparams=self.hyperparams,
+                                                 epochs=epochs,
+                                                 model=self.model,
+                                                 optimizer=self.optimizer,
+                                                 loss=self.loss,
+                                                 train_sample_percentage=train_sample_percentage)
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
                 X: HSImage,
-                y: HSMask = None) -> np.ndarray:
+                y: Optional[HSMask] = None) -> np.ndarray:
         prediction = super().predict_nn(X=X, y=y, model=self.model, hyperparams=self.hyperparams)
         return prediction
 # ----------------------------------------------------------------------------------------------------------------------

@@ -28,7 +28,8 @@ class RawImagesData:
             some_operation(frame)
     """
 
-    def __init__(self, path_to_dir: str):
+    def __init__(self,
+                 path_to_dir: str):
         self.path_to_dir = path_to_dir
         self.imgs_list = iter(os.listdir(path_to_dir))
 
@@ -82,7 +83,8 @@ class RawVideoData:
 
         """
 
-    def __init__(self, path_to_file: str):
+    def __init__(self,
+                 path_to_file: str):
         self.path = Path(path_to_file)
         self.format = self.path.suffix
         self.current_step = 0
@@ -112,7 +114,9 @@ class RawData:
     """
 
     """
-    def __init__(self, path_to_data: str, type_data: str):
+    def __init__(self,
+                 path_to_data: str,
+                 type_data: str):
         if type_data == "images":
             self.raw_data = RawImagesData(path_to_dir=path_to_data)
         elif type_data == "video":
@@ -162,7 +166,9 @@ class RawCsvData:
                 some_operation(line)
             
     """
-    def __init__(self, path_to_csv: str, video_name: str):
+    def __init__(self,
+                 path_to_csv: str,
+                 video_name: str):
         Path(path_to_csv)
         self.video_name = str(video_name).split("_")[-1].split(".")[0]
         self.current_step = 0
@@ -199,7 +205,8 @@ class RawCsvData:
 
 class RawMatData:
 
-    def __init__(self, path_to_mat: str):
+    def __init__(self,
+                 path_to_mat: str):
         self.path_to_mat = path_to_mat
 
     def __iter__(self):
@@ -214,7 +221,8 @@ class RawMatData:
 
 class RawTiffData:
     # TODO may be realize with GDAL?
-    def __init__(self, path_to_tiff: str):
+    def __init__(self,
+                 path_to_tiff: str):
         self.path_to_tiff = path_to_tiff
 
     def __iter__(self):

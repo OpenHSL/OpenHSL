@@ -32,12 +32,19 @@ class Model(ABC):
     @abstractmethod
     def predict(self,
                 X,
-                y) -> tuple[np.ndarray, np.ndarray]:
+                y) -> np.ndarray:
         raise NotImplemented("Method predict must be implemented!")
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def fit_nn(X, y, hyperparams, model, optimizer, loss, epochs, train_sample_percentage):
+    def fit_nn(X,
+               y,
+               hyperparams,
+               model,
+               optimizer,
+               loss,
+               epochs,
+               train_sample_percentage):
         # TODO ignored_labels and label_values for what?
         img, gt = get_dataset(hsi=X, mask=y)
 
@@ -55,14 +62,14 @@ class Model(ABC):
         train_loader = create_loader(img, train_gt, hyperparams, shuffle=True)
         val_loader = create_loader(img, val_gt, hyperparams)
 
-        model = Model.train(net=model,
+        model, losses = Model.train(net=model,
                             optimizer=optimizer,
                             criterion=loss,
                             data_loader=train_loader,
                             epoch=epochs,
                             val_loader=val_loader,
                             device=hyperparams['device'])
-        return model
+        return model, losses
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
@@ -93,23 +100,32 @@ class Model(ABC):
               epoch,
               scheduler=None,
               display_iter=100,
-              device=torch.device("cpu"),
+              device=None,
               val_loader=None):
         """
         Training loop to optimize a network for several epochs and a specified loss
         Parameters
         ----------
-            net: a PyTorch model
-            optimizer: a PyTorch optimizer
-            data_loader: a PyTorch dataset loader
-            epoch: int specifying the number of training epochs
-            criterion: a PyTorch-compatible loss function, e.g. nn.CrossEntropyLoss
-            device (optional): torch device to use (defaults to CPU)
-            display_iter (optional): number of iterations before refreshing the
-            display (False/None to switch off).
-            scheduler (optional): PyTorch scheduler
-            val_loader (optional): validation dataset
-            supervision (optional): 'full' or 'semi'
+            net:
+                a PyTorch model
+            optimizer:
+                a PyTorch optimizer
+            data_loader:
+                a PyTorch dataset loader
+            epoch:
+                int specifying the number of training epochs
+            criterion:
+                a PyTorch-compatible loss function, e.g. nn.CrossEntropyLoss
+            device (optional):
+                torch device to use (defaults to CPU)
+            display_iter (optional):
+                number of iterations before refreshing the display (False/None to switch off).
+            scheduler (optional):
+                PyTorch scheduler
+            val_loader (optional):
+                validation dataset
+            supervision (optional):
+                'full' or 'semi'
         """
         net.to(device)
 
@@ -119,7 +135,7 @@ class Model(ABC):
         mean_losses = np.zeros(100000000)
         iter_ = 1
         val_accuracies = []
-
+        train_loss = []
         for e in tqdm(range(1, epoch + 1)):
             # Set the network to training mode
             net.train()
@@ -158,8 +174,10 @@ class Model(ABC):
 
             # Update the scheduler
             avg_loss /= len(data_loader)
+            train_loss.append(avg_loss)
             if val_loader is not None:
                 val_acc = Model.val(net, val_loader, device=device)
+                tqdm.write(f"val accuracy: {val_acc}")
                 val_accuracies.append(val_acc)
                 metric = -val_acc
             else:
@@ -179,7 +197,7 @@ class Model(ABC):
                     epoch=e,
                     metric=abs(metric),
                 )
-        return net
+        return net, train_loss
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod

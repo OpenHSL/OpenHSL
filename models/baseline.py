@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 import numpy as np
 
 from models.model import Model
@@ -10,6 +10,7 @@ import torch.nn as nn
 from torch.nn import init
 import torch.optim as optim
 import torch.nn.functional as F
+
 
 class Baseline(nn.Module):
     """
@@ -47,6 +48,7 @@ class Baseline(nn.Module):
             x = self.dropout(x)
         x = self.fc4(x)
         return x
+
 
 class BASELINE(Model):
     def __init__(self,
@@ -90,18 +92,18 @@ class BASELINE(Model):
             epochs: int = 10,
             train_sample_percentage: float = 0.5):
 
-        self.model = super().fit_nn(X=X,
-                                    y=y,
-                                    hyperparams=self.hyperparams,
-                                    epochs=epochs,
-                                    model=self.model,
-                                    optimizer=self.optimizer,
-                                    loss=self.loss,
-                                    train_sample_percentage=train_sample_percentage)
+        self.model, self.losses = super().fit_nn(X=X,
+                                                 y=y,
+                                                 hyperparams=self.hyperparams,
+                                                 epochs=epochs,
+                                                 model=self.model,
+                                                 optimizer=self.optimizer,
+                                                 loss=self.loss,
+                                                 train_sample_percentage=train_sample_percentage)
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
                 X: HSImage,
-                y: HSMask = None) -> np.ndarray:
+                y: Optional[HSMask] = None) -> np.ndarray:
         prediction = super().predict_nn(X=X, y=y, model=self.model, hyperparams=self.hyperparams)
         return prediction

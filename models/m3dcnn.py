@@ -1,13 +1,10 @@
-from models import model_utils
 from hsi import HSImage
 from hs_mask import HSMask
-from Firsov_Legacy.dataset import get_dataset
-from Firsov_Legacy.utils import sample_gt
+
 from models.model import Model
 
 import numpy as np
-from typing import Any
-from matplotlib import pyplot as plt
+from typing import Any, Optional
 
 import torch
 import torch.nn as nn
@@ -203,20 +200,20 @@ class M3DCNN(Model):
             epochs: int = 5,
             train_sample_percentage: float = 0.5):
 
-        self.model = super().fit_nn(X=X,
-                                    y=y,
-                                    hyperparams=self.hyperparams,
-                                    epochs=epochs,
-                                    model=self.model,
-                                    optimizer=self.optimizer,
-                                    loss=self.loss,
-                                    train_sample_percentage=train_sample_percentage)
+        self.model, self.losses = super().fit_nn(X=X,
+                                                 y=y,
+                                                 hyperparams=self.hyperparams,
+                                                 epochs=epochs,
+                                                 model=self.model,
+                                                 optimizer=self.optimizer,
+                                                 loss=self.loss,
+                                                 train_sample_percentage=train_sample_percentage)
 
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
                 X: HSImage,
-                y: HSMask = None) -> np.ndarray:
+                y: Optional[HSMask] = None) -> np.ndarray:
 
         prediction = super().predict_nn(X=X,
                                         y=y,

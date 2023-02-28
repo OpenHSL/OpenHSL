@@ -1,5 +1,6 @@
-from typing import Any
+from typing import Any, Optional
 import numpy as np
+
 
 from models.model import Model
 from hsi import HSImage
@@ -26,7 +27,11 @@ class HSICNN_Net(nn.Module):
             init.zeros_(m.bias)
 # ------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, input_channels, n_classes, patch_size=3, n_planes=90):
+    def __init__(self,
+                 input_channels,
+                 n_classes,
+                 patch_size=3,
+                 n_planes=90):
         super(HSICNN_Net, self).__init__()
         self.input_channels = input_channels
         self.patch_size = patch_size
@@ -74,6 +79,7 @@ class HSICNN_Net(nn.Module):
         x = self.fc2(x)
         return x
 
+
 class HSICNN(Model):
     def __init__(self,
                  n_classes,
@@ -116,18 +122,18 @@ class HSICNN(Model):
             epochs: int = 10,
             train_sample_percentage: float = 0.5):
 
-        self.model = super().fit_nn(X=X,
-                                    y=y,
-                                    hyperparams=self.hyperparams,
-                                    epochs=epochs,
-                                    model=self.model,
-                                    optimizer=self.optimizer,
-                                    loss=self.loss,
-                                    train_sample_percentage=train_sample_percentage)
+        self.model, self.losses = super().fit_nn(X=X,
+                                                 y=y,
+                                                 hyperparams=self.hyperparams,
+                                                 epochs=epochs,
+                                                 model=self.model,
+                                                 optimizer=self.optimizer,
+                                                 loss=self.loss,
+                                                 train_sample_percentage=train_sample_percentage)
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
                 X: HSImage,
-                y: HSMask = None) -> np.ndarray:
+                y: Optional[HSMask] = None) -> np.ndarray:
         prediction = super().predict_nn(X=X, y=y, model=self.model, hyperparams=self.hyperparams)
         return prediction

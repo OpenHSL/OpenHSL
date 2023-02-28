@@ -4,6 +4,8 @@ import itertools
 import numpy as np
 import sklearn.model_selection
 import seaborn as sns
+from typing import Optional
+
 
 def get_device(ordinal: int):
     # Use GPU ?
@@ -122,6 +124,7 @@ def sample_gt(gt, train_size, mode='random'):
        test_indices = [list(t) for t in zip(*test_indices)]
        train_gt[tuple(train_indices)] = gt[tuple(train_indices)]
        test_gt[tuple(test_indices)] = gt[tuple(test_indices)]
+
     elif mode == 'fixed':
        print("Sampling {} with train size = {}".format(mode, train_size))
        train_indices, test_indices = [], []

@@ -1,4 +1,3 @@
-from numpy import array
 from typing import Optional
 from hs_mask import HSMask
 from hsi import HSImage

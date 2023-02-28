@@ -3,12 +3,13 @@ import torch.utils
 import torch.utils.data
 import numpy as np
 import torch.utils.data as data
+from typing import Dict, Any
 
 
 def create_loader(img: np.array,
                   gt: np.array,
-                  hyperparams: dict,
-                  shuffle: bool = False):
+                  hyperparams: Dict,
+                  shuffle: Any = False):
     dataset = DataLoader(img, gt, **hyperparams)
     return data.DataLoader(dataset, batch_size=hyperparams["batch_size"], shuffle=shuffle)
 
@@ -16,7 +17,10 @@ def create_loader(img: np.array,
 class DataLoader(torch.utils.data.Dataset):
     """ Generic class for a hyperspectral scene """
 
-    def __init__(self, data: np.array, gt: np.array, **hyperparams):
+    def __init__(self,
+                 data: np.ndarray,
+                 gt: np.ndarray,
+                 **hyperparams):
         """
         Args:
             data: 3D hyperspectral image

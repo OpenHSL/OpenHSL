@@ -2,9 +2,10 @@ import numpy as np
 from typing import Optional
 from hsi import HSImage
 from hs_mask import HSMask
+from typing import Tuple
 
 
-def get_dataset(hsi: HSImage, mask: Optional[HSMask]) -> tuple[np.ndarray, np.ndarray]:
+def get_dataset(hsi: HSImage, mask: Optional[HSMask]) -> Tuple[np.ndarray, np.ndarray]:
     """
     return data from .mat files in tuple
 
