@@ -1,8 +1,8 @@
 import numpy as np
 
-def normalization(mask: np.ndarrya) -> np.ndarray:
+def normalization(mask: np.ndarray) -> np.ndarray:
     """
-    normalization(mask: np.ndarrya)
+    normalization(mask: np.ndarray)
 
         Returns a normalized mask from 0 to 1
 
