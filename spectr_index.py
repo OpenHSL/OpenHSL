@@ -1,4 +1,21 @@
 import numpy as np
+
+def normalization(mask: np.ndarrya) -> np.ndarray:
+    """
+    normalization(mask: np.ndarrya)
+
+        Returns a normalized mask from 0 to 1
+
+        Parameters
+        ----------
+        mask: np.ndarrya
+            normalized mask
+        Return 
+        ------
+            np.ndarray
+    """
+    return (mask - mask.min())/(mask.max() - mask.min())
+
 def get_band_numbers(left_border: int, right_border: int, w_data: list) -> tuple:
     """
     get_band_numbers(left_border, right_border, w_data)
@@ -20,6 +37,7 @@ def get_band_numbers(left_border: int, right_border: int, w_data: list) -> tuple
         ------
             list     
     """
+
     part_bands_list = [i for i, v in enumerate(w_data) if left_border < v < right_border]
 
     return min(part_bands_list), max(part_bands_list)
@@ -27,7 +45,7 @@ def get_band_numbers(left_border: int, right_border: int, w_data: list) -> tuple
 
 def reduce_mean(hsi: np.ndarray, l_bound: int, r_bound: int) -> np.ndarray:
     """
-    reduceMean(HSI, l_bound, r_bound):
+    reduce_mean(HSI, l_bound, r_bound):
 
         Calculating average values from multiple channels
         
@@ -47,6 +65,7 @@ def reduce_mean(hsi: np.ndarray, l_bound: int, r_bound: int) -> np.ndarray:
             np.ndarray 
 
     """
+
     return np.mean(hsi[:, :, l_bound:r_bound], axis=2)
 
 
@@ -95,8 +114,7 @@ def ndvi_mask(cube: np.ndarray,
     mask = (nir - red) / (nir + red) + 1
     mask[nir + red == 0] = 0
 
-    #Значения сделаю пока от 0 до 1
-    return (mask - mask.min())/(mask.max() - mask.min())
+    return normalization(mask)
 
 
 def dvi_mask(cube: np.ndarray,
@@ -106,7 +124,7 @@ def dvi_mask(cube: np.ndarray,
             left_800=795,
             right_800=805) -> np.ndarray:
     """
-    ndvi_mask(cube: np.ndarray, w_data: list)
+    dvi_mask(cube: np.ndarray, w_data: list)
     
         Calculating the NDVI index
         
@@ -141,11 +159,9 @@ def dvi_mask(cube: np.ndarray,
     channel_700 = reduce_mean(cube, band_numbers_700[0], band_numbers_700[1])
     channel_800 = reduce_mean(cube, band_numbers_800[0], band_numbers_800[1])
 
-    mask = (channel_800 - channel_700)
+    mask = channel_800 - channel_700
 
-    #Значения сделаю пока от 0 до 1
-    return (mask - mask.min())/(mask.max() - mask.min())
-
+    return normalization(mask)
 
 def osavi_mask(cube: np.ndarray,
             w_data: list,
@@ -154,7 +170,7 @@ def osavi_mask(cube: np.ndarray,
             left_800=795,
             right_800=805) -> np.ndarray:
     """
-    ndvi_mask(cube: np.ndarray, w_data: list)
+    osavi_mask(cube: np.ndarray, w_data: list)
     
         Calculating the NDVI index
         
@@ -189,11 +205,10 @@ def osavi_mask(cube: np.ndarray,
     channel_670 = reduce_mean(cube, band_numbers_670[0], band_numbers_670[1])
     channel_800 = reduce_mean(cube, band_numbers_800[0], band_numbers_800[1])
     
-    mask = 1.16*(channel_800 - channel_670)/(channel_800 + channel_670 +0.16)
-    mask[channel_800 + channel_670 +0.16 == 0] = 0
+    mask = 1.16 * (channel_800 - channel_670) / (channel_800 + channel_670 + 0.16)
+    mask[channel_800 + channel_670 + 0.16 == 0] = 0
 
-    #Значения сделаю пока от 0 до 1
-    return (mask - mask.min())/(mask.max() - mask.min())
+    return normalization(mask)
 
 
 def sr_mask(cube: np.ndarray,
@@ -203,7 +218,7 @@ def sr_mask(cube: np.ndarray,
             left_800=795,
             right_800=805) -> np.ndarray:
     """
-    ndvi_mask(cube: np.ndarray, w_data: list)
+    sr_mask(cube: np.ndarray, w_data: list)
     
         Calculating the SR index
         
@@ -238,11 +253,10 @@ def sr_mask(cube: np.ndarray,
     channel_680 = reduce_mean(cube, band_numbers_680[0], band_numbers_680[1])
     channel_800 = reduce_mean(cube, band_numbers_800[0], band_numbers_800[1])
     
-    mask = channel_800/channel_680
+    mask = channel_800 / channel_680
     mask[channel_680 == 0] = 0
 
-    #Значения сделаю пока от 0 до 1
-    return (mask - mask.min())/(mask.max() - mask.min())
+    return normalization(mask)
 
 
 def wdrvi_mask(cube: np.ndarray,
@@ -252,7 +266,7 @@ def wdrvi_mask(cube: np.ndarray,
             left_800=795,
             right_800=805) -> np.ndarray:
     """
-    ndvi_mask(cube: np.ndarray, w_data: list)
+    wdrvi_mask(cube: np.ndarray, w_data: list)
     
         Calculating the wdrvi index
         
@@ -287,11 +301,10 @@ def wdrvi_mask(cube: np.ndarray,
     channel_680 = reduce_mean(cube, band_numbers_680[0], band_numbers_680[1])
     channel_800 = reduce_mean(cube, band_numbers_800[0], band_numbers_800[1])
 
-    mask = (0.05*channel_800 - channel_680)/(0.05*channel_800 + channel_680)
-    mask[0.05*channel_800 + channel_680 == 0] = 0
+    mask = (0.05 * channel_800 - channel_680)/(0.05 * channel_800 + channel_680)
+    mask[0.05 * channel_800 + channel_680 == 0] = 0
 
-    #Значения сделаю пока от 0 до 1
-    return (mask - mask.min())/(mask.max() - mask.min())
+    return normalization(mask)
 
 
 def mtvi2_mask(cube: np.ndarray,
@@ -303,7 +316,7 @@ def mtvi2_mask(cube: np.ndarray,
             left_800=795,
             right_800=805) -> np.ndarray:
     """
-    ndvi_mask(cube: np.ndarray, w_data: list)
+    mtvi2_mask(cube: np.ndarray, w_data: list)
     
         Calculating the mtvi2 index
         
@@ -346,9 +359,8 @@ def mtvi2_mask(cube: np.ndarray,
     channel_670 = reduce_mean(cube, band_numbers_670[0], band_numbers_670[1])
     channel_800 = reduce_mean(cube, band_numbers_800[0], band_numbers_800[1])
 
-    a = 1.5*(1.2 * (channel_800 - channel_550) - 2.5 * (channel_670 - channel_550))
-    b = np.sqrt((2 * channel_800 + 1)**2 - (6 * channel_800 - 5*np.sqrt((channel_670))) - 0.5)
-    mask = a*b
+    a = 1.5 * (1.2 * (channel_800 - channel_550) - 2.5 * (channel_670 - channel_550))
+    b = np.sqrt((2 * channel_800 + 1)**2 - (6 * channel_800 - 5 * np.sqrt((channel_670))) - 0.5)
+    mask = a * b
 
-    #Значения сделаю пока от 0 до 1
-    return (mask - mask.min())/(mask.max() - mask.min())
+    return normalization(mask)
