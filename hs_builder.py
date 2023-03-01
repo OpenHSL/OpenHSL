@@ -7,6 +7,7 @@ from utils import gaussian
 
 import cv2
 import math
+from tqdm import tqdm
 from sklearn.linear_model import LinearRegression
 
 
@@ -93,7 +94,10 @@ class HSBuilder:
         return frame
 
     # TODO must be realised
-    def __norm_frame_camera_geometry(self, frame: np.ndarray) -> np.ndarray:
+    def __norm_frame_camera_geometry(self,
+                                     frame: np.ndarray,
+                                     norm_rotation=False,
+                                     barrel_dist_norm=False) -> np.ndarray:
         """
         Normalizes geometric distortions on frame.
 
@@ -106,7 +110,8 @@ class HSBuilder:
         frame
 
         """
-        frame = HSBuilder.__norm_rotation_frame(frame=frame)
+        if norm_rotation:
+            frame = HSBuilder.__norm_rotation_frame(frame=frame)
 
         return frame
     # ------------------------------------------------------------------------------------------------------------------
@@ -182,18 +187,26 @@ class HSBuilder:
         return ans
 # ------------------------------------------------------------------------------------------------------------------
 
-    def build(self, principal_slices=False, roi=False):
+    def build(self,
+              principal_slices,
+              norm_rotation=False,
+              barrel_dist_norm=False,
+              light_norm=False,
+              roi=False):
         """
             Creates HSI from device-data
         """
         preproc_frames = []
-        for frame in self.frame_iterator:
-            frame = self.__norm_frame_camera_geometry(frame=frame)
-            frame = self.__norm_frame_camera_illumination(frame=frame)
+        for frame in tqdm(self.frame_iterator, total=len(self.frame_iterator), desc='Preprocessing frames'):
+            frame = self.__norm_frame_camera_geometry(frame=frame,
+                                                      norm_rotation=norm_rotation,
+                                                      barrel_dist_norm=barrel_dist_norm)
             if roi:
                 frame = self.get_roi(frame=frame)
             if principal_slices:
-                frame = self.__principal_slices(frame, 40)
+                frame = self.__principal_slices(frame, principal_slices)
+            if light_norm:
+                frame = self.__norm_frame_camera_illumination(frame=frame)
             preproc_frames.append(frame)
             
         data = np.array(preproc_frames)
