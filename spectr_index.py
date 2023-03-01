@@ -306,7 +306,7 @@ def mtvi2_mask(cube: np.ndarray,
     a = 1.5 * (1.2 * (channel_800 - channel_550) - 2.5 * (channel_670 - channel_550))
     b = np.sqrt((2 * channel_800 + 1)**2 - (6 * channel_800 - 5 * np.sqrt(channel_670)) - 0.5)
     mask = a * b
-    #При получении nan ставим 0
+    #При получении nan заменяем его на 0
     mask[np.isnan(mask)==True] = 0
    
 
