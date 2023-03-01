@@ -8,7 +8,6 @@ from utils import gaussian
 import cv2
 import math
 from tqdm import tqdm
-from matplotlib import pyplot as plt
 from sklearn.linear_model import LinearRegression
 
 
@@ -96,6 +95,34 @@ class HSBuilder:
 
         return frame
 
+    @staticmethod
+    def __norm_barrel_distortion(frame: np.ndarray):
+        width = frame.shape[1]
+        height = frame.shape[0]
+
+        distCoeff = np.zeros((4, 1), np.float64)
+        # TODO: add your coefficients here!
+        k1 = -1.4e-5  # negative to remove barrel distortion
+        k2 = 0.0
+        p1 = 0.0
+        p2 = 0.0
+
+        distCoeff[0, 0] = k1
+        distCoeff[1, 0] = k2
+        distCoeff[2, 0] = p1
+        distCoeff[3, 0] = p2
+        # assume unit matrix for camera
+        cam = np.eye(3, dtype=np.float32)
+
+        cam[0, 2] = width / 2.0  # define center x
+        cam[1, 2] = height / 2.0  # define center y
+        cam[0, 0] = 10.  # define focal length x
+        cam[1, 1] = 10.  # define focal length y
+
+        # here the undistortion will be computed
+        dst = cv2.undistort(frame, cam, distCoeff)
+        return dst
+
     # TODO must be realised
     def __norm_frame_camera_geometry(self,
                                      frame: np.ndarray,
@@ -115,6 +142,8 @@ class HSBuilder:
         """
         if norm_rotation:
             frame = HSBuilder.__norm_rotation_frame(frame=frame)
+        if barrel_dist_norm:
+            frame = HSBuilder.__norm_barrel_distortion(frame=frame)
 
         return frame
     # ------------------------------------------------------------------------------------------------------------------
