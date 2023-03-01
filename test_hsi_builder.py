@@ -8,7 +8,7 @@ test_wavelengths = [i for i in range(400, 650)]
 def test_hs_builder_imgs_rail():
     hsb = HSBuilder(path_to_data='./test_data/builder/imgs',
                     data_type='images')
-    hsb.build(roi=True, norm_rotation=True, principal_slices=250)
+    hsb.build(roi=True, norm_rotation=True, principal_slices=250, light_norm=True)
     hsi = hsb.get_hsi()
 
     # Проверка размерности ГСИ
