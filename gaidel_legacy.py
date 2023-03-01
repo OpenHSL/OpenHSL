@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import itertools
 from sklearn import neighbors
+from tqdm import trange
 
 CSV_DELIMITER = ';'
 GPS_HYPERCAM_FRAME = "Hypercam frame"
@@ -61,6 +62,7 @@ def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str) -> np.ndarray
     bands = np.transpose(bands, (2, 1, 0))
     return bands
 # -------------------------------------------------------------------------------------------------------------------------------
+
 
 # TODO interpolate doesn't use gps data, but inner computation. Define this more clearly
 def interpolate(cube: np.ndarray, latitude: list, longitude: list, rel_alt: list, angle: list) -> np.ndarray:
@@ -242,6 +244,7 @@ def knn_for_interpolate(x, y, z):
     model.fit(data, z)
     return model
 # ----------------------------------------------------------------------------------------------------------------------
+
 
 # TODO: Maybe we should separate calculating test points and search m/n_targets?
 def generate_test_points(x: list, y: list):

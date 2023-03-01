@@ -1,9 +1,15 @@
 import numpy as np
 from hsi import HSImage
-from hs_raw_pb_data import RawCsvData, RawData
+from hs_raw_pb_data import RawData
 from gaidel_legacy import build_hypercube_by_videos
 from typing import Optional
 from utils import gaussian
+
+import cv2
+import math
+from tqdm import tqdm
+from matplotlib import pyplot as plt
+from sklearn.linear_model import LinearRegression
 
 
 class HSBuilder:
@@ -19,14 +25,13 @@ class HSBuilder:
         path_to_metadata : str
 
         data_type : str
-            'images' -
-            'video' -
+            'images'
+            'video'
 
         Attributes
         ----------
         hsi : HSImage
         frame_iterator: RawData
-        telemetry_iterator: RawCsvData
         Examples
         --------
 
@@ -43,10 +48,10 @@ class HSBuilder:
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO must be realised
-    def __norm_frame_camera_illumination(self, frame: np.ndarray) -> np.ndarray:
+    def __norm_frame_camera_illumination(self, frame: np.ndarray, light_coeff: np.ndarray) -> np.ndarray:
         """
         Normalizes illumination on frame.
-        Frame have heterogeneous illumination by slit defects. It must be solved
+        Frame have heterogeneous illumination by slit defects. It must be corrected
 
         Parameters
         ----------
@@ -56,11 +61,46 @@ class HSBuilder:
         -------
         frame
         """
-        return frame
+        if frame.shape != light_coeff.shape:
+            raise Exception("Uncomparable shapes of frame and light source")
+
+        return np.multiply(frame, light_coeff)
     # ------------------------------------------------------------------------------------------------------------------
 
+    @staticmethod
+    def __get_slit_angle(frame: np.ndarray) -> float:
+        """
+            Returns slit tilt angle in degrees (nor radians!)
+        """
+
+        _, frame_t = cv2.threshold(frame, 250, 255, cv2.THRESH_BINARY)
+        y, x = np.where(frame_t > 0)
+        lr = LinearRegression().fit(x.reshape(-1, 1), y)
+        ang = math.degrees(math.atan(lr.coef_))
+        return ang
+    # ------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def __norm_rotation_frame(frame: np.ndarray) -> np.ndarray:
+        """
+            Normalizes slit angle
+        """
+        angle = HSBuilder.__get_slit_angle(frame)
+        #  rotate frame while angle is not in (-0.01; 0.01) degrees
+        while abs(angle) > 0.01:
+            h, w = frame.shape
+            center_x, center_y = (w // 2, h // 2)
+            angle = HSBuilder.__get_slit_angle(frame)
+            rotation_matrix = cv2.getRotationMatrix2D((center_x, center_y), angle, 1.0)
+            frame = cv2.warpAffine(frame, rotation_matrix, (w, h))
+
+        return frame
+
     # TODO must be realised
-    def __norm_frame_camera_geometry(self, frame: np.ndarray) -> np.ndarray:
+    def __norm_frame_camera_geometry(self,
+                                     frame: np.ndarray,
+                                     norm_rotation=False,
+                                     barrel_dist_norm=False) -> np.ndarray:
         """
         Normalizes geometric distortions on frame.
 
@@ -73,11 +113,15 @@ class HSBuilder:
         frame
 
         """
+        if norm_rotation:
+            frame = HSBuilder.__norm_rotation_frame(frame=frame)
+
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO must be realised
-    def get_roi(self, frame: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def get_roi(frame: np.ndarray) -> np.ndarray:
         """
         For this moment works to microscope rough settings
         Parameters
@@ -104,7 +148,7 @@ class HSBuilder:
 
         Parameters
         ----------
-        frame :
+        frame : np.ndarray
 
         Returns
         -------
@@ -113,7 +157,8 @@ class HSBuilder:
 # ------------------------------------------------------------------------------------------------------------------
 
     # TODO works not correct!
-    def __principal_slices(self, frame: np.ndarray, nums_bands: int) -> np.ndarray:
+    @staticmethod
+    def __principal_slices(frame: np.ndarray, nums_bands: int) -> np.ndarray:
         """
         Compresses the frame by number of channels
         
@@ -147,19 +192,35 @@ class HSBuilder:
         return ans
 # ------------------------------------------------------------------------------------------------------------------
 
-    def build(self, principal_slices=False, roi=False):
+    def build(self,
+              principal_slices,
+              norm_rotation=False,
+              barrel_dist_norm=False,
+              light_norm=False,
+              roi=False):
         """
             Creates HSI from device-data
         """
         preproc_frames = []
-        for frame in self.frame_iterator:
-            frame = self.__norm_frame_camera_illumination(frame=frame)
-            frame = self.__norm_frame_camera_geometry(frame=frame)
-            frame = self.__some_preparation_on_frame(frame=frame)
+
+        # TODO remake it! It's hardcoded
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        light_coeff = cv2.imread('./test_data/builder/micro_light_source.png', 0)
+        light_coeff = HSBuilder.__norm_rotation_frame(light_coeff)
+        light_coeff = HSBuilder.get_roi(frame=light_coeff)
+        light_coeff = 1 / (light_coeff / np.max(light_coeff))
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        for frame in tqdm(self.frame_iterator, total=len(self.frame_iterator), desc='Preprocessing frames'):
+            frame = self.__norm_frame_camera_geometry(frame=frame,
+                                                      norm_rotation=norm_rotation,
+                                                      barrel_dist_norm=barrel_dist_norm)
             if roi:
-                frame = self.get_roi(frame=frame)
+                frame = HSBuilder.get_roi(frame=frame)
             if principal_slices:
-                frame = self.__principal_slices(frame, 40)
+                frame = self.__principal_slices(frame, principal_slices)
+            if light_norm:
+                frame = self.__norm_frame_camera_illumination(frame=frame, light_coeff=light_coeff)
             preproc_frames.append(frame)
             
         data = np.array(preproc_frames)

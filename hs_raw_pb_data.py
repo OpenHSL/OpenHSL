@@ -12,6 +12,7 @@ SUPPORTED_VIDEO_FORMATS = ("mp4", "avi")
 SUPPORTED_IMG_FORMATS = ("jpg", "png", "bmp")
 SUPPORTED_FORMATS = SUPPORTED_VIDEO_FORMATS + SUPPORTED_IMG_FORMATS
 
+
 class RawImagesData:
     """
     RawImagesData(path_to_dir)
@@ -112,7 +113,8 @@ class RawVideoData:
                     return frame.T
         else:
             raise StopIteration
-    
+
+
 class RawData:
     """
 
@@ -145,7 +147,7 @@ class RawData:
         return next(self.raw_data)
 
     def __len__(self):
-        self.raw_data.__len__()
+        return self.raw_data.__len__()
 
 
 class RawCsvData:
