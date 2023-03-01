@@ -5,6 +5,10 @@ from gaidel_legacy import build_hypercube_by_videos
 from typing import Optional
 from utils import gaussian
 
+import cv2
+import math
+from sklearn.linear_model import LinearRegression
+
 
 class HSBuilder:
     """
@@ -56,8 +60,37 @@ class HSBuilder:
         -------
         frame
         """
+
         return frame
     # ------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def __get_slit_angle(frame: np.ndarray) -> float:
+        """
+            Returns slit tilt angle in degrees (nor radians!)
+        """
+        _, frame_t = cv2.threshold(frame, 254, 255, cv2.THRESH_BINARY)
+        y, x = np.where(frame_t > 0)
+        lr = LinearRegression().fit(x.reshape(-1, 1), y)
+        ang = math.degrees(math.atan(lr.coef_))
+        return ang
+    # ------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def __norm_rotation_frame(frame: np.ndarray) -> np.ndarray:
+        """
+            Normalizes slit angle
+        """
+        angle = HSBuilder.__get_slit_angle(frame)
+        #  rotate frame while angle is not in (-0.01; 0.01) degrees
+        while (angle > 0.01 or angle < -0.01):
+            h, w = frame.shape
+            cX, cY = (w // 2, h // 2)
+            angle = HSBuilder.__get_slit_angle(frame)
+            M = cv2.getRotationMatrix2D((cX, cY), angle, 1.0)
+            frame = cv2.warpAffine(frame, M, (w, h))
+
+        return frame
 
     # TODO must be realised
     def __norm_frame_camera_geometry(self, frame: np.ndarray) -> np.ndarray:
@@ -73,6 +106,8 @@ class HSBuilder:
         frame
 
         """
+        frame = HSBuilder.__norm_rotation_frame(frame=frame)
+
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -153,9 +188,8 @@ class HSBuilder:
         """
         preproc_frames = []
         for frame in self.frame_iterator:
-            frame = self.__norm_frame_camera_illumination(frame=frame)
             frame = self.__norm_frame_camera_geometry(frame=frame)
-            frame = self.__some_preparation_on_frame(frame=frame)
+            frame = self.__norm_frame_camera_illumination(frame=frame)
             if roi:
                 frame = self.get_roi(frame=frame)
             if principal_slices:
