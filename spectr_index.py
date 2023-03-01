@@ -2,7 +2,7 @@ import numpy as np
 
 def normalization(mask: np.ndarray) -> np.ndarray:
     """
-    normalization(mask: np.ndarray)
+    normalization(mask: np.ndarrya)
 
         Returns a normalized mask from 0 to 1
 
@@ -17,7 +17,7 @@ def normalization(mask: np.ndarray) -> np.ndarray:
     return (mask - mask.min())/(mask.max() - mask.min())
 
 
-def get_band_numbers(left_border: int, right_border: int, w_data: list) -> tuple:
+def get_band_numbers(w_l: int, w_data: list) -> int:
     """
     get_band_numbers(left_border, right_border, w_data)
 
@@ -39,43 +39,28 @@ def get_band_numbers(left_border: int, right_border: int, w_data: list) -> tuple
             list     
     """
 
-    part_bands_list = [i for i, v in enumerate(w_data) if left_border < v < right_border]
+    #delta:  [...-4 -2  0  3...]) Отклонение от нужной длины волны
+    delta = w_data - w_l
+    
+    #определяем минимальный положительный элемент из списка отклонений
+    min_plus_delta = min(delta[delta >= 0])
 
-    return min(part_bands_list), max(part_bands_list)
-
-
-def reduce_mean(hsi: np.ndarray, l_bound: int, r_bound: int) -> np.ndarray:
-    """
-    reduce_mean(HSI, l_bound, r_bound):
-
-        Calculating average values from multiple channels
-        
-        Parameters
-        ----------
-        hsi: np.ndarray
-           hyperspectral image
-
-        l_bound: int
-            channel number in the hyperspectral image, left border
-            
-        r_bound: int
-            channel number in the hyperspectral image, right border
-
-        Return 
-        ------
-            np.ndarray 
-
-    """
-
-    return np.mean(hsi[:, :, l_bound:r_bound], axis=2)
+    #определяем индекс этого элемента в списке дельт
+    index_min_poloj_delta = np.where(delta==min_plus_delta)
+    
+    #определили длину волны для подсчета индекса
+    wat_len = w_data[index_min_poloj_delta]
+    
+    #канал по длине волны
+    band_number = np.where(w_data == wat_len)
+   
+    return band_number[0]
 
 
 def ndvi_mask(cube: np.ndarray,
-              w_data: list,
-              left_red=633,
-              right_red=650,
-              left_nir=844,
-              right_nir=860) -> np.ndarray:
+            w_data: list,
+            wl_680 = 680,
+            wl_800 = 800) -> np.ndarray:
     """
     ndvi_mask(cube: np.ndarray, w_data: list)
     
@@ -89,28 +74,23 @@ def ndvi_mask(cube: np.ndarray,
         w_data: list
             list of hyperspectral images wavelengths
 
-        left_red: int 
-            the left border of red in nanometers
+        wl_680: int
+            wavelength in nanometers
 
-        right_red: int
-            the right border of red in nanometers
-
-        left_nir: int 
-            the left border of nir in nanometers
-            
-        right_nir: int
-            the right border of nir in nanometers
-
+        wl_800: int 
+            wavelength in nanometers
+                
         Return 
         ------
             np.ndarray        
     """
-
-    red_band_numbers = get_band_numbers(left_red, right_red, w_data)
-    nir_band_numbers = get_band_numbers(left_nir, right_nir, w_data)
-
-    red = reduce_mean(cube, red_band_numbers[0], red_band_numbers[1])
-    nir = reduce_mean(cube, nir_band_numbers[0], nir_band_numbers[1])
+    
+    red_band_numbers = get_band_numbers(wl_680, w_data)
+    print(red_band_numbers)
+    nir_band_numbers = get_band_numbers(wl_800, w_data)
+    print(nir_band_numbers)
+    red = cube[:, :, red_band_numbers]
+    nir = cube[:, :, nir_band_numbers]
 
     mask = (nir - red) / (nir + red) + 1
     mask[nir + red == 0] = 0
@@ -120,10 +100,9 @@ def ndvi_mask(cube: np.ndarray,
 
 def dvi_mask(cube: np.ndarray,
             w_data: list,
-            left_700=695,
-            right_700=705,
-            left_800=795,
-            right_800=805) -> np.ndarray:
+            wl_700=700,
+            wl_800=800,
+            ) -> np.ndarray:
     """
     dvi_mask(cube: np.ndarray, w_data: list)
     
@@ -137,28 +116,22 @@ def dvi_mask(cube: np.ndarray,
         w_data: list
             list of hyperspectral images wavelengths
 
-        left_700: int 
-            the left border of red in nanometers
+        wl_700: int
+            wavelength in nanometers
 
-        right_700: int
-            the right border of red in nanometers
-
-        left_800: int 
-            the left border of nir in nanometers
-            
-        right_800: int
-            the right border of nir in nanometers
+        wl_800: int 
+            wavelength in nanometers
 
         Return 
         ------
             np.ndarray        
     """
     
-    band_numbers_700 = get_band_numbers(left_700, right_700, w_data)
-    band_numbers_800 = get_band_numbers(left_800, right_800, w_data)
+    band_numbers_700 = get_band_numbers(wl_700,  w_data)
+    band_numbers_800 = get_band_numbers(wl_800, w_data)
 
-    channel_700 = reduce_mean(cube, band_numbers_700[0], band_numbers_700[1])
-    channel_800 = reduce_mean(cube, band_numbers_800[0], band_numbers_800[1])
+    channel_700 = cube[:, :, band_numbers_700]
+    channel_800 = cube[:, :, band_numbers_800]
 
     mask = channel_800 - channel_700
 
@@ -167,10 +140,8 @@ def dvi_mask(cube: np.ndarray,
 
 def osavi_mask(cube: np.ndarray,
             w_data: list,
-            left_670=665,
-            right_670=675,
-            left_800=795,
-            right_800=805) -> np.ndarray:
+            wl_670=670,
+            wl_800=800) -> np.ndarray:
     """
     osavi_mask(cube: np.ndarray, w_data: list)
     
@@ -184,28 +155,22 @@ def osavi_mask(cube: np.ndarray,
         w_data: list
             list of hyperspectral images wavelengths
 
-        left_670: int 
-            the left border of red in nanometers
+        wl_670: int
+            wavelength in nanometers
 
-        right_670: int
-            the right border of red in nanometers
-
-        left_800: int 
-            the left border of nir in nanometers
-            
-        right_800: int
-            the right border of nir in nanometers
+        wl_800: int 
+            wavelength in nanometers
 
         Return 
         ------
             np.ndarray        
     """
 
-    band_numbers_670 = get_band_numbers(left_670, right_670, w_data)
-    band_numbers_800 = get_band_numbers(left_800, right_800, w_data)
+    band_numbers_670 = get_band_numbers(wl_670, w_data)
+    band_numbers_800 = get_band_numbers(wl_800, w_data)
 
-    channel_670 = reduce_mean(cube, band_numbers_670[0], band_numbers_670[1])
-    channel_800 = reduce_mean(cube, band_numbers_800[0], band_numbers_800[1])
+    channel_670 = cube[:, :, band_numbers_670]
+    channel_800 = cube[:, :, band_numbers_800]
     
     mask = 1.16 * (channel_800 - channel_670) / (channel_800 + channel_670 + 0.16)
     mask[channel_800 + channel_670 + 0.16 == 0] = 0
@@ -215,10 +180,9 @@ def osavi_mask(cube: np.ndarray,
 
 def sr_mask(cube: np.ndarray,
             w_data: list,
-            left_680=675,
-            right_680=685,
-            left_800=795,
-            right_800=805) -> np.ndarray:
+            wl_680=680,
+            wl_800=800
+            ) -> np.ndarray:
     """
     sr_mask(cube: np.ndarray, w_data: list)
     
@@ -232,28 +196,22 @@ def sr_mask(cube: np.ndarray,
         w_data: list
             list of hyperspectral images wavelengths
 
-        left_680: int 
-            the left border of red in nanometers
+        wl_680: int
+            wavelength in nanometers
 
-        right_680: int
-            the right border of red in nanometers
-
-        left_800: int 
-            the left border of nir in nanometers
-            
-        right_800: int
-            the right border of nir in nanometers
+        wl_800: int 
+            wavelength in nanometers
 
         Return 
         ------
             np.ndarray        
     """
     
-    band_numbers_680 = get_band_numbers(left_680, right_680, w_data)
-    band_numbers_800 = get_band_numbers(left_800, right_800, w_data)
+    band_numbers_680 = get_band_numbers(wl_680, w_data)
+    band_numbers_800 = get_band_numbers(wl_800, w_data)
 
-    channel_680 = reduce_mean(cube, band_numbers_680[0], band_numbers_680[1])
-    channel_800 = reduce_mean(cube, band_numbers_800[0], band_numbers_800[1])
+    channel_680 = cube[:, :, band_numbers_680]
+    channel_800 = cube[:, :, band_numbers_800]
     
     mask = channel_800 / channel_680
     mask[channel_680 == 0] = 0
@@ -263,10 +221,9 @@ def sr_mask(cube: np.ndarray,
 
 def wdrvi_mask(cube: np.ndarray,
             w_data: list,
-            left_680=675,
-            right_680=685,
-            left_800=795,
-            right_800=805) -> np.ndarray:
+            wl_680=680,
+            wl_800=800
+            ) -> np.ndarray:
     """
     wdrvi_mask(cube: np.ndarray, w_data: list)
     
@@ -280,28 +237,22 @@ def wdrvi_mask(cube: np.ndarray,
         w_data: list
             list of hyperspectral images wavelengths
 
-        left_680: int 
-            the left border of red in nanometers
+        wl_680: int
+            wavelength in nanometers
 
-        right_680: int
-            the right border of red in nanometers
-
-        left_800: int 
-            the left border of nir in nanometers
-            
-        right_800: int
-            the right border of nir in nanometers
+        wl_800: int 
+            wavelength in nanometers
 
         Return 
         ------
             np.ndarray        
     """
 
-    band_numbers_680 = get_band_numbers(left_680, right_680, w_data)
-    band_numbers_800 = get_band_numbers(left_800, right_800, w_data)
+    band_numbers_680 = get_band_numbers(wl_680, w_data)
+    band_numbers_800 = get_band_numbers(wl_800, w_data)
 
-    channel_680 = reduce_mean(cube, band_numbers_680[0], band_numbers_680[1])
-    channel_800 = reduce_mean(cube, band_numbers_800[0], band_numbers_800[1])
+    channel_680 = cube[:, :, band_numbers_680]
+    channel_800 = cube[:, :, band_numbers_800]
 
     mask = (0.05 * channel_800 - channel_680)/(0.05 * channel_800 + channel_680)
     mask[0.05 * channel_800 + channel_680 == 0] = 0
@@ -311,12 +262,10 @@ def wdrvi_mask(cube: np.ndarray,
 
 def mtvi2_mask(cube: np.ndarray,
             w_data: list,
-            left_550=545,
-            right_550=555,
-            left_670=665,
-            right_670=675,
-            left_800=795,
-            right_800=805) -> np.ndarray:
+            wl_550=550,
+            wl_670=670,
+            wl_800=800
+            ) -> np.ndarray:
     """
     mtvi2_mask(cube: np.ndarray, w_data: list)
     
@@ -329,40 +278,36 @@ def mtvi2_mask(cube: np.ndarray,
 
         w_data: list
             list of hyperspectral images wavelengths
-        
-        left_550: int 
-            the left border of  green in nanometers
 
-        right_550: int
-            the right border of green in nanometers
+        wl_550: int 
+            wavelength in nanometers    
 
-        left_670: int 
-            the left border of red in nanometers
+        wl_670: int
+            wavelength in nanometers
 
-        right_670: int
-            the right border of red in nanometers
-
-        left_800: int 
-            the left border of nir in nanometers
-            
-        right_800: int
-            the right border of nir in nanometers
+        wl_800: int 
+            wavelength in nanometers
 
         Return 
         ------
             np.ndarray        
     """
 
-    band_numbers_550 = get_band_numbers(left_550, right_550, w_data)
-    band_numbers_670 = get_band_numbers(left_670, right_670, w_data)
-    band_numbers_800 = get_band_numbers(left_800, right_800, w_data)
+    band_numbers_550 = get_band_numbers(wl_550, w_data)
+    band_numbers_670 = get_band_numbers(wl_670, w_data)
+    band_numbers_800 = get_band_numbers(wl_800, w_data)
 
-    channel_550 = reduce_mean(cube, band_numbers_550[0], band_numbers_550[1])
-    channel_670 = reduce_mean(cube, band_numbers_670[0], band_numbers_670[1])
-    channel_800 = reduce_mean(cube, band_numbers_800[0], band_numbers_800[1])
+    channel_550 = cube[:, :, band_numbers_550]
+    channel_670 = cube[:, :, band_numbers_670]
+    channel_800 = cube[:, :, band_numbers_800]
 
+   
+    
     a = 1.5 * (1.2 * (channel_800 - channel_550) - 2.5 * (channel_670 - channel_550))
-    b = np.sqrt((2 * channel_800 + 1)**2 - (6 * channel_800 - 5 * np.sqrt((channel_670))) - 0.5)
+    b = np.sqrt((2 * channel_800 + 1)**2 - (6 * channel_800 - 5 * np.sqrt(channel_670)) - 0.5)
     mask = a * b
+    #При получении nan ставим 0
+    mask[np.isnan(mask)==True] = 0
+   
 
     return normalization(mask)
