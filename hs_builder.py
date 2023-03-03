@@ -174,6 +174,7 @@ class HSBuilder:
         return dst
     # ------------------------------------------------------------------------------------------------------------------
 
+
     @staticmethod
     def __norm_frame_camera_geometry(frame: np.ndarray,
                                      norm_rotation=False,
