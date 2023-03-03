@@ -20,48 +20,60 @@ class HSBuilder:
         Parameters
         ----------
         path_to_data : str
+            path to hyperspectral source data, for example path to directory with images or videos,
+            or path to video-file
 
-        path_to_metadata : str
-
+        path_to_metadata : str, default=None
+            path to file with telemetry data (for example gps-file)
         data_type : str
             'images'
             'video'
 
         Attributes
         ----------
-        hsi : HSImage
+        path_to_data : str
+        path_to_metadata : str
+        hsi : HSImage, default=None
         frame_iterator: RawData
+
+        Methods
+        -------
+        # TODO Must be described
+
         Examples
         --------
+        # TODO Must be described
 
     """
 
     def __init__(self, path_to_data, path_to_metadata=None, data_type=None):
-        """
-
-        """
         self.path_to_data = path_to_data
         self.path_to_metadata = path_to_metadata
         self.hsi: Optional[HSImage] = None
         self.frame_iterator = RawData(path_to_data=path_to_data, type_data=data_type)
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO must be realised
-    def __norm_frame_camera_illumination(self, frame: np.ndarray, light_coeff: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def __norm_frame_camera_illumination(frame: np.ndarray, light_coeff: np.ndarray) -> np.ndarray:
         """
-        Normalizes illumination on frame.
-        Frame have heterogeneous illumination by slit defects. It must be corrected
+        __norm_frame_camer_illumination(frame, light_coeff)
 
-        Parameters
-        ----------
-        frame
+            Normalizes illumination on frame.
+            Frame have heterogeneous illumination due slit defects. It must be corrected.
+            frame shape and light_coeff shape must be equal!
 
-        Returns
-        -------
-        frame
+            Parameters
+            ----------
+            frame : np.ndarray
+                hyperspectral frame
+            light_coeff : np.ndarray
+                light distribution on matrix
+            Returns
+            -------
+                np.ndarray
         """
         if frame.shape != light_coeff.shape:
-            raise Exception("Uncomparable shapes of frame and light source")
+            raise Exception("frame shape and light_coeff shape must be equal!")
 
         return np.multiply(frame, light_coeff)
     # ------------------------------------------------------------------------------------------------------------------
@@ -69,7 +81,18 @@ class HSBuilder:
     @staticmethod
     def __get_slit_angle(frame: np.ndarray) -> float:
         """
+        __get_slit_angle(frame)
+
             Returns slit tilt angle in degrees (nor radians!)
+
+            Parameters
+            ----------
+            frame : np.ndarray
+                hyperspectral frame
+
+            Returns
+            -------
+                float
         """
 
         _, frame_t = cv2.threshold(frame, 250, 255, cv2.THRESH_BINARY)
@@ -82,7 +105,18 @@ class HSBuilder:
     @staticmethod
     def __norm_rotation_frame(frame: np.ndarray) -> np.ndarray:
         """
-            Normalizes slit angle
+        __norm_rotation_frame(frame)
+
+            Normalizes slit angle by rotating input frame
+
+            Parameters
+            ----------
+            frame : np.ndarray
+                hyperspectral frame
+
+            Returns
+            -------
+                np.ndarray
         """
         angle = HSBuilder.__get_slit_angle(frame)
         #  rotate frame while angle is not in (-0.01; 0.01) degrees
@@ -94,14 +128,29 @@ class HSBuilder:
             frame = cv2.warpAffine(frame, rotation_matrix, (w, h))
 
         return frame
+    # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def __norm_barrel_distortion(frame: np.ndarray):
+    def __norm_barrel_distortion(frame: np.ndarray) -> np.ndarray:
+        """
+        __norm_barrel_distortion(frame)
+
+            Removes barrel distortion on frame
+
+            Parameters
+            ----------
+            frame : np.ndarray
+                hyperspectral frame
+
+            Returns
+            -------
+                np.ndarray
+        """
         width = frame.shape[1]
         height = frame.shape[0]
 
         distCoeff = np.zeros((4, 1), np.float64)
-        # TODO: add your coefficients here!
+        # TODO: replace by device features! IT'S HARDCODED
         k1 = -1.4e-5  # negative to remove barrel distortion
         k2 = 0.0
         p1 = 0.0
@@ -116,28 +165,31 @@ class HSBuilder:
 
         cam[0, 2] = width / 2.0  # define center x
         cam[1, 2] = height / 2.0  # define center y
+        # TODO remake hardcoded values!
         cam[0, 0] = 10.  # define focal length x
         cam[1, 1] = 10.  # define focal length y
 
         # here the undistortion will be computed
         dst = cv2.undistort(frame, cam, distCoeff)
         return dst
+    # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO must be realised
-    def __norm_frame_camera_geometry(self,
-                                     frame: np.ndarray,
+    @staticmethod
+    def __norm_frame_camera_geometry(frame: np.ndarray,
                                      norm_rotation=False,
                                      barrel_dist_norm=False) -> np.ndarray:
         """
-        Normalizes geometric distortions on frame.
+        Normalizes geometric distortions on frame:
+            - rotation
+            - barrel distortion
 
         Parameters
         ----------
-        frame
+        frame : np.ndarray
 
         Returns
         -------
-        frame
+        frame : np.ndarray
 
         """
         if norm_rotation:
@@ -148,7 +200,6 @@ class HSBuilder:
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO must be realised
     @staticmethod
     def get_roi(frame: np.ndarray) -> np.ndarray:
         """
@@ -171,38 +222,24 @@ class HSBuilder:
         return frame[x1: x2, left_bound_spectrum: right_bound_spectrum].T
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO must be realised
-    def __some_preparation_on_frame(self, frame: np.ndarray) -> np.ndarray:
-        """
-
-        Parameters
-        ----------
-        frame : np.ndarray
-
-        Returns
-        -------
-        """
-        return frame
-# ------------------------------------------------------------------------------------------------------------------
-
-    # TODO works not correct!
     @staticmethod
     def __principal_slices(frame: np.ndarray, nums_bands: int) -> np.ndarray:
         """
-        Compresses the frame by number of channels
-        
-        Parameters
-        ----------
-        frame: np.ndarray
-            2D frame which we wanna compress from shape (W, H) ---> (W, nums_bands) 
-        
-        nums_bands: int
-            Final numbers of channels 
+        __principal_slices(frame, nums_bands)
 
-        Returns
-        -------
-        Compress np.ndarray
+            Compresses the frame by number of channels
 
+            Parameters
+            ----------
+            frame: np.ndarray
+                2D frame which we wanna compress from shape (W, H) ---> (W, nums_bands)
+
+            nums_bands: int
+                Final numbers of channels
+
+            Returns
+            -------
+                np.ndarray
         """
         n, m = frame.shape 
 
@@ -240,7 +277,10 @@ class HSBuilder:
         light_coeff = 1 / (light_coeff / np.max(light_coeff))
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        for frame in tqdm(self.frame_iterator, total=len(self.frame_iterator), desc='Preprocessing frames'):
+        for frame in tqdm(self.frame_iterator,
+                          total=len(self.frame_iterator),
+                          desc='Preprocessing frames',
+                          colour='blue'):
             frame = self.__norm_frame_camera_geometry(frame=frame,
                                                       norm_rotation=norm_rotation,
                                                       barrel_dist_norm=barrel_dist_norm)
