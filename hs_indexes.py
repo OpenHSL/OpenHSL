@@ -41,7 +41,8 @@ def get_band_numbers(w_l: int, w_data: Union[list, np.ndarray]) -> int:
     """
     
     if w_l in w_data:
-        return w_l
+        w_data = list(w_data)
+        return w_data.index(w_l)
     else:
         w_data = np.array(w_data)
         delta = w_data - w_l
