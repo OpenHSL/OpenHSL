@@ -22,7 +22,7 @@ def normalization(mask: np.ndarray) -> np.ndarray:
     return (mask - mask.min()) / (mask.max() - mask.min())
 
 
-def neighbor_el(elements_list: list, element: float) -> float:
+def neighbor_el(l: list, el: float) -> float:
     """
     neighbor_el(l, el)
         Return the closest element from list to given element
@@ -37,15 +37,14 @@ def neighbor_el(elements_list: list, element: float) -> float:
         -------
             float
     """
-    return min(elements_list, key=lambda x: abs(x - element))
+    return min(l, key=lambda x: abs(x - el))
 
 
 def get_band_numbers(w_l: int, w_data: Union[list, np.ndarray]) -> int:
     """
     get_band_numbers(w_l, w_data)
 
-        Returns a tuple of two channel values with minimum and maximum wavelength values
-        # TODO update this docstring: not actual variables names
+        Returns the required channel value in the hyperspectral image
         Parameters
         ----------
         left_border: int
@@ -77,8 +76,10 @@ def get_band_numbers(w_l: int, w_data: Union[list, np.ndarray]) -> int:
 def ndvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
     """
     ndvi_mask(cube, w_data)
-        #TODO добавить ссылку на описание индекса
-        Calculating the NDVI index
+        
+        Calculating the NDVI index - "https://www.bestdroneconsulting.com/support/knowledge-base/97-vegetation-indices-ndvi-and-dvi.html, 
+        https://gis-lab.info/qa/ndvi.html, https://gis-lab.info/qa/vi.html, 
+        https://iopscience.iop.org/article/10.1088/1742-6596/1003/1/012083/pdf"
         
         Parameters
         ----------
@@ -99,7 +100,7 @@ def ndvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] 
 
     elif type(cube) == np.ndarray:
         cube_data = cube
-        del cube
+        
 
     wl_680 = 680
     wl_800 = 800
@@ -119,8 +120,9 @@ def ndvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] 
 def dvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
     """
     dvi_mask(cube, w_data)
-        #TODO добавить ссылку на описание индекса
-        Calculating the DVI index 
+       
+        Calculating the DVI index - "https://www.bestdroneconsulting.com/support/knowledge-base/97-vegetation-indices-ndvi-and-dvi.html, 
+        https://iopscience.iop.org/article/10.1088/1742-6596/1003/1/012083/pdf"
         
         Parameters
         ----------
@@ -141,7 +143,7 @@ def dvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] =
 
     elif type(cube) == np.ndarray:
         cube_data = cube
-        del cube
+        
 
     wl_700 = 700
     wl_800 = 800
@@ -160,8 +162,9 @@ def dvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] =
 def osavi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
     """
     osavi_mask(cube, w_data)
-        #TODO добавить ссылку на описание индекса
-        Calculating the 'osavi' index
+    
+        Calculating the 'osavi' index - "https://support.micasense.com/hc/en-us/articles/227837307-Overview-of-Agricultural-Indices#osavi,
+        https://www.sciencedirect.com/science/article/pii/S0034425797001144"
         
         Parameters
         ----------
@@ -182,7 +185,7 @@ def osavi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
 
     elif type(cube) == np.ndarray:
         cube_data = cube
-        del cube
+        
 
     wl_670 = 670
     wl_800 = 800
@@ -202,8 +205,8 @@ def osavi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
 def sr_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
     """
     sr_mask(cube, w_data)
-        #TODO добавить ссылку на описание индекса
-        Calculating the 'SR' index
+        
+        Calculating the 'SR' index - "https://www.hiphen-plant.com/vegetation-index/3582/"
         
         Parameters
         ----------
@@ -224,7 +227,7 @@ def sr_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = 
 
     elif type(cube) == np.ndarray:
         cube_data = cube
-        del cube
+       
 
     wl_680 = 680
     wl_800 = 800
@@ -244,8 +247,8 @@ def sr_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = 
 def wdrvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
     """
     wdrvi_mask(cube, w_data)
-        #TODO добавить ссылку на описание индекса
-        Calculating the 'wdrvi' index
+        
+        Calculating the 'wdrvi' index - "https://www.sciencedirect.com/science/article/pii/S0176161704705726"
         
         Parameters
         ----------
@@ -266,7 +269,7 @@ def wdrvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
 
     elif type(cube) == np.ndarray:
         cube_data = cube
-        del cube
+        
 
     wl_680 = 680
     wl_800 = 800
@@ -286,8 +289,8 @@ def wdrvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
 def mtvi2_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
     """
     mtvi2_mask(cube, w_data)
-        #TODO добавить ссылку на описание индекса
-        Calculating the 'mtvi2' index
+       
+        Calculating the 'mtvi2' index - "https://pro.arcgis.com/en/pro-app/latest/arcpy/image-analyst/mtvi2.htm"
         
         Parameters
         ----------
@@ -308,7 +311,7 @@ def mtvi2_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
 
     elif type(cube) == np.ndarray:
         cube_data = cube
-        del cube
+        
 
     wl_550 = 550
     wl_670 = 670
@@ -355,7 +358,7 @@ def simple_hsi_to_rgb(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.n
 
     elif type(cube) == np.ndarray:
         cube_data = cube
-        del cube
+        
 
     wl_440 = 440
     wl_550 = 550
@@ -402,10 +405,12 @@ def XYZ2sRGB_exgamma(XYZ):
     return sRGB
 
 
-# TODO finalize it.
-def hsi_to_rgb(cube: Union[HSImage, np.ndarray], illum_coef: np.ndarray, xyzbar: np.ndarray) -> np.ndarray:
+
+def hsi_to_rgb(cube: Union[HSImage, np.ndarray], 
+               w_data: Union[list, np.ndarray], 
+               illum_coef: np.ndarray, xyzbar: np.ndarray) -> np.ndarray: 
     """
-    hsi_to_rgb(cube, illum_coef, xyzbar)
+    hsi_to_rgb(cube, w_data, illum_coef, xyzbar)
 
         Extracts an RGB image from an HSI image
 
@@ -414,8 +419,12 @@ def hsi_to_rgb(cube: Union[HSImage, np.ndarray], illum_coef: np.ndarray, xyzbar:
         cube: HSImage or np.ndarray
             hyperspectral image
 
+        w_data: list or np.ndarray
+            list of hyperspectral images wavelengths
+
         illum_coef: np.ndarray
             spectral intensity coefficients of the light source
+
         xyzbar: np.ndarray
             color space coefficients CIE 1931
 
@@ -423,28 +432,29 @@ def hsi_to_rgb(cube: Union[HSImage, np.ndarray], illum_coef: np.ndarray, xyzbar:
         ------
             np.ndarray 
 
-
     """
-
+    
     if type(cube) == HSImage:
         cube_data = cube.data
-
+    
     elif type(cube) == np.ndarray:
         cube_data = cube
-        del cube
+    
+    if type(cube) != list:
+        w_data = list(w_data)
 
-    wavelengths = list(np.linspace(400, 720, 33))
-
-    wavelengths_cube = list(np.linspace(420, 980, cube_data.shape[-1]))
-    right_bound = wavelengths_cube.index(neighbor_el(wavelengths_cube, 720))
-    rgb_waves = wavelengths_cube[:right_bound]
-
-    # Функция которая в видимом диапазоне
-    f_illum = interp1d(wavelengths, illum_coef[:, 0])
+    #wavelengths_visible_light_range
+    wvlr = list(np.linspace(400, 720, 33))
+    
+    right_bound = w_data.index(neighbor_el(w_data, 720))
+    left_bound = w_data.index(neighbor_el(w_data, 400))
+    rgb_waves = w_data[left_bound:right_bound]
+   
+    f_illum = interp1d(wvlr, illum_coef[:,0])
 
     new_cube = np.zeros((np.shape(cube_data)[0], np.shape(cube_data)[1], right_bound))
-    for i, w in zip(range(new_cube.shape[-1]), rgb_waves):
-        new_cube[:, :, i] = cube_data[:, :, i] * f_illum(w)
+    for i, w in zip(range(new_cube.shape[-1]), rgb_waves): 
+        new_cube[:,:,i] = cube_data[:,:,i] * f_illum(w)
 
     r, c, w = new_cube.shape
     radiances = np.reshape(new_cube, (r * c, w))
@@ -454,27 +464,27 @@ def hsi_to_rgb(cube: Union[HSImage, np.ndarray], illum_coef: np.ndarray, xyzbar:
     xyzbar_1 = xyzbar[:, 1]
     xyzbar_2 = xyzbar[:, 2]
 
-    f_0 = interp1d(wavelengths, xyzbar_0)
-    f_1 = interp1d(wavelengths, xyzbar_1)
-    f_2 = interp1d(wavelengths, xyzbar_2)
+    f_0 = interp1d(wvlr, xyzbar_0)
+    f_1 = interp1d(wvlr, xyzbar_1)
+    f_2 = interp1d(wvlr, xyzbar_2)
 
     xyz_0 = [f_0(i) for i in rgb_waves]
     xyz_1 = [f_1(i) for i in rgb_waves]
     xyz_2 = [f_2(i) for i in rgb_waves]
 
     xyzbar_new = (np.array([xyz_0, xyz_1, xyz_2])).T
-
+    
     XYZ = np.dot(radiances, xyzbar_new)
     XYZ = np.reshape(XYZ, (r, c, 3))
     XYZ = (XYZ - np.min(XYZ)) / (np.max(XYZ) - np.min(XYZ))
-
+    
     RGB = XYZ2sRGB_exgamma(XYZ)
     RGB = (RGB - np.min(RGB)) / (np.max(RGB) - np.min(RGB))
 
+   
     gray_mean = np.mean(RGB, axis=2)
     un = np.unique(gray_mean)
 
-    # Так оставить?
     thresh = 0.98
     coord = [np.where(gray_mean == un[int(len(un) * thresh - 1)])][0]
     x, y = coord
