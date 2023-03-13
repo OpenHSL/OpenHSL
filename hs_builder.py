@@ -22,7 +22,6 @@ class HSBuilder:
         path_to_data : str
             path to hyperspectral source data, for example path to directory with images or videos,
             or path to video-file
-
         path_to_metadata : str, default=None
             path to file with telemetry data (for example gps-file)
         data_type : str
@@ -46,7 +45,10 @@ class HSBuilder:
 
     """
 
-    def __init__(self, path_to_data, path_to_metadata=None, data_type=None):
+    def __init__(self,
+                 path_to_data: str,
+                 path_to_metadata: str = None,
+                 data_type: str = None):
         self.path_to_data = path_to_data
         self.path_to_metadata = path_to_metadata
         self.hsi: Optional[HSImage] = None
@@ -174,7 +176,6 @@ class HSBuilder:
         return dst
     # ------------------------------------------------------------------------------------------------------------------
 
-
     @staticmethod
     def __norm_frame_camera_geometry(frame: np.ndarray,
                                      norm_rotation=False,
@@ -248,14 +249,13 @@ class HSBuilder:
         gaussian_window = gaussian(width, width / 2.0, width / 6.0) 
         mid = len(gaussian_window) // 2 
         gaussian_window[mid] = 1.0 - np.sum(gaussian_window) + gaussian_window[mid] 
-        ans = np.zeros(shape=(n, nums_bands), dtype=np.uint8) 
+        ans = np.zeros(shape=(n, nums_bands), dtype=np.uint8)
+
         for j in range(nums_bands): 
             left_bound = j * m // nums_bands 
-            ans[:, j] = np.tensordot( 
-                frame[:, left_bound:left_bound + len(gaussian_window)], 
-                gaussian_window, 
-                axes=([1], [0]), 
-            )
+            ans[:, j] = np.tensordot(frame[:, left_bound:left_bound + len(gaussian_window)],
+                                     gaussian_window,
+                                     axes=([1], [0]))
         return ans
 # ------------------------------------------------------------------------------------------------------------------
 

@@ -277,7 +277,7 @@ def generate_test_points(x: List, y: List) -> Tuple:
 
         Parameters:
         -----------
-            x and y lists of coords
+            x and y lists of coordinates
         
         Returns:
         -----------
