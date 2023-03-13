@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Union
-from hsi import HSImage
+from openhsl.hsi import HSImage
 from scipy.interpolate import interp1d
 
 

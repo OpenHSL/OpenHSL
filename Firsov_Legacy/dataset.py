@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Optional
-from hsi import HSImage
-from hs_mask import HSMask
+from openhsl.hsi import HSImage
+from openhsl.hs_mask import HSMask
 from typing import Tuple
 
 

@@ -4,10 +4,8 @@ import numpy as np
 import pandas as pd
 import itertools
 
-import sklearn.neighbors
 from sklearn import neighbors
 from typing import List, Tuple
-from time import time
 
 CSV_DELIMITER = ';'
 GPS_HYPERCAM_FRAME = "Hypercam frame"

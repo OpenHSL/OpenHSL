@@ -1,9 +1,9 @@
 import numpy as np
-from hsi import HSImage
-from hs_raw_pb_data import RawData
-from uav_builder import build_hypercube_by_videos
+from openhsl.hsi import HSImage
+from openhsl.hs_raw_pb_data import RawData
+from openhsl.uav_builder import build_hypercube_by_videos
 from typing import Optional
-from utils import gaussian
+from openhsl.utils import gaussian
 
 import cv2
 import math

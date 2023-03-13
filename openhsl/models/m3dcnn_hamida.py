@@ -1,9 +1,9 @@
 from typing import Any, Optional
 import numpy as np
 
-from models.model import Model
-from hsi import HSImage
-from hs_mask import HSMask
+from openhsl.models.model import Model
+from openhsl.hsi import HSImage
+from openhsl.hs_mask import HSMask
 
 import torch
 import torch.nn as nn

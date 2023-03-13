@@ -6,7 +6,7 @@ from pathlib import Path
 from PIL import Image
 from typing import Tuple
 
-from utils import dir_exists, load_data
+from openhsl.utils import dir_exists, load_data
 
 SUPPORTED_VIDEO_FORMATS = ("mp4", "avi")
 SUPPORTED_IMG_FORMATS = ("jpg", "png", "bmp")

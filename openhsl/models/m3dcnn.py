@@ -1,7 +1,7 @@
-from hsi import HSImage
-from hs_mask import HSMask
+from openhsl.hsi import HSImage
+from openhsl.hs_mask import HSMask
 
-from models.model import Model
+from openhsl.models.model import Model
 
 import numpy as np
 from typing import Any, Optional

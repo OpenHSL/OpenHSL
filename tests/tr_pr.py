@@ -1,11 +1,6 @@
-from hsi import HSImage
-from hs_mask import HSMask
-from models.m1dcnn import M1DCNN
-from models.m3dcnn import M3DCNN
-from models.m3dcnn_hamida import M3D_HAMIDA
-from models.m2dcnn import M2DCNN
-from models.baseline import BASELINE
-from models.hsicnn_luo import HSICNN
+from openhsl.hsi import HSImage
+from openhsl.hs_mask import HSMask
+from openhsl.models.m1dcnn import M1DCNN
 from matplotlib import pyplot as plt
 from Firsov_Legacy.utils import convert_to_color_
 

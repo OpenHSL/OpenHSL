@@ -1,6 +1,6 @@
 from typing import Optional
-from hs_mask import HSMask
-from hsi import HSImage
+from openhsl.hs_mask import HSMask
+from openhsl.hsi import HSImage
 
 
 class Dataloader:
