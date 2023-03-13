@@ -2,14 +2,15 @@ from hs_builder import HSBuilder
 from matplotlib import pyplot as plt
 from hsi import HSImage
 
+from time import time
+
 test_wavelengths = [i for i in range(400, 650)]
 
 
 def test_hs_builder_imgs_rail():
-    hsb = HSBuilder(path_to_data='./test_data/imgs',
+    hsb = HSBuilder(path_to_data='./test_data/builder/imgs',
                     data_type='images')
-    hsb.build(device_type='rail',
-              roi=True)
+    hsb.build(roi=True, norm_rotation=True, principal_slices=250, light_norm=True)
     hsi = hsb.get_hsi()
 
     # Проверка размерности ГСИ
@@ -37,13 +38,13 @@ def test_hs_builder_imgs_rail():
 
 def test_hs_builder_video_rotary():
     # Сборка из штатива
-    hsb = HSBuilder(path_to_data='./test_data/video/rec_2022-06-06-12-24-02.avi',
+    hsb = HSBuilder(path_to_data='./test_data/builder/video/rec_2022-06-06-12-24-02.avi',
                     data_type='video')
-    hsb.build(device_type='rotary')
+    hsb.build(principal_slices=250)
     hsi = hsb.get_hsi()
 
     # Проверка размерности ГСИ
-    assert (1001, 2048, 274) == hsi.data.shape
+    assert (1001, 2048, 250) == hsi.data.shape
 
     # Генерируем набор длин волн для теста
     hsi.wavelengths = test_wavelengths
@@ -67,10 +68,10 @@ def test_hs_builder_video_rotary():
 
 def test_hs_builder_video_uav():
     # Сборка из данных коптера
-    hsb = HSBuilder(path_to_data='./test_data/copter',
-                    path_to_metadata='./test_data/copter/gps_2021-03-30.csv',
-                    data_type='imgs')
-    hsb.build(device_type='gaidel_uav', gaidel=True)
+    hsb = HSBuilder(path_to_data='./test_data/builder/copter',
+                    path_to_metadata='./test_data/builder/copter/gps_2021-03-30.csv',
+                    data_type='video')
+    hsb.build(principal_slices=40)
     hsi = hsb.get_hsi()
 
     # Проверка размерности ГСИ
@@ -87,3 +88,4 @@ def test_hs_builder_video_uav():
     plt.imshow(hsi.data[:, :, 20], cmap='gray')
     plt.show()
 # ----------------------------------------------------------------------------------------------------------------------
+
