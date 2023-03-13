@@ -2,6 +2,8 @@ from hs_builder import HSBuilder
 from matplotlib import pyplot as plt
 from hsi import HSImage
 
+from time import time
+
 test_wavelengths = [i for i in range(400, 650)]
 
 

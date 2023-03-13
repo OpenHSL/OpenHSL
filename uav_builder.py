@@ -3,8 +3,11 @@ import math
 import numpy as np
 import pandas as pd
 import itertools
+
+import sklearn.neighbors
 from sklearn import neighbors
-from tqdm import trange
+from typing import List, Tuple
+from time import time
 
 CSV_DELIMITER = ';'
 GPS_HYPERCAM_FRAME = "Hypercam frame"
@@ -65,7 +68,11 @@ def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str) -> np.ndarray
 
 
 # TODO interpolate doesn't use gps data, but inner computation. Define this more clearly
-def interpolate(cube: np.ndarray, latitude: list, longitude: list, rel_alt: list, angle: list) -> np.ndarray:
+def interpolate(cube: np.ndarray,
+                latitude: List,
+                longitude: List,
+                rel_alt: List,
+                angle: List) -> np.ndarray:
     """
         interpolate(cube, latitude, longitude, rel_alt, angle)
 
@@ -97,8 +104,10 @@ def interpolate(cube: np.ndarray, latitude: list, longitude: list, rel_alt: list
         
     """
     n, _, k = cube.shape
-    rel_alt = calculate_rel_alt(rel_alt, n)
-    latitude, longitude = calculate_lat_lon(latitude, longitude, rel_alt, angle, n)
+
+    rel_alt = calculate_rel_alt(rel_alt)
+    latitude, longitude = calculate_lat_lon(latitude, longitude, rel_alt, angle)
+
     x, y, z = coordinates_for_frame(cube, latitude, longitude, rel_alt, angle)
 
     model = knn_for_interpolate(x, y, z)
@@ -107,45 +116,43 @@ def interpolate(cube: np.ndarray, latitude: list, longitude: list, rel_alt: list
     nearest_dit, _ = model.kneighbors(test, n_neighbors=1, return_distance=True)
 
     # check if the nearest distance is greater than the limit
-    for i in range(prediction.shape[0]):
-        if nearest_dit[i, 0] > DISTANCE_LIMIT:
-            prediction[i, :] = np.zeros(k)
+    prediction[nearest_dit[:, 0] > DISTANCE_LIMIT, :] = np.zeros(k)
 
     prediction = prediction.reshape(m_target, n_target, k)
+
     return prediction
 # -------------------------------------------------------------------------------------------------------------------------------
 
 
-def calculate_rel_alt(rel_alt: list, n: int) -> list:
+def calculate_rel_alt(rel_alt: List) -> List:
     """
-        calculate_rel_alt(rel_alt, x)
+        calculate_rel_alt(rel_alt)
 
-            For every frame calculating the altitude in relation to the 
-            camera pitch
+            For every frame calculating the altitude in relation to the camera pitch
 
         Parameters:
         ------------
         rel_alt: list
             list of floats from metadata file described UAV altitude
-        n: int
-            nums of frames
 
         Returns:
         -----------
             updated list rel_alts
     """
-    for j in range(n):
-        rel_alt[j] /= COS_PITCH
-    return rel_alt
+
+    return [alt / COS_PITCH for alt in rel_alt]
 # -------------------------------------------------------------------------------------------------------------------------------
 
 
-def calculate_lat_lon(latitude: list, longitude: list, rel_alt: list, angle: list, n: int):
+def calculate_lat_lon(latitude: List[float],
+                      longitude: List[float],
+                      rel_alt: List[float],
+                      angle: List[float]):
     """
         calculate_lat_lon(latitude, longitude, rel_alt, angle)
 
             It calculates the position in 2D plane of the current frame
-            in relation camera pirch, rel_alt and angle.
+            in relation camera pitch, rel_alt and angle.
 
         Parameters:
         ------------------
@@ -166,14 +173,18 @@ def calculate_lat_lon(latitude: list, longitude: list, rel_alt: list, angle: lis
             updated list of longitude
 
     """
-    for j in range(n):
-        latitude[j] += rel_alt[j] * TAN_PITCH * math.cos(angle[j])
-        longitude[j] += rel_alt[j] * TAN_PITCH * math.sin(angle[j])
-    return (latitude, longitude)
+    latitude = [lat + alt * TAN_PITCH * math.cos(ang) for lat, alt, ang in zip(latitude, rel_alt, angle)]
+    longitude = [lon + alt * TAN_PITCH * math.sin(ang) for lon, alt, ang in zip(longitude, rel_alt, angle)]
+
+    return latitude, longitude
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def coordinates_for_frame(cube: np.ndarray, latitude: list, longitude: list, rel_alt: list, angle: list):
+def coordinates_for_frame(cube: np.ndarray,
+                          latitude: List[float],
+                          longitude: List[float],
+                          rel_alt: List[float],
+                          angle: List[float]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
         coordinates_for_frame(cube, latitude, longitude, rel_alt, angle)
             It calculates the coordinates in the frame width amount
@@ -203,28 +214,37 @@ def coordinates_for_frame(cube: np.ndarray, latitude: list, longitude: list, rel
             list z with shape(width of frame * nums of frame, height)
     """
     n, m, k = cube.shape
-    x = []
-    y = []
-    z = []
-    for j in range(n):
-        x_1, y_1 = move_point(latitude[j], longitude[j], angle[j] + PI_2, rel_alt[j] * CAMERA_TANGENT / 2.0)
-        x_2, y_2 = move_point(latitude[j], longitude[j], angle[j] - PI_2, rel_alt[j] * CAMERA_TANGENT / 2.0)
-        x.extend(np.linspace(x_1, x_2, m))
-        y.extend(np.linspace(y_1, y_2, m))
-        for index in range(m):
-            z.append(np.flip(cube[j, index, :]))
+
+    distance = np.array(rel_alt) * CAMERA_TANGENT / 2.0
+
+    np_lat = np.array(latitude)
+    np_lon = np.array(longitude)
+    np_ang = np.array(angle)
+
+    # left bound angles
+    angs_1 = np_ang + PI_2
+
+    # right bound angles
+    angs_2 = np_ang - PI_2
+
+    x_1 = np_lat + distance * np.cos(angs_1)
+    x_2 = np_lat + distance * np.cos(angs_2)
+
+    y_1 = np_lon + distance * np.sin(angs_1)
+    y_2 = np_lon + distance * np.sin(angs_2)
+
+    x = np.linspace(x_1, x_2, m).T.reshape((n * m))
+    y = np.linspace(y_1, y_2, m).T.reshape((n * m))
+
+    z = cube.reshape((n * m, k))
+
     return x, y, z
-# -------------------------------------------------------------------------------------------------------------------------------
-
-
-def move_point(latitude: float, longitude: float, angle: float, distance: float):
-    sin_a = math.sin(angle)
-    cos_a = math.cos(angle)
-    return latitude + distance * cos_a, longitude + distance * sin_a
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def knn_for_interpolate(x, y, z):
+def knn_for_interpolate(x: np.ndarray,
+                        y: np.ndarray,
+                        z: np.ndarray) -> neighbors.KNeighborsRegressor:
     """
         knn_for_interpolate(x, y, z)
 
@@ -239,7 +259,7 @@ def knn_for_interpolate(x, y, z):
         ----------
             The trained model
     """
-    model = neighbors.KNeighborsRegressor(n_neighbors=1)
+    model = neighbors.KNeighborsRegressor(n_neighbors=1, n_jobs=-1)
     data = np.stack((np.array(x), np.array(y))).T
     model.fit(data, z)
     return model
@@ -247,7 +267,7 @@ def knn_for_interpolate(x, y, z):
 
 
 # TODO: Maybe we should separate calculating test points and search m/n_targets?
-def generate_test_points(x: list, y: list):
+def generate_test_points(x: List, y: List) -> Tuple:
     """
         generate_test_points(x, y)
 
@@ -267,10 +287,9 @@ def generate_test_points(x: list, y: list):
             m_target and n_target: integers
                 for final resolution of hypercube
     """
-    x_min = np.min(x)
-    x_max = np.max(x)
-    y_min = np.min(y)
-    y_max = np.max(y)
+    x_min, x_max = np.min(x), np.max(x)
+    y_min, y_max = np.min(y), np.max(y)
+
     n_target = TARGET_RESOLUTION
     m_target = int(n_target * (y_max - y_min) / (x_max - x_min))
     test_points = list(itertools.product(np.linspace(x_min, x_max, n_target), np.linspace(y_min, y_max, m_target)))
@@ -280,3 +299,4 @@ def generate_test_points(x: list, y: list):
 
 def blur_image(img: np.ndarray) -> np.ndarray:
     return cv2.blur(img, BLUR_SHAPE)
+# ----------------------------------------------------------------------------------------------------------------------
