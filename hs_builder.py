@@ -1,7 +1,7 @@
 import numpy as np
 from hsi import HSImage
 from hs_raw_pb_data import RawData
-from gaidel_legacy import build_hypercube_by_videos
+from uav_builder import build_hypercube_by_videos
 from typing import Optional
 from utils import gaussian
 
