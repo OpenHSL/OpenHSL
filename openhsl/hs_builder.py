@@ -264,7 +264,8 @@ class HSBuilder:
               norm_rotation=False,
               barrel_dist_norm=False,
               light_norm=False,
-              roi=False):
+              roi=False,
+              flip_wavelengths=False):
         """
             Creates HSI from device-data
         """
@@ -296,7 +297,8 @@ class HSBuilder:
         data = np.array(preproc_frames)
         if self.path_to_metadata:
             data = build_hypercube_by_videos(data, self.path_to_metadata)
-            
+        if flip_wavelengths:
+            np.flip(data, axis=2)
         self.hsi = HSImage(hsi=data, wavelengths=None)
     # ------------------------------------------------------------------------------------------------------------------
 
