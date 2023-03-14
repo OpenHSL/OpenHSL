@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Union
-from openhsl.hsi import HSImage
+from hs_mask import HSMask
+from hsi import HSImage
 from scipy.interpolate import interp1d
 
 
@@ -73,7 +74,7 @@ def get_band_numbers(w_l: int, w_data: Union[list, np.ndarray]) -> int:
         return index_new_wl
 
 
-def ndvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
+def ndvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> HSMask and np.ndarray:
     """
     ndvi_mask(cube, w_data)
         
@@ -91,13 +92,13 @@ def ndvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] 
                 
         Returns 
         ------
-            np.ndarray        
+            HSMask, np.ndarray        
     """
 
     if type(cube) == HSImage:
         cube_data = cube.data
         w_data = cube.wavelengths
-
+ 
     elif type(cube) == np.ndarray:
         cube_data = cube
         
@@ -114,10 +115,12 @@ def ndvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] 
     mask = (nir - red) / (nir + red) + 1
     mask[nir + red == 0] = 0
 
-    return normalization(mask)
+    index_mask = HSMask(mask, None)
+
+    return index_mask, normalization(mask)
 
 
-def dvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
+def dvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> HSMask and np.ndarray:
     """
     dvi_mask(cube, w_data)
        
@@ -134,7 +137,7 @@ def dvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] =
 
         Returns 
         ------
-            np.ndarray        
+            HSMask, np.ndarray        
     """
 
     if type(cube) == HSImage:
@@ -155,11 +158,12 @@ def dvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] =
     channel_800 = cube_data[:, :, band_numbers_800]
 
     mask = channel_800 - channel_700
+    index_mask = HSMask(mask, None)
 
-    return normalization(mask)
+    return index_mask, normalization(mask)
 
 
-def osavi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
+def osavi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> HSMask and np.ndarray:
     """
     osavi_mask(cube, w_data)
     
@@ -176,7 +180,7 @@ def osavi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
 
         Returns 
         ------
-            np.ndarray        
+            HSMask, np.ndarray        
     """
 
     if type(cube) == HSImage:
@@ -199,10 +203,12 @@ def osavi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
     mask = 1.16 * (channel_800 - channel_670) / (channel_800 + channel_670 + 0.16)
     mask[channel_800 + channel_670 + 0.16 == 0] = 0
 
-    return normalization(mask)
+    index_mask = HSMask(mask, None)
+    
+    return index_mask, normalization(mask)
 
 
-def sr_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
+def sr_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> HSMask and np.ndarray:
     """
     sr_mask(cube, w_data)
         
@@ -218,7 +224,7 @@ def sr_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = 
 
         Returns 
         ------
-            np.ndarray        
+            HSMask, np.ndarray        
     """
 
     if type(cube) == HSImage:
@@ -241,10 +247,12 @@ def sr_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = 
     mask = channel_800 / channel_680
     mask[channel_680 == 0] = 0
 
-    return normalization(mask)
+    index_mask = HSMask(mask, None)
+    
+    return index_mask, normalization(mask)
 
 
-def wdrvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
+def wdrvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> HSMask and np.ndarray:
     """
     wdrvi_mask(cube, w_data)
         
@@ -260,7 +268,7 @@ def wdrvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
 
         Returns 
         ------
-            np.ndarray        
+            HSMask, np.ndarray        
     """
 
     if type(cube) == HSImage:
@@ -283,10 +291,12 @@ def wdrvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
     mask = (0.05 * channel_800 - channel_680) / (0.05 * channel_800 + channel_680)
     mask[0.05 * channel_800 + channel_680 == 0] = 0
 
-    return normalization(mask)
+    index_mask = HSMask(mask, None)
+
+    return index_mask, normalization(mask)
 
 
-def mtvi2_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
+def mtvi2_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> HSMask and np.ndarray:
     """
     mtvi2_mask(cube, w_data)
        
@@ -302,7 +312,7 @@ def mtvi2_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
 
         Returns 
         ------
-            np.ndarray        
+            HSMask, np.ndarray        
     """
 
     if type(cube) == HSImage:
@@ -330,7 +340,9 @@ def mtvi2_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
     mask = a * b
     mask[np.isnan(mask) == True] = 0
 
-    return normalization(mask)
+    index_mask = HSMask(mask, None)
+
+    return index_mask, normalization(mask)
 
 
 def simple_hsi_to_rgb(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
@@ -355,25 +367,26 @@ def simple_hsi_to_rgb(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.n
     if type(cube) == HSImage:
         cube_data = cube.data
         w_data = cube.wavelengths
-
+        
     elif type(cube) == np.ndarray:
         cube_data = cube
         
 
-    wl_440 = 440
-    wl_550 = 550
-    wl_640 = 640
-
+    wl_440 = 470
+    wl_550 = 540
+    wl_640 = 650
+    #print('simple_hsi_to_rgb w_data: ', w_data)
     blue_band_numbers = get_band_numbers(wl_440, w_data)
     green_band_numbers = get_band_numbers(wl_550, w_data)
     red_band_numbers = get_band_numbers(wl_640, w_data)
 
+    print('bgr: ', blue_band_numbers, green_band_numbers, red_band_numbers)
+
     blue = cube_data[:, :, blue_band_numbers]
     green = cube_data[:, :, green_band_numbers]
     red = cube_data[:, :, red_band_numbers]
-
-    return np.dstack((blue, green, red))
-
+    
+    return np.dstack((blue.astype(np.uint8), green.astype(np.uint8), red.astype(np.uint8)))
 
 def XYZ2sRGB_exgamma(XYZ):
     """
