@@ -56,7 +56,8 @@ class HSBuilder:
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def __norm_frame_camera_illumination(frame: np.ndarray, light_coeff: np.ndarray) -> np.ndarray:
+    def __norm_frame_camera_illumination(frame: np.ndarray,
+                                         light_coeff: np.ndarray) -> np.ndarray:
         """
         __norm_frame_camer_illumination(frame, light_coeff)
 
@@ -225,7 +226,8 @@ class HSBuilder:
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def __principal_slices(frame: np.ndarray, nums_bands: int) -> np.ndarray:
+    def __principal_slices(frame: np.ndarray,
+                           nums_bands: int) -> np.ndarray:
         """
         __principal_slices(frame, nums_bands)
 
@@ -298,7 +300,7 @@ class HSBuilder:
         if self.path_to_metadata:
             data = build_hypercube_by_videos(data, self.path_to_metadata)
         if flip_wavelengths:
-            np.flip(data, axis=2)
+            data = np.flip(data, axis=2)
         self.hsi = HSImage(hsi=data, wavelengths=None)
     # ------------------------------------------------------------------------------------------------------------------
 

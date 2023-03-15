@@ -52,11 +52,18 @@ class HSImage:
         """
             Inits HSI object.
 
-            Raises
-            ------
         """
         self.data = hsi
         self.wavelengths = wavelengths
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def rot90(self):
+        """
+        rot90()
+
+            Rotates for 90 degree hsi built-in counterclockwise
+        """
+        self.data = np.rot90(self.data, axes=(0, 1))
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_metadata(self,
@@ -75,13 +82,13 @@ class HSImage:
         """
         save_metadata(path_to_file)
 
-        Parameters
-        ----------
-        path_to_file: str
-            path to json file
+            Parameters
+            ----------
+            path_to_file: str
+                path to json file
 
-        Returns
-        -------
+            Returns
+            -------
 
         """
         if not self.wavelengths:
@@ -254,7 +261,7 @@ class HSImage:
         """
         with h5py.File(path_to_file, 'w') as f:
             f.create_dataset(h5_key, data=self.data)
-            # f.create_dataset("wavelengths", data=self.wavelengths)
+
         path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
         self.save_metadata(path_to_meta)
     # ------------------------------------------------------------------------------------------------------------------
