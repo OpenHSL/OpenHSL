@@ -59,8 +59,8 @@ class HSImage:
         self.wavelengths = wavelengths
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_wavelengths(self,
-                         path_to_file: str):
+    def load_metadata(self,
+                      path_to_file: str):
         if os.path.exists(path_to_file):
             with open(path_to_file, 'r') as json_file:
                 data = json.load(json_file)
@@ -70,8 +70,23 @@ class HSImage:
             self.wavelengths = []
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_wavelengths(self,
-                         path_to_file: str):
+    def save_metadata(self,
+                      path_to_file: str):
+        """
+        save_metadata(path_to_file)
+
+        Parameters
+        ----------
+        path_to_file: str
+            path to json file
+
+        Returns
+        -------
+
+        """
+        if not self.wavelengths:
+            print('Wavelengths are empty! Save as empy list')
+            self.wavelengths = []
         data = {"wavelengths": list(self.wavelengths)}
         with open(path_to_file, 'w') as outfile:
             outfile.write(json.dumps(data))
@@ -98,8 +113,8 @@ class HSImage:
         """
         self.data = loadmat(path_to_file)[mat_key]
 
-        path_to_meta = splitext(path_to_file)[0] + '.json'
-        self.load_wavelengths(path_to_meta)
+        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
+        self.load_metadata(path_to_meta)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_tiff(self,
@@ -134,8 +149,8 @@ class HSImage:
         """
         self.data = np.load(path_to_file)
 
-        path_to_meta = splitext(path_to_file)[0] + '.json'
-        self.load_wavelengths(path_to_meta)
+        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
+        self.load_metadata(path_to_meta)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_h5(self,
@@ -155,8 +170,8 @@ class HSImage:
         """
         self.data = h5py.File(path_to_file, 'r')[h5_key]
 
-        path_to_meta = splitext(path_to_file)[0] + '.json'
-        self.load_wavelengths(path_to_meta)
+        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
+        self.load_metadata(path_to_meta)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_layer_images(self,
@@ -202,8 +217,8 @@ class HSImage:
         temp_dict = {mat_key: self.data}
         savemat(path_to_file, temp_dict)
 
-        path_to_meta = splitext(path_to_file)[0] + '.json'
-        self.save_wavelengths(path_to_meta)
+        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
+        self.save_metadata(path_to_meta)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_tiff(self,
@@ -240,8 +255,8 @@ class HSImage:
         with h5py.File(path_to_file, 'w') as f:
             f.create_dataset(h5_key, data=self.data)
             # f.create_dataset("wavelengths", data=self.wavelengths)
-        path_to_meta = splitext(path_to_file)[0] + '.json'
-        self.save_wavelengths(path_to_meta)
+        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
+        self.save_metadata(path_to_meta)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_npy(self,
@@ -257,8 +272,8 @@ class HSImage:
                 Path to saving file
         """
         np.save(path_to_file, self.data)
-        path_to_meta = splitext(path_to_file)[0] + '.json'
-        self.save_wavelengths(path_to_meta)
+        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
+        self.save_metadata(path_to_meta)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_images(self,
