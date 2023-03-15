@@ -1,10 +1,13 @@
+import os.path
+
 import h5py
 import numpy as np
 from os import listdir, mkdir
-from os.path import isdir
+from os.path import isdir, splitext
 from PIL import Image
 from scipy.io import loadmat, savemat
 from typing import Optional, List
+import json
 
 
 class HSImage:
@@ -44,8 +47,8 @@ class HSImage:
     """
 
     def __init__(self,
-                 hsi: Optional[np.ndarray],
-                 wavelengths: Optional[List]):
+                 hsi: Optional[np.ndarray] = None,
+                 wavelengths: Optional[List] = None):
         """
             Inits HSI object.
 
@@ -56,16 +59,37 @@ class HSImage:
         self.wavelengths = wavelengths
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_wavelengths(self,
-                         path_to_file: str):
-        # TODO
-        return []
+    def load_metadata(self,
+                      path_to_file: str):
+        if os.path.exists(path_to_file):
+            with open(path_to_file, 'r') as json_file:
+                data = json.load(json_file)
+            self.wavelengths = data['wavelengths']
+        else:
+            print("Metainfo file does not exist!")
+            self.wavelengths = []
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_wavelengths(self,
-                         path_to_file: str):
-        # TODO
-        pass
+    def save_metadata(self,
+                      path_to_file: str):
+        """
+        save_metadata(path_to_file)
+
+        Parameters
+        ----------
+        path_to_file: str
+            path to json file
+
+        Returns
+        -------
+
+        """
+        if not self.wavelengths:
+            print('Wavelengths are empty! Save as empy list')
+            self.wavelengths = []
+        data = {"wavelengths": list(self.wavelengths)}
+        with open(path_to_file, 'w') as outfile:
+            outfile.write(json.dumps(data))
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_mat(self,
@@ -89,13 +113,8 @@ class HSImage:
         """
         self.data = loadmat(path_to_file)[mat_key]
 
-        try:
-            wavelengths = list(loadmat(path_to_file)['wavelengths'][0])
-        except:
-            print('There isn\'t info about wavelengths')
-            wavelengths = []
-
-        self.wavelengths = wavelengths
+        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
+        self.load_metadata(path_to_meta)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_tiff(self,
@@ -129,7 +148,9 @@ class HSImage:
                 Path to .npy file
         """
         self.data = np.load(path_to_file)
-        self.wavelengths = self.load_wavelengths(path_to_file)
+
+        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
+        self.load_metadata(path_to_meta)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_h5(self,
@@ -148,12 +169,9 @@ class HSImage:
                 Key for field in .h5 file as dict object
         """
         self.data = h5py.File(path_to_file, 'r')[h5_key]
-        try:
-            wavelengths = list(h5py.File(path_to_file, 'r')['wavelengths'])
-        except:
-            wavelengths = []
 
-        self.wavelengths = wavelengths
+        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
+        self.load_metadata(path_to_meta)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_layer_images(self,
@@ -168,14 +186,17 @@ class HSImage:
             path_to_dir: str
                 Path to directory with images
         """
+        if not os.path.exists(path_to_dir):
+            os.mkdir(path_to_dir)
+
         images_list = listdir(path_to_dir)
         hsi = []
+
         for image_name in images_list:
             img = Image.open(f'{path_to_dir}/{image_name}').convert("L")
             hsi.append(np.array(img))
 
         self.data = np.array(hsi).transpose((1, 2, 0))
-        self.wavelengths = self.load_wavelengths('')
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_mat(self,
@@ -193,8 +214,11 @@ class HSImage:
             mat_key: str
                 Key for dictionary
         """
-        temp_dict = {mat_key: self.data, 'wavelengths': self.wavelengths}
+        temp_dict = {mat_key: self.data}
         savemat(path_to_file, temp_dict)
+
+        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
+        self.save_metadata(path_to_meta)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_tiff(self,
@@ -230,7 +254,9 @@ class HSImage:
         """
         with h5py.File(path_to_file, 'w') as f:
             f.create_dataset(h5_key, data=self.data)
-            f.create_dataset("wavelengths", data=self.wavelengths)
+            # f.create_dataset("wavelengths", data=self.wavelengths)
+        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
+        self.save_metadata(path_to_meta)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_npy(self,
@@ -246,7 +272,8 @@ class HSImage:
                 Path to saving file
         """
         np.save(path_to_file, self.data)
-        self.save_wavelengths(path_to_file)
+        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
+        self.save_metadata(path_to_meta)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_images(self,
