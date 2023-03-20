@@ -76,7 +76,9 @@ class HSBuilder:
                 np.ndarray
         """
         if frame.shape != light_coeff.shape:
-            raise Exception("frame shape and light_coeff shape must be equal!")
+            raise Exception("frame shape and light_coeff shape must be equal!\n",
+                            f"frame shape is: {frame.shape}\n",
+                            f'light shape is: {light_coeff.shape}\n')
 
         return np.multiply(frame, light_coeff)
     # ------------------------------------------------------------------------------------------------------------------
@@ -278,6 +280,7 @@ class HSBuilder:
         light_coeff = cv2.imread('./test_data/builder/micro_light_source.png', 0)
         light_coeff = HSBuilder.__norm_rotation_frame(light_coeff)
         light_coeff = HSBuilder.get_roi(frame=light_coeff)
+        light_coeff = HSBuilder.__principal_slices(light_coeff, principal_slices)
         light_coeff = 1 / (light_coeff / np.max(light_coeff))
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
