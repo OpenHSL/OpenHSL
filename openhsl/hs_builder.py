@@ -55,6 +55,7 @@ class HSBuilder:
         self.frame_iterator = RawData(path_to_data=path_to_data, type_data=data_type)
     # ------------------------------------------------------------------------------------------------------------------
 
+    # TODO move?
     @staticmethod
     def __norm_frame_camera_illumination(frame: np.ndarray,
                                          light_coeff: np.ndarray) -> np.ndarray:
@@ -83,6 +84,7 @@ class HSBuilder:
         return np.multiply(frame, light_coeff)
     # ------------------------------------------------------------------------------------------------------------------
 
+    # TODO move?
     @staticmethod
     def __get_slit_angle(frame: np.ndarray) -> float:
         """
@@ -107,6 +109,7 @@ class HSBuilder:
         return ang
     # ------------------------------------------------------------------------------------------------------------------
 
+    # TODO move?
     @staticmethod
     def __norm_rotation_frame(frame: np.ndarray) -> np.ndarray:
         """
@@ -135,6 +138,7 @@ class HSBuilder:
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
+    # TODO implementation will move into device
     @staticmethod
     def __norm_barrel_distortion(frame: np.ndarray) -> np.ndarray:
         """
@@ -205,6 +209,7 @@ class HSBuilder:
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
+    # TODO implementation will move into device
     @staticmethod
     def get_roi(frame: np.ndarray) -> np.ndarray:
         """
@@ -227,6 +232,7 @@ class HSBuilder:
         return frame[x1: x2, left_bound_spectrum: right_bound_spectrum].T
     # ------------------------------------------------------------------------------------------------------------------
 
+    # TODO rename
     @staticmethod
     def __principal_slices(frame: np.ndarray,
                            nums_bands: int) -> np.ndarray:
@@ -293,10 +299,10 @@ class HSBuilder:
                                                       barrel_dist_norm=barrel_dist_norm)
             if roi:
                 frame = HSBuilder.get_roi(frame=frame)
-            if principal_slices:
-                frame = self.__principal_slices(frame, principal_slices)
             if light_norm:
                 frame = self.__norm_frame_camera_illumination(frame=frame, light_coeff=light_coeff)
+            if principal_slices:
+                frame = self.__principal_slices(frame, principal_slices)
             preproc_frames.append(frame)
             
         data = np.array(preproc_frames)
