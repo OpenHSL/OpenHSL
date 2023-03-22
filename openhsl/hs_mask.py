@@ -37,12 +37,135 @@ class HSMask:
 
     def __init__(self,
                  mask: Optional[np.array],
-                 label_class: Optional[Dict]):
-        self.data = mask
-        self.label_class = label_class
-        self.n_classes = len(np.unique(mask))
-        
+                 label_class: Optional[Dict] = None):
+
+        if HSMask.__is_correct_2d_mask(mask):
+            print("got 2d mask")
+            self.data = HSMask.convert_2d_to_3d_mask(mask)
+
+        elif HSMask.__is_correct_3d_mask(mask):
+            print("got 3d mask")
+            self.data = mask
+        else:
+            print("Void data or incorrect data. Set data and label classes to None and None")
+            self.data = None
+
+        if np.any(self.data) and HSMask.__is_correct_class_dict(d=label_class, class_count=self.data.shape[-1]):
+            self.label_class = label_class
+        else:
+            print("Void data or incorrect data. Set label classes to None")
+            self.label_class = None
+
+        self.n_classes = self.data.shape[-1]
     # ------------------------------------------------------------------------------------------------------------------
+
+    def __getitem__(self, item):
+        if item < len(self):
+            return self.data[:, :, item]
+        else:
+            raise IndexError(f"{item} is too much for {len(self)} channels in hsi")
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def __len__(self):
+        return self.data.shape[-1]
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def get_2d(self):
+        return HSMask.convert_3d_to_2d_mask(self.data)
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def get_3d(self):
+        return self.data
+    # ------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def __is_correct_2d_mask(mask: np.ndarray) -> bool:
+        """
+        __is_correct_2d_mask(mask)
+            2D mask must have class values as 0,1,2...
+            minimal is 0 and 1 (binary image)
+
+            Parameters
+            ----------
+            mask: np.ndarray
+
+            Returns
+            -------
+
+        """
+        # input mask must have 2 dimensions
+        if len(mask.shape) > 2:
+            return False
+
+        # data type in mask must be integer
+        if mask.dtype not in ["int8", "int16", "int32", "int64"]:
+            return False
+
+        # number of classes in mask must be as 0,1,2... not 1,2... not 0,2,5 ...
+        if np.all(np.unique(mask) != np.array(range(0, len(np.unique(mask))))):
+            return False
+
+        return True
+    # ------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def __is_correct_3d_mask(mask: np.ndarray) -> bool:
+        """
+        __is_correct_3d_mask(mask)
+            3D mask must have class values as binary image in N-layers
+            Each layer must be binary!
+            minimal is two-layer image
+            Parameters
+            ----------
+            mask
+
+            Returns
+            -------
+        """
+        # check 3D-condition and layer (class) count
+        if len(mask.shape) != 3 and mask.shape[-1] < 2:
+            return False
+
+        # check each layer that it's binary
+        for layer in np.transpose(mask, (2, 0, 1)):
+            if np.unique(layer) != np.array([0, 1]):
+                return False
+
+        return True
+    # ------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def __is_correct_class_dict(d: dict, class_count: int) -> bool:
+
+        if not d:
+            return False
+
+        if len(d) != class_count and np.all(np.array(d.keys()) != np.array(range(0, class_count))):
+            return False
+
+        return True
+    # ------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def convert_2d_to_3d_mask(mask: np.ndarray) -> np.ndarray:
+        mask_3d = []
+        for cl in np.unique(mask):
+
+            mask_3d.append((mask == cl).astype('uint32'))
+        mask_3d = np.array(mask_3d)
+
+        return np.transpose(mask_3d, (1, 2, 0))
+    # ------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def convert_3d_to_2d_mask(mask: np.ndarray) -> np.ndarray:
+        mask_2d = np.zeros(mask.shape[:2])
+        for cl, layer in enumerate(np.transpose(mask, (2, 0, 1))):
+            mask_2d[layer == 1] = cl
+
+        return mask_2d.astype('uint32')
+    # ------------------------------------------------------------------------------------------------------------------
+
     def load_mask(self,
                   path_to_file: str,
                   mat_key: str = None,
@@ -52,7 +175,7 @@ class HSMask:
         load_mask(path_to_file, mat_key, h5_key)
 
             Reads information from a file,
-            converting it to the numpy.array format
+            converting it to the numpy.ndarray format
 
             input data shape:
             ____________
@@ -71,6 +194,7 @@ class HSMask:
                 Key for field in .h5 file as 5h object
 
         """
+
         def load_img(path_to_file: str):
             """
             ____________
@@ -82,14 +206,16 @@ class HSMask:
             path_to_file: str
                 Path to file
             """
-            hsi = []
             img = Image.open(path_to_file).convert("L")
-            hsi.append(np.array(img))
-            return np.array(hsi).transpose((1, 2, 0))
+            img = np.array(img)
+            if HSMask.__is_correct_2d_mask(img):
+                return HSMask.convert_2d_to_3d_mask(img)
+            else:
+                raise ValueError("Not supported image type")
 
         _, file_extension = os.path.splitext(path_to_file)
 
-        if file_extension in ['.jpg','.jpeg','.bmp','.png']:
+        if file_extension in ['.jpg', '.jpeg', '.bmp', '.png']:
             '''
             loading a mask from images
             '''
@@ -99,22 +225,41 @@ class HSMask:
             '''
             loading a mask from numpy file
             '''
-            self.data = np.load(path_to_file)
+            tmp_data = np.load(path_to_file)
+            if HSMask.__is_correct_2d_mask(tmp_data):
+                self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
+            elif HSMask.__is_correct_3d_mask(tmp_data):
+                self.data = tmp_data
+            else:
+                raise ValueError("Unsupported type of mask")
 
         elif file_extension == '.mat':
             '''
             loading a mask from mat file
             '''
-            self.data = loadmat(path_to_file)[mat_key]
+            tmp_data = loadmat(path_to_file)[mat_key]
+            if HSMask.__is_correct_2d_mask(tmp_data):
+                self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
+            elif HSMask.__is_correct_3d_mask(tmp_data):
+                self.data = tmp_data
+            else:
+                raise ValueError("Unsupported type of mask")
 
         elif file_extension == '.h5':
             '''
             loading a mask from h5 file
             '''
-            self.data = h5py.File(path_to_file, 'r')[h5_key]
+            tmp_data = h5py.File(path_to_file, 'r')[h5_key]
+            if HSMask.__is_correct_2d_mask(tmp_data):
+                self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
+            elif HSMask.__is_correct_3d_mask(tmp_data):
+                self.data = tmp_data
+            else:
+                raise ValueError("Unsupported type of mask")
 
         # updates number of classes after loading mask
         self.n_classes = len(np.unique(self.data))
+        self.label_class = {}
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_mat(self,
@@ -206,5 +351,3 @@ class HSMask:
     def save_class_info(self):
         pass
     # ------------------------------------------------------------------------------------------------------------------
-
-

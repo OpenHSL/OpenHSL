@@ -57,6 +57,17 @@ class HSImage:
         self.wavelengths = wavelengths
     # ------------------------------------------------------------------------------------------------------------------
 
+    def __getitem__(self, item):
+        if item < len(self):
+            return self.data[:, :, item]
+        else:
+            raise IndexError(f"{item} is too much for {len(self)} channels in hsi")
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def __len__(self):
+        return self.data.shape[-1]
+    # ------------------------------------------------------------------------------------------------------------------
+
     def rot90(self):
         """
         rot90()
