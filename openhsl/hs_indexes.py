@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Union
+from typing import Union, Tuple
 from openhsl.hs_mask import HSMask
 from openhsl.hsi import HSImage
 from scipy.interpolate import interp1d
@@ -26,6 +26,7 @@ def normalization(mask: np.ndarray) -> np.ndarray:
 def neighbor_el(l: list, el: float) -> float:
     """
     neighbor_el(l, el)
+
         Return the closest element from list to given element
 
         Parameters
@@ -46,13 +47,11 @@ def get_band_numbers(w_l: int, w_data: Union[list, np.ndarray]) -> int:
     get_band_numbers(w_l, w_data)
 
         Returns the required channel value in the hyperspectral image
+
         Parameters
         ----------
-        left_border: int
-           left border in nm
-
-        right_border: int
-            the right boundary in nm
+        w_l: int
+           the desired wavelength (nm)
 
         w_data: list or np.ndarray
             list of wavelengths
@@ -74,7 +73,52 @@ def get_band_numbers(w_l: int, w_data: Union[list, np.ndarray]) -> int:
         return index_new_wl
 
 
-def ndvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> HSMask and np.ndarray:
+def get_hypercube_and_wavelength(cube: Union[HSImage, np.ndarray], 
+             wave_data: Union[list, np.ndarray] = None) -> Tuple[np.ndarray, list]:
+    """
+    get_hypercube_and_wavelength(cube, wave_data)
+
+        Returns hypercube and wavelengths, determines priority
+
+        Parameters
+        ----------
+        cube: HSImage or np.ndarray
+           hyperspectral image
+
+        w_data: list or np.ndarray
+            list of hyperspectral images wavelengths
+
+        Returns 
+        ------
+            np.ndarray, list
+    """
+
+    w_data = None
+
+    if isinstance(cube, HSImage):
+        cube_data = cube.data
+        if cube.wavelengths:
+            w_data = cube.wavelengths
+    
+    elif isinstance(cube, np.ndarray):
+        cube_data = cube
+    else:
+        raise ValueError("Unvailable type of HSI")
+
+    if np.any(wave_data):
+        w_data = list(wave_data) 
+        
+    if not w_data:
+        raise ValueError("Not info about wavelengths")
+
+    if type(w_data) != list:
+        w_data = list(w_data)
+
+    return cube_data, w_data
+    
+
+def ndvi_mask(cube: Union[HSImage, np.ndarray], 
+              wave_data: Union[list, np.ndarray] = None) -> Tuple[HSMask, np.ndarray]:
     """
     ndvi_mask(cube, w_data)
         
@@ -95,13 +139,7 @@ def ndvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] 
             HSMask, np.ndarray        
     """
 
-    if type(cube) == HSImage:
-        cube_data = cube.data
-        w_data = cube.wavelengths
- 
-    elif type(cube) == np.ndarray:
-        cube_data = cube
-        
+    cube_data, w_data = get_hypercube_and_wavelength(cube, wave_data)
 
     wl_680 = 680
     wl_800 = 800
@@ -120,7 +158,8 @@ def ndvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] 
     return index_mask, normalization(mask)
 
 
-def dvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> HSMask and np.ndarray:
+def dvi_mask(cube: Union[HSImage, np.ndarray], 
+             wave_data: Union[list, np.ndarray] = None) -> Tuple[HSMask, np.ndarray]:
     """
     dvi_mask(cube, w_data)
        
@@ -140,13 +179,7 @@ def dvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] =
             HSMask, np.ndarray        
     """
 
-    if type(cube) == HSImage:
-        cube_data = cube.data
-        w_data = cube.wavelengths
-
-    elif type(cube) == np.ndarray:
-        cube_data = cube
-        
+    cube_data, w_data = get_hypercube_and_wavelength(cube, wave_data)
 
     wl_700 = 700
     wl_800 = 800
@@ -163,7 +196,7 @@ def dvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] =
     return index_mask, normalization(mask)
 
 
-def osavi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> HSMask and np.ndarray:
+def osavi_mask(cube: Union[HSImage, np.ndarray], wave_data: Union[list, np.ndarray] = None) -> Tuple[HSMask, np.ndarray]:
     """
     osavi_mask(cube, w_data)
     
@@ -183,13 +216,7 @@ def osavi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
             HSMask, np.ndarray        
     """
 
-    if type(cube) == HSImage:
-        cube_data = cube.data
-        w_data = cube.wavelengths
-
-    elif type(cube) == np.ndarray:
-        cube_data = cube
-        
+    cube_data, w_data = get_hypercube_and_wavelength(cube, wave_data)
 
     wl_670 = 670
     wl_800 = 800
@@ -208,7 +235,7 @@ def osavi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
     return index_mask, normalization(mask)
 
 
-def sr_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> HSMask and np.ndarray:
+def sr_mask(cube: Union[HSImage, np.ndarray], wave_data: Union[list, np.ndarray] = None) -> Tuple[HSMask, np.ndarray]:
     """
     sr_mask(cube, w_data)
         
@@ -227,13 +254,7 @@ def sr_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = 
             HSMask, np.ndarray        
     """
 
-    if type(cube) == HSImage:
-        cube_data = cube.data
-        w_data = cube.wavelengths
-
-    elif type(cube) == np.ndarray:
-        cube_data = cube
-       
+    cube_data, w_data = get_hypercube_and_wavelength(cube, wave_data)  
 
     wl_680 = 680
     wl_800 = 800
@@ -252,7 +273,7 @@ def sr_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = 
     return index_mask, normalization(mask)
 
 
-def wdrvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> HSMask and np.ndarray:
+def wdrvi_mask(cube: Union[HSImage, np.ndarray], wave_data: Union[list, np.ndarray] = None) -> Tuple[HSMask, np.ndarray]:
     """
     wdrvi_mask(cube, w_data)
         
@@ -271,13 +292,7 @@ def wdrvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
             HSMask, np.ndarray        
     """
 
-    if type(cube) == HSImage:
-        cube_data = cube.data
-        w_data = cube.wavelengths
-
-    elif type(cube) == np.ndarray:
-        cube_data = cube
-        
+    cube_data, w_data = get_hypercube_and_wavelength(cube, wave_data)
 
     wl_680 = 680
     wl_800 = 800
@@ -296,7 +311,7 @@ def wdrvi_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
     return index_mask, normalization(mask)
 
 
-def mtvi2_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> HSMask and np.ndarray:
+def mtvi2_mask(cube: Union[HSImage, np.ndarray], wave_data: Union[list, np.ndarray] = None) -> Tuple[HSMask, np.ndarray]:
     """
     mtvi2_mask(cube, w_data)
        
@@ -307,7 +322,7 @@ def mtvi2_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
         cube: HSImage or np.ndarray
            hyperspectral image
 
-        w_data: list or np.ndarray
+        wave_data: list or np.ndarray
             list of hyperspectral images wavelengths
 
         Returns 
@@ -315,13 +330,7 @@ def mtvi2_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
             HSMask, np.ndarray        
     """
 
-    if type(cube) == HSImage:
-        cube_data = cube.data
-        w_data = cube.wavelengths
-
-    elif type(cube) == np.ndarray:
-        cube_data = cube
-        
+    cube_data, w_data = get_hypercube_and_wavelength(cube, wave_data)   
 
     wl_550 = 550
     wl_670 = 670
@@ -345,9 +354,10 @@ def mtvi2_mask(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray]
     return index_mask, normalization(mask)
 
 
-def simple_hsi_to_rgb(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.ndarray] = False) -> np.ndarray:
+def simple_hsi_to_rgb(cube: Union[HSImage, np.ndarray], 
+                      wave_data: Union[list, np.ndarray] = None) -> np.ndarray:
     """
-    hsi_for_rgb(cube, w_data)
+    simple_hsi_to_rgb(cube, w_data)
 
         Return rgb-image from hyperspectral image
         
@@ -356,7 +366,7 @@ def simple_hsi_to_rgb(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.n
         cube: HSImage or np.ndarray
            hyperspectral image
 
-        w_data: list or np.ndarray
+        wave_data: list or np.ndarray
             list of hyperspectral images wavelengths
 
         Returns 
@@ -364,29 +374,22 @@ def simple_hsi_to_rgb(cube: Union[HSImage, np.ndarray], w_data: Union[list, np.n
             np.ndarray        
     """
 
-    if type(cube) == HSImage:
-        cube_data = cube.data
-        w_data = cube.wavelengths
-        
-    elif type(cube) == np.ndarray:
-        cube_data = cube
-        
+    cube_data, w_data = get_hypercube_and_wavelength(cube, wave_data)
 
     wl_440 = 470
     wl_550 = 540
     wl_640 = 650
-    #print('simple_hsi_to_rgb w_data: ', w_data)
+    
     blue_band_numbers = get_band_numbers(wl_440, w_data)
     green_band_numbers = get_band_numbers(wl_550, w_data)
     red_band_numbers = get_band_numbers(wl_640, w_data)
-
-    print('bgr: ', blue_band_numbers, green_band_numbers, red_band_numbers)
 
     blue = cube_data[:, :, blue_band_numbers]
     green = cube_data[:, :, green_band_numbers]
     red = cube_data[:, :, red_band_numbers]
     
     return np.dstack((blue.astype(np.uint8), green.astype(np.uint8), red.astype(np.uint8)))
+
 
 def XYZ2sRGB_exgamma(XYZ):
     """
@@ -418,10 +421,10 @@ def XYZ2sRGB_exgamma(XYZ):
     return sRGB
 
 
-
 def hsi_to_rgb(cube: Union[HSImage, np.ndarray], 
-               w_data: Union[list, np.ndarray], 
-               illum_coef: np.ndarray, xyzbar: np.ndarray) -> np.ndarray: 
+               wave_data: Union[list, np.ndarray], 
+               illum_coef: np.ndarray, 
+               xyzbar: np.ndarray) -> np.ndarray: 
     """
     hsi_to_rgb(cube, w_data, illum_coef, xyzbar)
 
@@ -432,7 +435,7 @@ def hsi_to_rgb(cube: Union[HSImage, np.ndarray],
         cube: HSImage or np.ndarray
             hyperspectral image
 
-        w_data: list or np.ndarray
+        wave_data: list or np.ndarray
             list of hyperspectral images wavelengths
 
         illum_coef: np.ndarray
@@ -447,14 +450,7 @@ def hsi_to_rgb(cube: Union[HSImage, np.ndarray],
 
     """
     
-    if type(cube) == HSImage:
-        cube_data = cube.data
-    
-    elif type(cube) == np.ndarray:
-        cube_data = cube
-    
-    if type(cube) != list:
-        w_data = list(w_data)
+    cube_data, w_data = get_hypercube_and_wavelength(cube, wave_data)
 
     #wavelengths_visible_light_range
     wvlr = list(np.linspace(400, 720, 33))
@@ -471,7 +467,6 @@ def hsi_to_rgb(cube: Union[HSImage, np.ndarray],
 
     r, c, w = new_cube.shape
     radiances = np.reshape(new_cube, (r * c, w))
-    radiances.shape
 
     xyzbar_0 = xyzbar[:, 0]
     xyzbar_1 = xyzbar[:, 1]
@@ -494,7 +489,7 @@ def hsi_to_rgb(cube: Union[HSImage, np.ndarray],
     RGB = XYZ2sRGB_exgamma(XYZ)
     RGB = (RGB - np.min(RGB)) / (np.max(RGB) - np.min(RGB))
 
-   
+
     gray_mean = np.mean(RGB, axis=2)
     un = np.unique(gray_mean)
 
