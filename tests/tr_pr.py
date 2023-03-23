@@ -10,11 +10,11 @@ import torch
 
 print(torch.cuda.is_available())
 
-hsi = HSImage(None, None)
-mask = HSMask(None, None)
+hsi = HSImage()
+mask = HSMask()
 
-hsi.load_from_mat('test_data/tr_pr/PaviaU.mat', mat_key='paviaU')
-mask.load_mask('test_data/tr_pr/PaviaU_gt.mat', mat_key='paviaU_gt')
+hsi.load_from_mat('../test_data/tr_pr/PaviaU.mat', mat_key='paviaU')
+mask.load_mask('../test_data/tr_pr/PaviaU_gt.mat', mat_key='paviaU_gt')
 
 cnn = M1DCNN(n_classes=mask.n_classes,
              n_bands=hsi.data.shape[-1],

@@ -36,27 +36,30 @@ class HSMask:
     """
 
     def __init__(self,
-                 mask: Optional[np.array],
+                 mask: Optional[np.array] = None,
                  label_class: Optional[Dict] = None):
+        if mask:
+            if HSMask.__is_correct_2d_mask(mask):
+                print("got 2d mask")
+                self.data = HSMask.convert_2d_to_3d_mask(mask)
 
-        if HSMask.__is_correct_2d_mask(mask):
-            print("got 2d mask")
-            self.data = HSMask.convert_2d_to_3d_mask(mask)
+            elif HSMask.__is_correct_3d_mask(mask):
+                print("got 3d mask")
+                self.data = mask
+            else:
+                print("Void data or incorrect data. Set data and label classes to None and None")
+                self.data = None
 
-        elif HSMask.__is_correct_3d_mask(mask):
-            print("got 3d mask")
-            self.data = mask
+            if np.any(self.data) and HSMask.__is_correct_class_dict(d=label_class, class_count=self.data.shape[-1]):
+                self.label_class = label_class
+            else:
+                print("Void data or incorrect data. Set label classes to None")
+                self.label_class = None
+
+            self.n_classes = self.data.shape[-1]
         else:
-            print("Void data or incorrect data. Set data and label classes to None and None")
             self.data = None
-
-        if np.any(self.data) and HSMask.__is_correct_class_dict(d=label_class, class_count=self.data.shape[-1]):
-            self.label_class = label_class
-        else:
-            print("Void data or incorrect data. Set label classes to None")
             self.label_class = None
-
-        self.n_classes = self.data.shape[-1]
     # ------------------------------------------------------------------------------------------------------------------
 
     def __getitem__(self, item):
@@ -98,7 +101,8 @@ class HSMask:
             return False
 
         # data type in mask must be integer
-        if mask.dtype not in ["int8", "int16", "int32", "int64"]:
+        if mask.dtype not in ["uint8", "uint16", "uint32", "uint64",
+                              "int8", "int16", "int32", "int64"]:
             return False
 
         # number of classes in mask must be as 0,1,2... not 1,2... not 0,2,5 ...
@@ -151,7 +155,7 @@ class HSMask:
         mask_3d = []
         for cl in np.unique(mask):
 
-            mask_3d.append((mask == cl).astype('uint32'))
+            mask_3d.append((mask == cl).astype('uint8'))
         mask_3d = np.array(mask_3d)
 
         return np.transpose(mask_3d, (1, 2, 0))
@@ -163,7 +167,7 @@ class HSMask:
         for cl, layer in enumerate(np.transpose(mask, (2, 0, 1))):
             mask_2d[layer == 1] = cl
 
-        return mask_2d.astype('uint32')
+        return mask_2d.astype('uint8')
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_mask(self,
@@ -238,6 +242,7 @@ class HSMask:
             loading a mask from mat file
             '''
             tmp_data = loadmat(path_to_file)[mat_key]
+            print(tmp_data.dtype)
             if HSMask.__is_correct_2d_mask(tmp_data):
                 self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
             elif HSMask.__is_correct_3d_mask(tmp_data):

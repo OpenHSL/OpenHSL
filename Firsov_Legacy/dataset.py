@@ -17,7 +17,7 @@ def get_dataset(hsi: HSImage, mask: Optional[HSMask]) -> Tuple[np.ndarray, np.nd
     ----------
     img : np.array
         hyperspectral image
-    gt : np.darray
+    gt : np.ndarray
         mask of hyperspectral image
 
     """
@@ -25,7 +25,7 @@ def get_dataset(hsi: HSImage, mask: Optional[HSMask]) -> Tuple[np.ndarray, np.nd
     img = hsi.data
 
     if mask:
-        gt = mask.data
+        gt = mask.get_2d()
         label_values = np.unique(gt)
     else:
         gt = None
