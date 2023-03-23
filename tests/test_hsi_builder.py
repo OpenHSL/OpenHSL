@@ -141,14 +141,14 @@ def test_not_valid_data_type():
 
 
 def test_copter_without_metadata():
-        hsb = HSBuilder(path_to_data=path_to_copter_data,
-                        data_type="video")
-        hsb.build(principal_slices=10)
-        hsi = hsb.get_hsi()
+    hsb = HSBuilder(path_to_data=path_to_copter_data,
+                    data_type="video")
+    hsb.build(principal_slices=10)
+    hsi = hsb.get_hsi()
 
 
 # TODO: It's failed 
-def test_rail_with_metadata():
+def test_rotary_with_metadata():
     with pytest.raises(ValueError):
         hsb = HSBuilder(path_to_data=path_to_rotary_data,
                         path_to_metadata=path_to_copter_metadata,
