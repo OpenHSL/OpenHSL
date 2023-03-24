@@ -376,13 +376,15 @@ def simple_hsi_to_rgb(cube: Union[HSImage, np.ndarray],
 
     cube_data, w_data = get_hypercube_and_wavelength(cube, wave_data)
 
-    wl_440 = 470
-    wl_550 = 540
-    wl_640 = 650
+    wl_440 = 440
+    wl_550 = 550
+    wl_640 = 640
     
     blue_band_numbers = get_band_numbers(wl_440, w_data)
     green_band_numbers = get_band_numbers(wl_550, w_data)
     red_band_numbers = get_band_numbers(wl_640, w_data)
+
+    print('BGR band: ', blue_band_numbers, green_band_numbers, red_band_numbers)
 
     blue = cube_data[:, :, blue_band_numbers]
     green = cube_data[:, :, green_band_numbers]
