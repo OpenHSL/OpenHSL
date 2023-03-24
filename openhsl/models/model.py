@@ -63,12 +63,12 @@ class Model(ABC):
         val_loader = create_loader(img, val_gt, hyperparams)
 
         model, losses = Model.train(net=model,
-                            optimizer=optimizer,
-                            criterion=loss,
-                            data_loader=train_loader,
-                            epoch=epochs,
-                            val_loader=val_loader,
-                            device=hyperparams['device'])
+                                    optimizer=optimizer,
+                                    criterion=loss,
+                                    data_loader=train_loader,
+                                    epoch=epochs,
+                                    val_loader=val_loader,
+                                    device=hyperparams['device'])
         return model, losses
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -88,7 +88,7 @@ class Model(ABC):
         prediction = np.argmax(probabilities, axis=-1)
         # fill void areas in result with zeros
         if y:
-            prediction[y.data == 0] = 0
+            prediction[y.get_2d() == 0] = 0
         return prediction
     # ------------------------------------------------------------------------------------------------------------------
 

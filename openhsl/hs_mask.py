@@ -73,11 +73,11 @@ class HSMask:
         return self.data.shape[-1]
     # ------------------------------------------------------------------------------------------------------------------
 
-    def get_2d(self):
+    def get_2d(self) -> np.ndarray:
         return HSMask.convert_3d_to_2d_mask(self.data)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def get_3d(self):
+    def get_3d(self) -> np.ndarray:
         return self.data
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -199,7 +199,7 @@ class HSMask:
 
         """
 
-        def load_img(path_to_file: str):
+        def load_img(path_to_file: str) -> np.ndarray:
             """
             ____________
             necessary for reading 3-dimensional images
@@ -216,6 +216,7 @@ class HSMask:
                 return HSMask.convert_2d_to_3d_mask(img)
             else:
                 raise ValueError("Not supported image type")
+
 
         _, file_extension = os.path.splitext(path_to_file)
 
@@ -263,7 +264,7 @@ class HSMask:
                 raise ValueError("Unsupported type of mask")
 
         # updates number of classes after loading mask
-        self.n_classes = len(np.unique(self.data))
+        self.n_classes = self.data.shape[-1]
         self.label_class = {}
     # ------------------------------------------------------------------------------------------------------------------
 

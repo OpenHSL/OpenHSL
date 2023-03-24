@@ -34,4 +34,4 @@ color_pred = convert_to_color_(pred)
 plt.imshow(color_pred)
 plt.show()
 
-print(classification_report(pred.flatten(), mask.data.flatten()))
+print(classification_report(pred.flatten(), mask.get_2d().flatten()))
