@@ -4,6 +4,7 @@ from openhsl.hsi import HSImage
 
 test_wavelengths = [i for i in range(400, 650)]
 
+
 def test_hs_builder_imgs_rail():
     hsb = HSBuilder(path_to_data='test_data/builder/imgs',
                     data_type='images')
@@ -20,7 +21,7 @@ def test_hs_builder_imgs_rail():
     hsi.save_to_h5(path_to_file='out/microscope.h5',
                    h5_key='image')
 
-    hsi = HSImage(None, None)
+    hsi = HSImage()
 
     # Проверка чтения из h5
     hsi.load_from_h5(path_to_file='out/microscope.h5',
@@ -50,7 +51,7 @@ def test_hs_builder_video_rotary():
     hsi.save_to_mat(path_to_file='out/tripod.mat',
                     mat_key='image')
 
-    hsi = HSImage(None, None)
+    hsi = HSImage()
 
     # Проверка чтения из mat
     hsi.load_from_mat(path_to_file='out/tripod.mat',
@@ -77,7 +78,7 @@ def test_hs_builder_video_uav():
     # Проверка возможности сохранения в npy
     hsi.save_to_npy(path_to_file='out/uav.npy')
 
-    hsi = HSImage(None, None)
+    hsi = HSImage()
 
     # Проверка чтения из npy
     hsi.load_from_npy(path_to_file='out/uav.npy')

@@ -81,7 +81,7 @@ class HSBuilder:
                             f"frame shape is: {frame.shape}\n",
                             f'light shape is: {light_coeff.shape}\n')
 
-        return np.multiply(frame, light_coeff)
+        return np.multiply(frame, light_coeff) * np.tile(np.max(frame, axis=0), (np.shape(frame)[0], 1))
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO move?
@@ -287,7 +287,7 @@ class HSBuilder:
         light_coeff = HSBuilder.__norm_rotation_frame(light_coeff)
         light_coeff = HSBuilder.get_roi(frame=light_coeff)
         light_coeff = HSBuilder.__principal_slices(light_coeff, principal_slices)
-        light_coeff = 1 / (light_coeff / np.max(light_coeff))
+        light_coeff = 1.0 / (light_coeff)
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         for frame in tqdm(self.frame_iterator,

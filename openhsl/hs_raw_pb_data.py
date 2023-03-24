@@ -1,4 +1,5 @@
 import os
+import re
 
 import cv2
 import numpy as np
@@ -127,6 +128,7 @@ class RawData:
                 raise ValueError("Path {} not found or {} format not supported".format(path_to_data, path_to_data.split(".")[-1]))
             if type_data == "images":
                 files = load_data(path_to_data, SUPPORTED_IMG_FORMATS)
+                files.sort(key=lambda f: int(re.sub('\D', '', f)))
             elif type_data == "video":
                 files = load_data(path_to_data, SUPPORTED_VIDEO_FORMATS)
         
@@ -134,6 +136,7 @@ class RawData:
             files = [path_to_data]
 
         if type_data == "images":
+
             self.raw_data = RawImagesData(path_to_files=files)
 
         elif type_data == "video":
