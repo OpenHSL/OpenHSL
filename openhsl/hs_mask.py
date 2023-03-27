@@ -25,7 +25,7 @@ class HSMask:
         ----------
         data: np.ndarray
 
-        metadata: dict
+        label_class: dict
 
         Examples
         --------
@@ -356,7 +356,7 @@ class HSMask:
         ----------
         path_to_file: str
             Path to file
-        mat_key: str
+        h5_key: str
             Key for field in .mat file as dict object
             mat_file['image']
         h5_key: str

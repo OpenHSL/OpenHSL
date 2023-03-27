@@ -33,7 +33,6 @@ def test_ndvi_mask():
     index_mask_HSI2, index_mask_IMG2 = indexes.ndvi_mask(hsi_image, w_data)
     index_mask_HSI3, index_mask_IMG3 = indexes.ndvi_mask(hsi_image2, None)
     index_mask_HSI4, index_mask_IMG4 = indexes.ndvi_mask(hsi_image2, w_data)
-    
 
     assert np.allclose(index_mask_HSI1.data, index_mask_HSI2.data) 
     assert np.allclose(index_mask_HSI3.data, index_mask_HSI4.data)

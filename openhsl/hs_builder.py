@@ -127,6 +127,7 @@ class HSBuilder:
                 np.ndarray
         """
         angle = HSBuilder.__get_slit_angle(frame)
+
         #  rotate frame while angle is not in (-0.01; 0.01) degrees
         while abs(angle) > 0.01:
             h, w = frame.shape
@@ -229,7 +230,9 @@ class HSBuilder:
         right_bound_spectrum = 1390
         x1 = gap_coord + range_to_spectrum
         x2 = x1 + range_to_end_spectrum
-        return frame[x1: x2, left_bound_spectrum: right_bound_spectrum].T
+        #return frame[x1: x2, left_bound_spectrum: right_bound_spectrum].T
+        return frame[805: 1055, left_bound_spectrum: right_bound_spectrum]
+        #return frame[:, 655:905]
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO rename
@@ -284,9 +287,10 @@ class HSBuilder:
         # TODO remake it! It's hardcoded
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         light_coeff = cv2.imread('./test_data/builder/micro_light_source.png', 0)
-        light_coeff = HSBuilder.__norm_rotation_frame(light_coeff)
+        light_coeff = HSBuilder.__norm_frame_camera_geometry(light_coeff,
+                                                             norm_rotation=True,
+                                                             barrel_dist_norm=True)
         light_coeff = HSBuilder.get_roi(frame=light_coeff)
-        light_coeff = HSBuilder.__principal_slices(light_coeff, principal_slices)
         light_coeff = 1.0 / (light_coeff)
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -302,12 +306,12 @@ class HSBuilder:
             if light_norm:
                 frame = self.__norm_frame_camera_illumination(frame=frame, light_coeff=light_coeff)
             if principal_slices:
-                frame = self.__principal_slices(frame, principal_slices)
+                frame = self.__principal_slices(frame.T, principal_slices)
             preproc_frames.append(frame)
             
         data = np.array(preproc_frames)
         if self.path_to_metadata:
-            data = build_hypercube_by_videos(data, self.path_to_metadata)
+            data = build_hypercube_by_videos(data.astype("uint8"), self.path_to_metadata)
         if flip_wavelengths:
             data = np.flip(data, axis=2)
         self.hsi = HSImage(hsi=data, wavelengths=None)

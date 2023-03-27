@@ -113,7 +113,7 @@ class RawVideoData:
                 ret, frame = cap.read()
                 if ret:
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    return frame.T
+                    return frame
         else:
             raise StopIteration
 
