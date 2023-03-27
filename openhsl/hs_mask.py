@@ -81,14 +81,55 @@ class HSMask:
         return self.data
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO must be realise
-    def delete_layer(self, pos: int):
+    def __update_label_class(self):
         pass
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO must be realise
-    def add_layer(self, pos: int):
-        pass
+    def delete_layer(self, pos: int):
+        """
+        delete_layer(pos)
+            deletes layer in mask by index
+            Parameters
+            ----------
+            pos: int
+                layer number for deleting
+        """
+        tmp_list = list(np.transpose(self.data, (2, 0, 1)))
+        tmp_list.pop(pos)
+        self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def add_void_layer(self, pos: int):
+        """
+        add_void_layer(pos)
+            adds filled by zeros layer in mask by index
+            Parameters
+            ----------
+            pos: int
+                layer position for adding
+        """
+        tmp_list = list(np.transpose(self.data, (2, 0, 1)))
+        tmp_list.insert(pos, np.zeros(self.data.shape[:-1], dtype="uint8"))
+        self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def add_completed_layer(self, pos: int, layer: np.ndarray):
+        """
+        add_completed_layer(pos, layer)
+            adds filled by completed layer in mask by index
+            Parameters
+            ----------
+            pos: int
+                layer position for adding
+            layer: np.ndarray
+                binary layer
+        """
+        if self.__is_correct_binary_layer(layer):
+            tmp_list = list(np.transpose(self.data, (2, 0, 1)))
+            tmp_list.insert(pos, layer)
+            self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
+        else:
+            raise ValueError("Incorrect layer!")
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
@@ -101,9 +142,6 @@ class HSMask:
             Parameters
             ----------
             mask: np.ndarray
-
-            Returns
-            -------
 
         """
         # input mask must have 2 dimensions
@@ -122,6 +160,10 @@ class HSMask:
         return True
     # ------------------------------------------------------------------------------------------------------------------
 
+    def __is_correct_binary_layer(self, layer: np.ndarray) -> bool:
+        return np.all(layer.shape == self.data.shape[:-1]) and np.all(np.unique(layer) == np.array([0, 1]))
+    # ------------------------------------------------------------------------------------------------------------------
+
     @staticmethod
     def __is_correct_3d_mask(mask: np.ndarray) -> bool:
         """
@@ -129,6 +171,7 @@ class HSMask:
             3D mask must have class values as binary image in N-layers
             Each layer must be binary!
             minimal is two-layer image
+
             Parameters
             ----------
             mask
@@ -209,7 +252,7 @@ class HSMask:
 
         """
 
-        def load_img(path_to_file: str) -> np.ndarray:
+        def load_img(path_to_image: str) -> np.ndarray:
             """
             ____________
             necessary for reading 3-dimensional images
@@ -217,16 +260,15 @@ class HSMask:
 
             Parameters
             ----------
-            path_to_file: str
+            path_to_image: str
                 Path to file
             """
-            img = Image.open(path_to_file).convert("L")
+            img = Image.open(path_to_image).convert("L")
             img = np.array(img)
             if HSMask.__is_correct_2d_mask(img):
                 return HSMask.convert_2d_to_3d_mask(img)
             else:
                 raise ValueError("Not supported image type")
-
 
         _, file_extension = os.path.splitext(path_to_file)
 
