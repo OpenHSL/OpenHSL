@@ -9,7 +9,7 @@ import cv2
 import math
 from tqdm import tqdm
 from sklearn.linear_model import LinearRegression
-
+from matplotlib import pyplot as plt
 
 class HSBuilder:
     """
@@ -56,6 +56,7 @@ class HSBuilder:
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO move?
+    # TODO REPAIR IT!
     @staticmethod
     def __norm_frame_camera_illumination(frame: np.ndarray,
                                          light_coeff: np.ndarray) -> np.ndarray:
@@ -81,7 +82,8 @@ class HSBuilder:
                             f"frame shape is: {frame.shape}\n",
                             f'light shape is: {light_coeff.shape}\n')
 
-        return np.multiply(frame, light_coeff) * np.tile(np.max(frame, axis=0), (np.shape(frame)[0], 1))
+        return np.multiply(frame.astype("uint8"), light_coeff).astype("uint8")
+        #return np.multiply(frame, light_coeff) * np.tile(frame[frame.shape[0] // 2, :], (np.shape(frame)[0], 1))
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO move?
@@ -288,10 +290,10 @@ class HSBuilder:
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         light_coeff = cv2.imread('./test_data/builder/micro_light_source.png', 0)
         light_coeff = HSBuilder.__norm_frame_camera_geometry(light_coeff,
-                                                             norm_rotation=True,
-                                                             barrel_dist_norm=True)
+                                                             norm_rotation=norm_rotation,
+                                                             barrel_dist_norm=barrel_dist_norm)
         light_coeff = HSBuilder.get_roi(frame=light_coeff)
-        light_coeff = 1.0 / (light_coeff)
+        light_coeff = 1.0 / (light_coeff / np.max(light_coeff))
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         for frame in tqdm(self.frame_iterator,

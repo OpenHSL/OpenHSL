@@ -6,13 +6,13 @@ test_wavelengths = [i for i in range(400, 650)]
 
 
 def test_hs_builder_imgs_rail():
-    hsb = HSBuilder(path_to_data='test_data/builder/micro_new',
+    hsb = HSBuilder(path_to_data='test_data/builder/imgs',
                     data_type='images')
     hsb.build(roi=True, norm_rotation=True, barrel_dist_norm=True, principal_slices=250, light_norm=True)
     hsi = hsb.get_hsi()
 
     # Проверка размерности ГСИ
-    assert (200, 900, 250) == hsi.data.shape
+    assert (300, 900, 250) == hsi.data.shape
 
     # Генерируем набор длин волн для теста
     hsi.wavelengths = test_wavelengths
