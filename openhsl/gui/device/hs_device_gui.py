@@ -52,6 +52,10 @@ class HSDeviceGUI(QMainWindow):
         # Slit angle tab
         self.ui_slit_image_path_open_button: QPushButton = self.findChild(QPushButton, 'slitImagePathOpen_pushButton')
         # self.ui_slit_image_path_open_button.setIcon(QIcon(QPixmap("icons:three-dots.svg")))
+        # Settings tab
+        self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
+        self.ui_device_type_combobox.addItem("test1")
+        self.ui_device_type_combobox.addItem("test2")
 
     def closeEvent(self, event):
         self.t_hsd.exit()
