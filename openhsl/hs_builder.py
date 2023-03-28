@@ -232,9 +232,8 @@ class HSBuilder:
         right_bound_spectrum = 1390
         x1 = gap_coord + range_to_spectrum
         x2 = x1 + range_to_end_spectrum
-        #return frame[x1: x2, left_bound_spectrum: right_bound_spectrum].T
+
         return frame[805: 1055, left_bound_spectrum: right_bound_spectrum]
-        #return frame[:, 655:905]
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO rename
