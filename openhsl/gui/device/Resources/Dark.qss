@@ -1,4 +1,71 @@
 /****************************************
+ *              QComboBox               *
+ ****************************************/
+QComboBox {
+  border: 1px solid #9b9b9b;
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+  border-bottom-right-radius: 2px;
+  border-bottom-left-radius: 2px;
+  background-color: #404142;
+  color: #d0d0d0;
+  min-height: 22px;
+  text-align: center;
+  padding: 1px 18px 1px 3px;
+}
+
+QComboBox QAbstractItemView {
+  border: 1px solid #9b9b9b;
+  border-bottom-left-radius: 2px;
+  border-bottom-right-radius: 2px;
+  background-color: transparent;
+  color: #d0d0d0;
+  outline: none;
+}
+
+QComboBox QAbstractItemView:item:selected {
+  background-color: #654321;
+}
+
+QComboBox:editable {
+  background: #404142;
+  border-top-left-radius: 0px;
+  border-bottom-left-radius: 0px;
+}
+
+QComboBox::down-arrow {
+  image: url(icons:caret-down-fill-12.svg);
+}
+
+QComboBox::down-arrow:on {
+  top: 1px;
+}
+
+QComboBox:on {
+  /* shift the text when the popup opens */
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+  border-bottom-right-radius: 0px;
+  border-bottom-left-radius: 0px;
+  top: 1px;
+}
+
+QComboBox::drop-down {
+  subcontrol-origin: padding;
+  subcontrol-position: top right;
+  width: 15px;
+  color: #d0d0d0;
+  border-left-width: 1px;
+  border-left-color: #9b9b9b;
+  border-left-style: solid;
+  /* just a single line */
+  border-top-right-radius: 2px;
+  /* same radius as the QComboBox */
+  border-bottom-right-radius: 2px;
+  background-color: #404142;
+}
+
+/****************************************
  *           QGraphicsView              *
  ****************************************/
 QGraphicsView {
@@ -6,6 +73,59 @@ QGraphicsView {
   border-radius: 2px;
   padding: 2px;
   background-color: #2e2f30;
+}
+
+/****************************************
+ *              QGroupBox               *
+ ****************************************/
+QGroupBox {
+  background-color: #404142;
+  color: #d0d0d0;
+  border: 1px solid #9b9b9b;
+  border-radius: 10px;
+  margin-top: 4.0ex;
+  padding-top: 15px;
+}
+
+QGroupBox QAbstractItemView:item:selected {
+  background-color: #654321;
+}
+
+QGroupBox:unchecked {
+  background-color: transparent;
+}
+
+QGroupBox:disabled {
+  background-color: transparent;
+}
+
+QGroupBox::title {
+  border: 1px solid #9b9b9b;
+  border-radius: 5px;
+  subcontrol-origin: margin;
+  subcontrol-position: top left;
+  padding: 3px;
+  left: 10px;
+  background-color: #404142;
+}
+
+QGroupBox::indicator {
+  background-color: transparent;
+  image: url(icons:checkbox.png);
+}
+
+QGroupBox::indicator:unchecked {
+  background-color: transparent;
+  image: url(icons:checkbox.png);
+}
+
+QGroupBox::indicator:checked {
+  background-color: transparent;
+  image: url(icons:checkbox-checked.png);
+}
+
+QGroupBox::indicator:hover {
+  background-color: #654321;
 }
 
 /****************************************
@@ -47,7 +167,7 @@ QMainWindow {
 QMenu {
   background: #404142;
   color: #d0d0d0;
-  border: 1px #404142;
+  border: 1px solid #000000;
 }
 
 QMenu::item {
@@ -61,7 +181,6 @@ QMenu::item {
 QMenu::item:selected {
   /* when user selects item using mouse or keyboard */
   background-color: #654321;
-  /*color: white;*/
 }
 
 QMenu::item:enabled:selected {
@@ -79,6 +198,7 @@ QMenu::icon {
 QMenuBar {
   background-color: #404142;
   color: #d0d0d0;
+  border-bottom: 1px solid #000000;
 }
 
 QMenuBar::item {
@@ -129,6 +249,22 @@ QPushButton[id="open"]:hover {
 
 QPushButton[id="open"]:pressed {
   image: url(icons:three-dots-pressed.svg);
+  background-color: #2e2f30;
+}
+
+QPushButton[id="add"] {
+  image: url(icons:plus-lg.svg);
+  border-radius: 2px;
+  width: 24px;
+}
+
+QPushButton[id="add"]:hover {
+  image: url(icons:plus-lg-hover.svg);
+  background-color: #654321;
+}
+
+QPushButton[id="add"]:pressed {
+  image: url(icons:plus-lg-pressed.svg);
   background-color: #2e2f30;
 }
 

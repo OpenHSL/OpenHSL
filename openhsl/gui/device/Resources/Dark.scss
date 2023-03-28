@@ -1,6 +1,7 @@
 $bg-dark: #2e2f30;
 $bg-dark-light: #404142;
 $bg-border: #9b9b9b;
+$bg-border-dark: #000000;
 $bg-hover: #654321;
 $bg-pressed: #2e2f30;
 $fg-text: #d0d0d0;
@@ -17,6 +18,86 @@ $bg-tab-selected: #565656;
 //$bg-tab-selected: #5b5c5d;
 
 /****************************************
+ *              QComboBox               *
+ ****************************************/
+
+QComboBox {
+    border: 1px solid $bg-border;
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+	border-bottom-right-radius: 2px;
+	border-bottom-left-radius:2px;
+	background-color: $bg-dark-light;
+	color: $fg-text;
+	min-height: 22px;
+    text-align: center;
+	padding:  1px 18px 1px 3px;;
+
+	QAbstractItemView {
+		border: 1px solid $bg-border;
+		border-bottom-left-radius: 2px;
+		border-bottom-right-radius: 2px;
+		background-color: transparent;
+		color: $fg-text;
+		outline: none;
+
+		&:item {
+			&:selected {
+				background-color: $bg-hover;
+			}
+		}
+
+		//&:hover {
+		//	background-color: $bg-hover;
+		//}
+	}
+
+	&:editable {
+		background: $bg-dark-light;
+		border-top-left-radius: 0px;
+		border-bottom-left-radius: 0px;
+	}
+
+	&::down-arrow {
+		image: url(icons:caret-down-fill-12.svg);
+
+		&:on {
+			top: 1px;
+		}
+	}
+
+	&:on { /* shift the text when the popup opens */
+		border-top-left-radius: 2px;
+		border-top-right-radius: 2px;
+		border-bottom-right-radius: 0px;
+		border-bottom-left-radius: 0px;
+		top: 1px;
+	}
+
+	&::drop-down {
+		subcontrol-origin: padding;
+		subcontrol-position: top right;
+		width: 15px;
+		color: $fg-text;
+
+		border-left-width: 1px;
+		border-left-color: $bg-border;
+		border-left-style: solid; /* just a single line */
+		border-top-right-radius: 2px; /* same radius as the QComboBox */
+		border-bottom-right-radius: 2px;
+		background-color: $bg-dark-light;
+	}
+}
+
+//QComboBox QAbstractItemView {
+//    border: 1px solid $bg-border;
+//	background-color: transparent;
+//	selection-background-color: $bg-hover;
+//	selection-color: $fg-text-selected;
+//	selection-border: none;
+//}
+
+/****************************************
  *           QGraphicsView              *
  ****************************************/
 
@@ -27,6 +108,64 @@ QGraphicsView {
 	background-color: $bg-dark;
 }
 
+/****************************************
+ *              QGroupBox               *
+ ****************************************/
+
+QGroupBox {
+	background-color: $bg-dark-light;
+	color: $fg-text;
+	border: 1px solid $bg-border;
+	border-radius: 10px;
+	margin-top: 4.0ex;
+	padding-top: 15px;
+
+	QAbstractItemView {
+		&:item {
+			&:selected {
+				background-color: $bg-hover;
+			}
+		}
+	}
+
+	&:unchecked {
+		background-color: transparent;
+	}
+
+	&:disabled {
+		background-color: transparent;
+	}
+
+	&::title {
+		border: 1px solid $bg-border;
+		border-radius: 5px;
+
+		subcontrol-origin: margin;
+		subcontrol-position: top left;
+		padding: 3px;
+		left: 10px;
+		background-color: $bg-dark-light;
+	}
+
+	&::indicator {
+		background-color: transparent;
+		image: url(icons:checkbox.png);
+
+		&:unchecked {
+			background-color: transparent;
+			image: url(icons:checkbox.png);
+		}
+
+		&:checked {
+			background-color: transparent;
+			image: url(icons:checkbox-checked.png);
+		}
+
+		&:hover {
+			background-color: $bg-hover;
+		}
+	}
+}
 
 /****************************************
  *               QLabel                 *
@@ -71,21 +210,24 @@ QMainWindow {
 QMenu {
     background: $bg-menu;
 	color: $fg-text;
-	border: 1px $bg-menu;
+	border: 1px solid $bg-border-dark;
+
 	&::item {
 		/* sets background of menu item. set this to something non-transparent
 			if you want menu color and menu item color to be different */
 		background-color: transparent;
 		padding: 2px 20px 2px 25px;
 		min-height: 20;
+
 		&:selected { /* when user selects item using mouse or keyboard */
 			background-color: $bg-menu-hover;
-			/*color: white;*/
 		}
+
 		&:enabled:selected {
 			color: $fg-text-selected;
 		}
 	}
+
 	&::icon {
 		padding: 2px;
 		border: 2px white;
@@ -99,6 +241,7 @@ QMenu {
 QMenuBar {
     background-color: $bg-menu;
 	color: $fg-text;
+	border-bottom: 1px solid $bg-border-dark;
 
 	&::item {
 		spacing: 7px; /* spacing between menu bar items */
@@ -147,6 +290,22 @@ QPushButton {
 
 		&:pressed {
 			image: url(icons:three-dots-pressed.svg);
+			background-color: $bg-pressed;
+		}
+	}
+
+	&[id="add"] {
+		image: url(icons:plus-lg.svg);
+		border-radius: 2px;
+		width: 24px;
+
+		&:hover {
+			image: url(icons:plus-lg-hover.svg);
+			background-color: $bg-button-hover;
+		}
+
+		&:pressed {
+			image: url(icons:plus-lg-pressed.svg);
 			background-color: $bg-pressed;
 		}
 	}
