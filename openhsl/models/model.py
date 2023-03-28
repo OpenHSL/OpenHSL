@@ -8,9 +8,9 @@ import numpy as np
 import datetime
 from tqdm import tqdm
 
-from Firsov_Legacy.dataset import get_dataset
-from Firsov_Legacy.utils import camel_to_snake, grouper, count_sliding_window, sliding_window, sample_gt
-from Firsov_Legacy.DataLoader import create_loader
+from openhsl.Firsov_Legacy.dataset import get_dataset
+from openhsl.Firsov_Legacy.utils import camel_to_snake, grouper, count_sliding_window, sliding_window, sample_gt
+from openhsl.Firsov_Legacy.DataLoader import create_loader
 
 
 class Model(ABC):

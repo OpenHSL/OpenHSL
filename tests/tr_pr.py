@@ -2,7 +2,7 @@ from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 from openhsl.models.m1dcnn import M1DCNN
 from matplotlib import pyplot as plt
-from Firsov_Legacy.utils import convert_to_color_
+from openhsl.Firsov_Legacy.utils import convert_to_color_
 
 from sklearn.metrics import classification_report
 
