@@ -1,4 +1,5 @@
 import csv
+import ctypes
 import itertools
 import json
 import sys
@@ -23,6 +24,13 @@ class HSDeviceGUI(QMainWindow):
     def __init__(self):
         super(HSDeviceGUI, self).__init__()
         uic.loadUi('hs_device_mainwindow.ui', self)
+        self.setWindowIcon(QIcon("icons:openhsl.svg"))
+
+        # Workaround for taskbar icon in Windows
+        # See: https://stackoverflow.com/a/1552105
+        openhsl_id = 'locus.openhsl.hs_device_gui.0.0.1'  # arbitrary string
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(openhsl_id)
+
         with open("./Resources/Dark.qss", 'r') as f:
             strings = f.read()
             self.setStyleSheet(strings)
