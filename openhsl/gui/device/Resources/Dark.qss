@@ -1,0 +1,288 @@
+/****************************************
+ *           QGraphicsView              *
+ ****************************************/
+QGraphicsView {
+  border: 1px solid #9b9b9b;
+  border-radius: 2px;
+  padding: 2px;
+  background-color: #2e2f30;
+}
+
+/****************************************
+ *               QLabel                 *
+ ****************************************/
+QLabel {
+  color: #d0d0d0;
+}
+
+/****************************************
+ *              QLineEdit               *
+ ****************************************/
+QLineEdit {
+  border: 1px solid #9b9b9b;
+  border-radius: 2px;
+  background-color: #404142;
+  selection-background-color: #654321;
+  selection-color: white;
+  color: #d0d0d0;
+  min-height: 22px;
+}
+
+QLineEdit:disabled {
+  background-color: transparent;
+  border-color: lightgray;
+}
+
+/****************************************
+ *             QMainWindow              *
+ ****************************************/
+QMainWindow {
+  background-color: #2e2f30;
+  color: #d0d0d0;
+}
+
+/****************************************
+ *                QMenu                 *
+ ****************************************/
+QMenu {
+  background: #404142;
+  color: #d0d0d0;
+  border: 1px #404142;
+}
+
+QMenu::item {
+  /* sets background of menu item. set this to something non-transparent
+			if you want menu color and menu item color to be different */
+  background-color: transparent;
+  padding: 2px 20px 2px 25px;
+  min-height: 20;
+}
+
+QMenu::item:selected {
+  /* when user selects item using mouse or keyboard */
+  background-color: #654321;
+  /*color: white;*/
+}
+
+QMenu::item:enabled:selected {
+  color: white;
+}
+
+QMenu::icon {
+  padding: 2px;
+  border: 2px white;
+}
+
+/****************************************
+ *               QMenuBar               *
+ ****************************************/
+QMenuBar {
+  background-color: #404142;
+  color: #d0d0d0;
+}
+
+QMenuBar::item {
+  spacing: 7px;
+  /* spacing between menu bar items */
+  padding: 4px 14px;
+  background: transparent;
+  border-radius: 0px;
+}
+
+QMenuBar::item:selected {
+  /* when selected using mouse or keyboard */
+  background: #5b5c5d;
+}
+
+QMenuBar::item:pressed {
+  background: #545556;
+}
+
+QPushButton {
+  background-color: #535455;
+  border: 1px solid gray;
+  border-radius: 0px;
+  color: #d0d0d0;
+  min-height: 22;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+QPushButton:hover {
+  background-color: #654321;
+}
+
+QPushButton:pressed {
+  background-color: #2e2f30;
+}
+
+QPushButton[id="open"] {
+  image: url(icons:three-dots.svg);
+  border-radius: 2px;
+  width: 24px;
+}
+
+QPushButton[id="open"]:hover {
+  image: url(icons:three-dots-hover.svg);
+  background-color: #654321;
+}
+
+QPushButton[id="open"]:pressed {
+  image: url(icons:three-dots-pressed.svg);
+  background-color: #2e2f30;
+}
+
+QPushButton[id="big"] {
+  border-radius: 2px;
+  min-width: 60;
+  min-height: 32;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+/****************************************
+ *               QSlider                *
+ ****************************************/
+QSlider::groove:horizontal {
+  border: 1px solid #9b9b9b;
+  border-radius: 4px;
+  height: 8px;
+  /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
+  background: #404142;
+  margin: 0px 0;
+}
+
+QSlider::handle:horizontal {
+  background: #2e2f30;
+  border: 1px solid #9b9b9b;
+  width: 14px;
+  height: 14px;
+  margin: -4px 0;
+  /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
+  border-radius: 8px;
+}
+
+QSlider::handle:horizontal:hover {
+  background-color: #654321;
+}
+
+QSlider::sub-page:horizontal {
+  border: 1px solid #9b9b9b;
+  border-radius: 4px;
+  background-color: #2e2f30;
+}
+
+/****************************************
+ *      QSpinBox, QDoubleSpinBox        *
+ ****************************************/
+QSpinBox, QDoubleSpinBox {
+  border: 1px solid #9b9b9b;
+  border-radius: 2px;
+  background-color: #404142;
+  color: #d0d0d0;
+  min-height: 19px;
+  selection-background-color: #654321;
+  selection-color: white;
+}
+
+QSpinBox::up-button, QDoubleSpinBox::up-button {
+  image: url(icons:caret-up-fill.svg);
+  subcontrol-origin: border;
+  subcontrol-position: top right;
+  border: 1px solid #9b9b9b;
+  border-top-right-radius: 2px;
+  width: 12px;
+  height: 8px;
+  background-color: #404142;
+}
+
+QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover {
+  image: url(icons:caret-up-fill-hover.svg);
+  background-color: #654321;
+}
+
+QSpinBox::up-button:pressed, QDoubleSpinBox::up-button:pressed {
+  image: url(icons:caret-up-fill-pressed.svg);
+  background-color: #2e2f30;
+}
+
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+  image: url(icons:caret-down-fill.svg);
+  subcontrol-origin: border;
+  subcontrol-position: bottom right;
+  border: 1px solid #9b9b9b;
+  border-bottom-right-radius: 2px;
+  width: 12px;
+  height: 8px;
+  background-color: #404142;
+}
+
+QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {
+  image: url(icons:caret-down-fill-hover.svg);
+  background-color: #654321;
+}
+
+QSpinBox::down-button:pressed, QDoubleSpinBox::down-button:pressed {
+  image: url(icons:caret-down-fill-pressed.svg);
+  background-color: #2e2f30;
+}
+
+QSpinBox::up-arrow:disabled, QDoubleSpinBox::up-arrow:disabled {
+  image: url(:/MainForm/Resources/Images/arrow-black-up-disabled.png);
+}
+
+QSpinBox::down-arrow:disabled, QDoubleSpinBox::down-arrow:disabled {
+  image: url(:/MainForm/Resources/Images/arrow-black-down-disabled.png);
+}
+
+QTabWidget::pane {
+  /* The tab widget frame */
+  border: 1px solid #9b9b9b;
+  background-color: #404142;
+  border-radius: 10px;
+  top: -1px;
+}
+
+QTabWidget::tab-bar {
+  left: 10px;
+  /* move to the right by 5px */
+}
+
+/* Style the tab using the tab sub-control. Note that
+    it reads QTabBar _not_ QTabWidget */
+QTabBar::tab {
+  background: #2e2f30;
+  color: #d0d0d0;
+  border: 1px solid #9b9b9b;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  min-width: 8ex;
+  padding: 4px 8px;
+  margin-top: 2px;
+}
+
+QTabBar::tab:selected {
+  background: #404142;
+  color: white;
+  border-bottom: 4px;
+  border-bottom-color: #404142;
+  margin-top: 0px;
+  margin-left: -4px;
+  margin-right: -4px;
+}
+
+QTabBar::tab:hover {
+  background: #654321;
+}
+
+QTabBar::tab:first:selected {
+  margin-left: 0;
+}
+
+QTabBar::tab:last:selected {
+  margin-right: 0;
+}
+
+QTabBar::tab:only-one {
+  margin: 0;
+}
