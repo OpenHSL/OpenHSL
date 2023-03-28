@@ -6,9 +6,9 @@ from typing import List, Optional, Union
 class HSCalibrationWavelengthData:
     def __init__(self):
         self.wavelength: Optional[int] = None
-        self.calib_slit_a: Optional[float] = None
-        self.calib_slit_b: Optional[float] = None
+        self.calib_slit_slope: Optional[float] = None
         self.calib_slit_angle: Optional[float] = None
+        self.calib_slit_intercept: Optional[float] = None
         self.wavelength_x: Optional[int] = None
         self.wavelength_y: Optional[int] = None
         self.wavelength_slit_offset: Optional[int] = None
