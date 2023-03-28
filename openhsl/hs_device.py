@@ -25,6 +25,7 @@ class HSDeviceType(BaseIntEnum):
 
 class HSROI:
     def __init__(self):
+        self.slit_slope: float = 0
         self.slit_angle: float = 0
         self.slit_intercept: int = 0
         self.x: int = 0
