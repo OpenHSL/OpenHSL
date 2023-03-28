@@ -9,7 +9,7 @@ import cv2
 import math
 from tqdm import tqdm
 from sklearn.linear_model import LinearRegression
-from matplotlib import pyplot as plt
+
 
 class HSBuilder:
     """
@@ -49,6 +49,11 @@ class HSBuilder:
                  path_to_data: str,
                  path_to_metadata: str = None,
                  data_type: str = None):
+        if not isinstance(path_to_data, str): raise TypeError(f"path_to_data must be str, not {type(path_to_data)}")
+        if not isinstance(data_type, str): raise TypeError(f"data_type must be str, not {type(data_type)}")
+        if path_to_metadata and not isinstance(path_to_metadata, str): raise TypeError(f"path_to_metadata must be str, not {type(path_to_metadata)}")
+
+        if data_type not in ['images', 'video']: raise ValueError(f"data_type must be 'images' or 'video', not {data_type}")
         self.path_to_data = path_to_data
         self.path_to_metadata = path_to_metadata
         self.hsi: Optional[HSImage] = None
@@ -56,7 +61,6 @@ class HSBuilder:
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO move?
-    # TODO REPAIR IT!
     @staticmethod
     def __norm_frame_camera_illumination(frame: np.ndarray,
                                          light_coeff: np.ndarray) -> np.ndarray:
@@ -129,7 +133,6 @@ class HSBuilder:
                 np.ndarray
         """
         angle = HSBuilder.__get_slit_angle(frame)
-
         #  rotate frame while angle is not in (-0.01; 0.01) degrees
         while abs(angle) > 0.01:
             h, w = frame.shape
