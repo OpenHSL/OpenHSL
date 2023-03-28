@@ -18,17 +18,18 @@ SUPPORTED_FORMATS = SUPPORTED_VIDEO_FORMATS + SUPPORTED_IMG_FORMATS
 
 class RawImagesData:
     """
-    RawImagesData(path_to_dir)
+    RawImagesData(path_to_files)
         Create iterator for images set.
         In each step return ndarray object
+
         Parameters
         ----------
-        path_to_dir : str
+        path_to_files : list
             Path to directory with images
         Attributes
         ----------
-        path_to_dir : str
-        imgs_list : iterable
+        path_to_files : str
+        current_step : int
         Examples
         --------
         rid = RawImagesData("./some_directory")
@@ -57,28 +58,24 @@ class RawImagesData:
 
 class RawVideoData:
     """
-        RawVideoData(path_to_file: str)
+        RawVideoData(path_to_files: str)
 
             Create iterator for videoframes.
-            In each step return np.array object.
+            In each step return np.ndarray object.
 
             Parameters
             ----------
-            path_to_file : str
-                Path to video file
+            path_to_files : list
+                list of pathes to video files
 
             Attributes
             ----------
-            path : pathlib.Path
+            paths : pathlib.Path
                 Path to video file
-            format: str
-                Video format
             current_step : int
                 Current step of iteration
-            cap : cv2.VideoCapture
+            caps : cv2.VideoCapture
                 Video capture object
-            frame: np.array
-                Current frame
             length: int
                 Count of videoframes
 
@@ -127,20 +124,20 @@ class RawData:
             if not dir_exists(path_to_data):
                 raise ValueError("Path {} not found or {} format not supported".format(path_to_data, path_to_data.split(".")[-1]))
             if type_data == "images":
-                files = load_data(path_to_data, SUPPORTED_IMG_FORMATS)
-                files.sort(key=lambda f: int(re.sub('\D', '', f)))
+                self.files = load_data(path_to_data, SUPPORTED_IMG_FORMATS)
+                self.files.sort(key=lambda f: int(re.sub('\D', '', f)))
             elif type_data == "video":
-                files = load_data(path_to_data, SUPPORTED_VIDEO_FORMATS)
+                self.files = load_data(path_to_data, SUPPORTED_VIDEO_FORMATS)
         
         else:
-            files = [path_to_data]
+            self.files = [path_to_data]
 
         if type_data == "images":
 
-            self.raw_data = RawImagesData(path_to_files=files)
+            self.raw_data = RawImagesData(path_to_files=self.files)
 
         elif type_data == "video":
-            self.raw_data = RawVideoData(path_to_files=files)
+            self.raw_data = RawVideoData(path_to_files=self.files)
 
         else:
             raise ValueError("type_data must be 'images' or 'video'")
@@ -251,6 +248,3 @@ class RawTiffData:
 
     def __len__(self):
         pass
-
-
-

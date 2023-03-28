@@ -26,6 +26,9 @@ TAN_PITCH = math.tan(math.radians(CAMERA_PITCH))
 PI_2 = math.pi / 2.0
 
 
+def blur_band(band):
+    return blur_image(band) if BLUR_AUTO else band
+
 def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str) -> np.ndarray:
     """
         build_hypercube_by_videos(cube, gps_filename)
@@ -42,8 +45,8 @@ def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str) -> np.ndarray
                 Contain telemetry information about UAV flight session where
                 each line correlates to each frame from cube
 
-            Return:
-            ----------
+            Returns
+            --------
             bands: np.ndarray
                 Building result - hypercube from UAV footage
     """
@@ -57,7 +60,6 @@ def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str) -> np.ndarray
                         rel_alt=gps[HEADER_REL_ALT].tolist(),
                         angle=gps[HEADER_ANGLE].tolist())
 
-    blur_band = lambda band: blur_image(band) if BLUR_AUTO else band
     bands = list(map(blur_band, [bands[:, :, i] for i in range(z)]))
     bands = np.array(bands)
     bands = np.transpose(bands, (2, 1, 0))
@@ -119,7 +121,7 @@ def interpolate(cube: np.ndarray,
     prediction = prediction.reshape(m_target, n_target, k)
 
     return prediction
-# -------------------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def calculate_rel_alt(rel_alt: List) -> List:
