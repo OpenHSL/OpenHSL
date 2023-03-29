@@ -240,42 +240,56 @@ def osavi_mask(cube: Union[HSImage, np.ndarray],
     return index_mask, normalization(mask)
 
 
-def norm_diff_index(channel_1, channel_2):
+def norm_diff_index(channel_1: np.ndarray,
+                    channel_2: np.ndarray) -> np.ndarray:
+
     mask = (channel_1 - channel_2) / (channel_1 + channel_2)
-    mask[np.isnan(mask)] = 0
-    mask[mask < 2] = 0
-    mask[mask >= 2] = 1
+    mask[np.isnan(mask)] = 1
+    magic_threshold = 2
+    mask[mask < magic_threshold] = 0
+    mask[mask >= magic_threshold] = 1
     return mask
 
-def adaptive_norm_diff_index(cube: np.ndarray, example_1: np.ndarray, example_2: np.ndarray):
+
+def adaptive_norm_diff_index(cube: np.ndarray,
+                             example_1: np.ndarray,
+                             example_2: np.ndarray) -> np.ndarray:
+
     example_1_size = example_1[:, :, 0].size
     example_2_size = example_2[:, :, 0].size
-    min_score = 2.0
-    for i in product(range(example_1.shape[2]), range(example_2.shape[2])):
-        if i[0] == i[1]: continue
-        channel_1 = example_1[:, :, i[0]]
-        channel_2 = example_1[:, :, i[1]]
 
-        ndi = norm_diff_index(channel_1, channel_2)
+    min_score = 2.0
+    best_idx = None, None
+
+    if example_1.shape[2] == example_2.shape[2]:
+        channels_count = example_1.shape[2]
+    else:
+        raise ValueError("Different numbers of channels in two sets")
+
+    for ind_1, ind_2 in product(range(channels_count), range(channels_count)):
+
+        # skip main diagonal
+        if ind_1 == ind_2:
+            continue
+
+        ndi = norm_diff_index(channel_1=example_1[:, :, ind_1],
+                              channel_2=example_1[:, :, ind_2])
 
         score = np.sum(ndi) / example_1_size
 
-        channel_1 = example_2[:, :, i[0]]
-        channel_2 = example_2[:, :, i[1]]
-
-        ndi = norm_diff_index((channel_1, channel_2))
+        ndi = norm_diff_index(channel_1=example_2[:, :, ind_1],
+                              channel_2=example_2[:, :, ind_2])
 
         score += (example_2_size - np.sum(ndi)) / example_2_size
+
         if score < min_score:
             min_score = score
-            best_idx = i[0], i[1]
+            best_idx = ind_1, ind_2
 
     print(best_idx)
 
-    channel_1 = cube[:, :, best_idx[0]]
-    channel_2 = cube[:, :, best_idx[1]]
-
-    ndi = norm_diff_index(channel_1, channel_2)
+    ndi = norm_diff_index(channel_1=cube[:, :, best_idx[0]],
+                          channel_2=cube[:, :, best_idx[1]])
 
     return ndi
 
