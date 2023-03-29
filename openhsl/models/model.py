@@ -62,14 +62,14 @@ class Model(ABC):
         train_loader = create_loader(img, train_gt, hyperparams, shuffle=True)
         val_loader = create_loader(img, val_gt, hyperparams)
 
-        model, losses = Model.train(net=model,
-                                    optimizer=optimizer,
-                                    criterion=loss,
-                                    data_loader=train_loader,
-                                    epoch=epochs,
-                                    val_loader=val_loader,
-                                    device=hyperparams['device'])
-        return model, losses
+        model, losses, val_accs = Model.train(net=model,
+                                              optimizer=optimizer,
+                                              criterion=loss,
+                                              data_loader=train_loader,
+                                              epoch=epochs,
+                                              val_loader=val_loader,
+                                              device=hyperparams['device'])
+        return model, losses, val_accs
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
@@ -197,7 +197,7 @@ class Model(ABC):
                     epoch=e,
                     metric=abs(metric),
                 )
-        return net, train_loss
+        return net, train_loss, val_accuracies
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod

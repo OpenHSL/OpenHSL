@@ -200,14 +200,14 @@ class M3DCNN(Model):
             epochs: int = 5,
             train_sample_percentage: float = 0.5):
 
-        self.model, self.losses = super().fit_nn(X=X,
-                                                 y=y,
-                                                 hyperparams=self.hyperparams,
-                                                 epochs=epochs,
-                                                 model=self.model,
-                                                 optimizer=self.optimizer,
-                                                 loss=self.loss,
-                                                 train_sample_percentage=train_sample_percentage)
+        self.model, self.losses, self.val_accs = super().fit_nn(X=X,
+                                                                y=y,
+                                                                hyperparams=self.hyperparams,
+                                                                epochs=epochs,
+                                                                model=self.model,
+                                                                optimizer=self.optimizer,
+                                                                loss=self.loss,
+                                                                train_sample_percentage=train_sample_percentage)
 
     # ------------------------------------------------------------------------------------------------------------------
 
