@@ -21,7 +21,7 @@ cnn = M1DCNN(n_classes=mask.n_classes,
              #path_to_weights='../tests/checkpoints/m1_dcnn__net/m1dcnn/2023_03_29_15_07_07_epoch50_0.76.pth',
              device='cuda')
 
-cnn.fit(X=hsi, y=mask, train_sample_percentage=0.5, epochs=40)
+cnn.fit(X=hsi, y=mask, train_sample_percentage=0.5, epochs=10, dataloader_mode="disjoint")
 
 #print(cnn.losses)
 #print(cnn.val_accs)

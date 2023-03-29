@@ -7,9 +7,11 @@ import torch.utils.data as data
 import numpy as np
 import datetime
 from tqdm import tqdm
+from PIL import Image
 
 from openhsl.Firsov_Legacy.dataset import get_dataset
-from openhsl.Firsov_Legacy.utils import camel_to_snake, grouper, count_sliding_window, sliding_window, sample_gt
+from openhsl.Firsov_Legacy.utils import camel_to_snake, grouper, count_sliding_window, \
+                                        sliding_window, sample_gt, convert_to_color_
 from openhsl.Firsov_Legacy.DataLoader import create_loader
 
 
@@ -44,14 +46,34 @@ class Model(ABC):
                optimizer,
                loss,
                epochs,
-               train_sample_percentage):
+               train_sample_percentage,
+               mode):
+        """
+
+        Parameters
+        ----------
+        X
+        y
+        hyperparams
+        model
+        optimizer
+        loss
+        epochs
+        train_sample_percentage
+        mode: str
+            random, disjoint
+
+        Returns
+        -------
+
+        """
         # TODO ignored_labels and label_values for what?
         img, gt = get_dataset(hsi=X, mask=y)
 
         hyperparams['epoch'] = epochs
 
-        train_gt, _ = sample_gt(gt, train_sample_percentage, mode='random')
-        train_gt, val_gt = sample_gt(train_gt, 0.9, mode="random")
+        train_gt, _ = sample_gt(gt, train_sample_percentage, mode=mode)
+        train_gt, val_gt = sample_gt(train_gt, 0.9, mode=mode)
 
         print(f'Full size: {np.sum(gt > 0)}')
         print(f'Train size: {np.sum(train_gt > 0)}')
@@ -61,6 +83,10 @@ class Model(ABC):
 
         train_loader = create_loader(img, train_gt, hyperparams, shuffle=True)
         val_loader = create_loader(img, val_gt, hyperparams)
+
+        Model.save_train_mask(model_name=camel_to_snake(str(model.__class__.__name__)),
+                              dataset_name=train_loader.dataset.name,
+                              mask=train_gt)
 
         model, losses, val_accs = Model.train(net=model,
                                               optimizer=optimizer,
@@ -276,6 +302,23 @@ class Model(ABC):
                     else:
                         probs[x: x + w, y: y + h] += out
         return probs
+    # ------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def save_train_mask(model_name, dataset_name, mask):
+
+        mask_dir = "./masks/" + model_name + "/" + dataset_name + "/"
+        time_str = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        if not os.path.isdir(mask_dir):
+            os.makedirs(mask_dir, exist_ok=True)
+        gray_filename = f"{mask_dir}/{time_str}_gray_mask.png"
+        color_filename = f"{mask_dir}/{time_str}_color_mask.png"
+        gray = Image.fromarray(mask)
+        color = Image.fromarray(convert_to_color_(mask))
+        gray.save(gray_filename)
+        color.save(color_filename)
+
+        pass
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod

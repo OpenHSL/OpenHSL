@@ -148,7 +148,8 @@ class M3D_HAMIDA(Model):
             X: HSImage,
             y: HSMask,
             epochs: int = 10,
-            train_sample_percentage: float = 0.5):
+            train_sample_percentage: float = 0.5,
+            dataloader_mode: str = "random"):
 
         self.model, self.losses, self.val_accs = super().fit_nn(X=X,
                                                                 y=y,
@@ -157,7 +158,8 @@ class M3D_HAMIDA(Model):
                                                                 model=self.model,
                                                                 optimizer=self.optimizer,
                                                                 loss=self.loss,
-                                                                train_sample_percentage=train_sample_percentage)
+                                                                train_sample_percentage=train_sample_percentage,
+                                                                mode=dataloader_mode)
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
