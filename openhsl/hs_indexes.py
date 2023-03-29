@@ -1,4 +1,5 @@
 import numpy as np
+from itertools import product
 from typing import Union, Tuple
 from openhsl.hs_mask import HSMask
 from openhsl.hsi import HSImage
@@ -237,6 +238,46 @@ def osavi_mask(cube: Union[HSImage, np.ndarray],
     index_mask = HSMask(mask, None)
     
     return index_mask, normalization(mask)
+
+
+def norm_diff_index(channel_1, channel_2):
+    mask = (channel_1 - channel_2) / (channel_1 + channel_2)
+    mask[np.isnan(mask)] = 0
+    mask[mask < 2] = 0
+    mask[mask >= 2] = 1
+    return mask
+
+def find_ndi_indexes(cube: np.ndarray, example_1: np.ndarray, example_2: np.ndarray):
+    example_1_size = example_1[:, :, 0].size
+    example_2_size = example_2[:, :, 0].size
+    min_score = 2.0
+    for i in product(range(example_1.shape[2]), range(example_2.shape[2])):
+        if i[0] == i[1]: continue
+        channel_1 = example_1[:, :, i[0]]
+        channel_2 = example_1[:, :, i[1]]
+
+        ndi = norm_diff_index(channel_1, channel_2)
+
+        score = np.sum(ndi) / example_1_size
+
+        channel_1 = example_2[:, :, i[0]]
+        channel_2 = example_2[:, :, i[1]]
+
+        ndi = norm_diff_index((channel_1, channel_2))
+
+        score += (example_2_size - np.sum(ndi)) / example_2_size
+        if score < min_score:
+            min_score = score
+            best_idx = i[0], i[1]
+
+    print(best_idx)
+
+    channel_1 = cube[:, :, best_idx[0]]
+    channel_2 = cube[:, :, best_idx[1]]
+
+    ndi = norm_diff_index(channel_1, channel_2)
+
+    return ndi
 
 
 def sr_mask(cube: Union[HSImage, np.ndarray],
