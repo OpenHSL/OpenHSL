@@ -247,7 +247,7 @@ def norm_diff_index(channel_1, channel_2):
     mask[mask >= 2] = 1
     return mask
 
-def find_ndi_indexes(cube: np.ndarray, example_1: np.ndarray, example_2: np.ndarray):
+def adaptive_norm_diff_index(cube: np.ndarray, example_1: np.ndarray, example_2: np.ndarray):
     example_1_size = example_1[:, :, 0].size
     example_2_size = example_2[:, :, 0].size
     min_score = 2.0
