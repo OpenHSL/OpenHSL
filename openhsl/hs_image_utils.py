@@ -1,4 +1,5 @@
 import enum
+import numpy as np
 
 
 class BaseIntEnum(enum.IntEnum):
@@ -11,3 +12,7 @@ class BaseIntEnum(enum.IntEnum):
     @classmethod
     def enum_names(cls):
         return [v.name for v in list(cls)]
+
+
+def get_slit_angle(frame: np.ndarray) -> float:
+    pass
