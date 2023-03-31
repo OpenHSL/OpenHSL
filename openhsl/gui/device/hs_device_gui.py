@@ -57,6 +57,13 @@ class HSDeviceGUI(QMainWindow):
         self.ui_device_type_combobox.addItem("test1")
         self.ui_device_type_combobox.addItem("test2")
 
+        # Signal and slot connections
+        # Slit angle tab
+        self.ui_slit_image_path_open_button.clicked.connect(self.on_slit_image_path_button_clicked)
+
+    def on_slit_image_path_button_clicked(self):
+        fileName = QFileDialog.getOpenFileName(self, "Choose file", "", "Image file (*.bmp *.png *.jpg *.tif)")
+
     def closeEvent(self, event):
         self.t_hsd.exit()
         event.accept()
