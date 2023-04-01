@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, 
     QSlider, QSpinBox, QToolBar, QToolButton, QWidget
 from PyQt6 import uic
 from typing import Any, Dict, List
-from openhsl.hs_device import HSDevice
+from openhsl.hs_device import HSDevice, HSDeviceType
 from openhsl.utils import dir_exists, get_current_date, get_current_time, key_exists_in_dict
 
 
@@ -69,6 +69,16 @@ class HSDeviceGUI(QMainWindow):
         self.last_device_settings_path = ""
         self.settings_name = 'hs_device_gui_settings.json'
         self.settings_dict = self.initialize_settings_dict()
+
+        self.prepare_ui()
+
+    def prepare_ui(self):
+        self.fill_device_type_combobox()
+
+    def fill_device_type_combobox(self):
+        d = HSDeviceType.to_dict()
+        for k, v in d.items():
+            self.ui_device_type_combobox.addItem(k, v)
 
     def initialize_settings_dict(self):
         settings_dict = {
