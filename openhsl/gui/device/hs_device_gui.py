@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, 
 from PyQt6 import uic
 from typing import Any, Dict, List
 from openhsl.hs_device import HSDevice
+from openhsl.utils import dir_exists, get_current_date, get_current_time, key_exists_in_dict
 
 
 class HSDeviceQ(HSDevice, QObject):
@@ -62,12 +63,55 @@ class HSDeviceGUI(QMainWindow):
         # Slit angle tab
         self.ui_slit_image_path_open_button.clicked.connect(self.on_slit_image_path_button_clicked)
 
+        self.slit_image_path = ""
+        self.recent_device_settings_path_list = []
+        self.device_settings_path = ""
+        self.last_device_settings_path = ""
+        self.settings_name = 'hs_device_gui_settings.json'
+        self.settings_dict = self.initialize_settings_dict()
+
+    def initialize_settings_dict(self):
+        settings_dict = {
+            "program": "HSDeviceGUI",
+            "generation_date": get_current_date(),
+            "recent_device_settings_path_list": self.recent_device_settings_path_list,
+            "last_device_settings_path": self.device_settings_path,
+        }
+        return settings_dict
+
+    def save_settings(self):
+        self.settings_dict["generation_date"] = get_current_date()
+        self.settings_dict["generation_time"] = get_current_time()
+        self.settings_dict["recent_device_settings_path_list"] = self.recent_device_settings_path_list
+        self.settings_dict["last_device_settings_path"] = self.last_device_settings_path
+
+        with open(self.settings_name, 'w') as settings_file:
+            json.dump(self.settings_dict, settings_file, indent=4)
+
+    def load_settings(self):
+        settings_filename = self.settings_name
+        if dir_exists(settings_filename):
+            with open(settings_filename) as settings_file:
+                self.settings_dict = json.load(settings_file)
+            # Settings tab
+            if key_exists_in_dict(self.settings_dict, "recent_device_settings_path_list"):
+                self.recent_device_settings_path_list = self.settings_dict["recent_device_settings_path_list"]
+
+    def on_main_window_is_shown(self):
+        self.load_settings()
+
     def on_slit_image_path_button_clicked(self):
-        fileName = QFileDialog.getOpenFileName(self, "Choose file", "", "Image file (*.bmp *.png *.jpg *.tif)")
+        self.slit_image_path = QFileDialog.getOpenFileName(self, "Choose file", "", "Image file (*.bmp *.png *.jpg *.tif)")
 
     def closeEvent(self, event):
         self.t_hsd.exit()
+        self.save_settings()
         event.accept()
+
+    def showEvent(self, event):
+        event.accept()
+        # zero interval timer fires only when after all events in the queue are processed
+        QTimer.singleShot(0, self.on_main_window_is_shown)
 
 
 def main():
