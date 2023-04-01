@@ -462,6 +462,9 @@ QTabBar {
 			margin-top: 0px;
 			margin-left: -4px;
 			margin-right: -4px;
+			&:hover {
+				background: $bg-dark-light;
+			}
 		}
 
 		&:hover {

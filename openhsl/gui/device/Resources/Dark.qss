@@ -407,6 +407,10 @@ QTabBar::tab:selected {
   margin-right: -4px;
 }
 
+QTabBar::tab:selected:hover {
+  background: #404142;
+}
+
 QTabBar::tab:hover {
   background: #654321;
 }
