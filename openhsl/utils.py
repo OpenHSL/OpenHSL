@@ -23,6 +23,11 @@ def key_exists_in_dict(dict_var: dict, key: str) -> bool:
     return key in dict_var
 
 
+def get_file_complete_name(path: str) -> str:
+    p = Path(path)
+    return p.name
+
+
 def load_data(path: str, exts: list) -> list:
     return [str(p) for p in Path(path).glob("*") if p.suffix[1:] in exts]
 
