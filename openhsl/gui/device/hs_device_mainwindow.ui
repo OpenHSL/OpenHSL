@@ -354,6 +354,8 @@
      <string>File</string>
     </property>
     <addaction name="fileOpen_action"/>
+    <addaction name="recentDevices_action"/>
+    <addaction name="separator"/>
     <addaction name="fileExit_action"/>
    </widget>
    <widget class="QMenu" name="help_menu">
@@ -379,6 +381,11 @@
   <action name="helpAbout_action">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="recentDevices_action">
+   <property name="text">
+    <string>Recent devices</string>
    </property>
   </action>
  </widget>
