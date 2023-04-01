@@ -13,6 +13,10 @@ class BaseIntEnum(enum.IntEnum):
     def enum_names(cls):
         return [v.name for v in list(cls)]
 
+    @classmethod
+    def to_dict(cls):
+        return {i.name: i.value for i in cls}
+
 
 def get_slit_angle(frame: np.ndarray) -> float:
     pass
