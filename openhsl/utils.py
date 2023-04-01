@@ -1,10 +1,23 @@
-from pathlib import Path
+import datetime
 import math
 import numpy as np
+from pathlib import Path
 
 
 def dir_exists(path: str) -> bool:
     return Path(path).exists()
+
+
+def get_current_date(date_format_str = "%d.%m.%Y") -> str:
+    return datetime.datetime.now().strftime(date_format_str)
+
+
+def get_current_time(time_format_str = "%H:%M:%S") -> str:
+    return datetime.datetime.now().strftime(time_format_str)
+
+
+def key_exists_in_dict(dict_var: dict, key: str) -> bool:
+    return key in dict_var
 
 
 def load_data(path: str, exts: list) -> list:
