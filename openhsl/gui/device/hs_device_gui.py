@@ -74,6 +74,14 @@ class HSDeviceGUI(QMainWindow):
 
     def prepare_ui(self):
         self.fill_device_type_combobox()
+        # TODO maybe add default zeros
+        self.hsd.roi = HSROI()
+        # TODO remove
+        wl_1 = HSCalibrationWavelengthData()
+        wl_1.wavelength = 415
+        wl_2 = HSCalibrationWavelengthData()
+        wl_2.wavelength = 705
+        self.hsd.calib_wavelength_data = [wl_1, wl_2]
 
     def fill_device_type_combobox(self):
         d = HSDeviceType.to_dict()

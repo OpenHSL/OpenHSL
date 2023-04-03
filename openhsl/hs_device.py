@@ -13,6 +13,18 @@ class HSCalibrationWavelengthData:
         self.wavelength_y: Optional[int] = None
         self.wavelength_slit_offset: Optional[int] = None
 
+    def to_dict(self):
+        data = dict()
+        data["wavelength"] = self.wavelength
+        data["calib_slit_slope"] = self.calib_slit_slope
+        data["calib_slit_angle"] = self.calib_slit_angle
+        data["calib_slit_intercept"] = self.calib_slit_intercept
+        data["wavelength_x"] = self.wavelength_x
+        data["wavelength_y"] = self.wavelength_y
+        data["wavelength_slit_offset"] = self.wavelength_slit_offset
+
+        return data
+
 
 class HSDeviceType(BaseIntEnum):
     Undef = 0
@@ -32,6 +44,18 @@ class HSROI:
         self.y: int = 0
         self.width: int = 0
         self.height: int = 0
+
+    def to_dict(self) -> dict:
+        data = dict()
+        data["slit_slope"] = self.slit_slope
+        data["slit_angle"] = self.slit_angle
+        data["slit_intercept"] = self.slit_intercept
+        data["x"] = self.x
+        data["y"] = self.y
+        data["width"] = self.width
+        data["height"] = self.height
+
+        return data
 
 
 class HSDevice:
@@ -67,3 +91,22 @@ class HSDevice:
 
     def load_device_data(self, path: Union[str, Path]) -> None:
         pass
+
+    def to_dict(self):
+        device_data = dict()
+        device_data["device_type"] = self.device_type
+
+        if self.calib_wavelength_data is None:
+            device_data["calib_wavelength_data"] = None
+        else:
+            calib_wavelength_data = dict()
+            for wl in self.calib_wavelength_data:
+                calib_wavelength_data[str(wl.wavelength)] = wl.to_dict()
+            device_data["calib_wavelength_data"] = calib_wavelength_data
+
+        if self.roi is None:
+            device_data["roi"] = None
+        else:
+            device_data["roi"] = self.roi.to_dict()
+
+        return device_data
