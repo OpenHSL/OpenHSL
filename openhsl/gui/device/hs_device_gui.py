@@ -66,7 +66,7 @@ class HSDeviceGUI(QMainWindow):
 
         # Signal and slot connections
         # Slit angle tab
-        self.ui_slit_image_path_open_button.clicked.connect(self.on_slit_image_path_button_clicked)
+        self.ui_slit_image_path_open_button.clicked.connect(self.on_ui_slit_image_path_button_clicked)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -154,8 +154,9 @@ class HSDeviceGUI(QMainWindow):
             # TODO remove action from list
             pass
 
-    def on_slit_image_path_button_clicked(self):
-        self.slit_image_path = QFileDialog.getOpenFileName(self, "Choose file", "", "Image file (*.bmp *.png *.jpg *.tif)")
+    def on_ui_slit_image_path_button_clicked(self):
+        self.slit_image_path = QFileDialog.getOpenFileName(self, "Choose file", "",
+                                                           "Image file (*.bmp *.png *.jpg *.tif)")
 
     def on_ui_device_settings_path_save_button_clicked(self):
         self.device_settings_path, _filter = QFileDialog.getSaveFileName(self, "Save file", "",
