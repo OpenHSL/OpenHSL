@@ -79,6 +79,7 @@ class HSDeviceGUI(QMainWindow):
         self.recent_device_settings_action_triggered_signal_mapper = QSignalMapper(self)
         self.device_settings_path = ""
         self.device_settings_name = ""
+        self.device_settings_dict = dict()
         self.last_device_settings_path = ""
         self.settings_name = 'hs_device_gui_settings.json'
         self.settings_dict = self.initialize_settings_dict()
@@ -142,6 +143,23 @@ class HSDeviceGUI(QMainWindow):
                 self.recent_device_settings_path_list = self.settings_dict["recent_device_settings_path_list"]
                 self.fill_recent_devices_menu()
 
+    def save_device_settings(self):
+        self.device_settings_dict["generation_date"] = utils.get_current_date()
+        self.device_settings_dict["generation_time"] = utils.get_current_time()
+        self.device_settings_dict["slit_image_path"] = self.slit_image_path
+        self.device_settings_dict["device_metadata"] = self.hsd.to_dict()
+        utils.save_dict_to_json(self.device_settings_dict, self.device_settings_path)
+
+    def load_device_settings(self):
+        if utils.dir_exists(self.device_settings_path):
+            self.device_settings_dict = utils.load_dict_from_json(self.device_settings_path)
+            if utils.key_exists_in_dict(self.device_settings_dict, "slit_image_path"):
+                self.slit_image_path = self.device_settings_dict["slit_image_path"]
+                self.ui_slit_image_path_line_edit.setText(self.slit_image_path)
+            if utils.key_exists_in_dict(self.device_settings_dict, "device_metadata"):
+                device_data_dict = self.device_settings_dict["device_metadata"]
+                self.hsd = HSDeviceQ.from_dict(device_data_dict)
+
     def on_main_window_is_shown(self):
         self.load_settings()
 
@@ -150,7 +168,7 @@ class HSDeviceGUI(QMainWindow):
             self.device_settings_path = path
             self.ui_device_settings_path_line_edit.setText(self.device_settings_path)
             self.last_device_settings_path = self.device_settings_path
-            # TODO add load data
+            self.load_device_settings()
         else:
             # TODO remove action from list
             pass
@@ -168,7 +186,7 @@ class HSDeviceGUI(QMainWindow):
             self.device_settings_name = utils.get_file_complete_name(self.device_settings_path)
 
     def on_ui_device_settings_save_button_clicked(self):
-        utils.save_dict_to_json(self.hsd.to_dict(), self.device_settings_path)
+        self.save_device_settings()
         self.last_device_settings_path = self.device_settings_path
         # TODO rewrite
         self.recent_device_settings_path_list.append(self.last_device_settings_path)
