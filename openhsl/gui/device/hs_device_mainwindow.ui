@@ -164,6 +164,16 @@
            </spacer>
           </item>
           <item>
+           <widget class="QPushButton" name="loadSlitImage_pushButton">
+            <property name="text">
+             <string>Load slit image</string>
+            </property>
+            <property name="id" stdset="0">
+             <string>big</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="calcAngle_pushButton">
             <property name="text">
              <string>Calc angle</string>
