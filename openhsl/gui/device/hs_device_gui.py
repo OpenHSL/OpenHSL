@@ -59,11 +59,9 @@ class HSDeviceGUI(QMainWindow):
         # self.ui_slit_image_path_open_button.setIcon(QIcon(QPixmap("icons:three-dots.svg")))
         # Settings tab
         self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
-        self.ui_device_type_combobox.addItem("test1")
-        self.ui_device_type_combobox.addItem("test2")
         self.ui_device_settings_path_line_edit: QLineEdit = self.findChild(QLineEdit, "deviceSettingsPath_lineEdit")
         self.ui_device_settings_path_save_button: QPushButton = self.findChild(QPushButton,
-                                                                               'deviceSettingsPathOpen_pushButton')
+                                                                               'deviceSettingsPathSave_pushButton')
         self.ui_device_settings_save_button: QPushButton = self.findChild(QPushButton,
                                                                           'deviceSettingsSave_pushButton')
 
