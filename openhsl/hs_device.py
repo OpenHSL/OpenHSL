@@ -1,6 +1,7 @@
 from openhsl.hs_image_utils import BaseIntEnum
 from pathlib import Path
 from typing import List, Optional, Union
+import openhsl.utils as utils
 
 
 class HSCalibrationWavelengthData:
@@ -12,6 +13,26 @@ class HSCalibrationWavelengthData:
         self.wavelength_x: Optional[int] = None
         self.wavelength_y: Optional[int] = None
         self.wavelength_slit_offset: Optional[int] = None
+
+    @classmethod
+    def from_dict(cls, data_dict: dict):
+        obj = cls()
+        if utils.key_exists_in_dict(data_dict, "wavelength"):
+            obj.wavelength = data_dict["wavelength"]
+        if utils.key_exists_in_dict(data_dict, "calib_slit_slope"):
+            obj.calib_slit_slope = data_dict["calib_slit_slope"]
+        if utils.key_exists_in_dict(data_dict, "calib_slit_angle"):
+            obj.calib_slit_angle = data_dict["calib_slit_angle"]
+        if utils.key_exists_in_dict(data_dict, "calib_slit_intercept"):
+            obj.calib_slit_intercept = data_dict["calib_slit_intercept"]
+        if utils.key_exists_in_dict(data_dict, "wavelength_x"):
+            obj.wavelength_x = data_dict["wavelength_x"]
+        if utils.key_exists_in_dict(data_dict, "wavelength_y"):
+            obj.wavelength_y = data_dict["wavelength_y"]
+        if utils.key_exists_in_dict(data_dict, "wavelength_slit_offset"):
+            obj.wavelength_slit_offset = data_dict["wavelength_slit_offset"]
+
+        return obj
 
     def to_dict(self):
         data = dict()
@@ -44,6 +65,26 @@ class HSROI:
         self.y: int = 0
         self.width: int = 0
         self.height: int = 0
+
+    @classmethod
+    def from_dict(cls, data_dict: dict):
+        obj = cls()
+        if utils.key_exists_in_dict(data_dict, "slit_slope"):
+            obj.slit_slope = data_dict["slit_slope"]
+        if utils.key_exists_in_dict(data_dict, "slit_angle"):
+            obj.slit_angle = data_dict["slit_angle"]
+        if utils.key_exists_in_dict(data_dict, "slit_intercept"):
+            obj.slit_intercept = data_dict["slit_intercept"]
+        if utils.key_exists_in_dict(data_dict, "x"):
+            obj.x = data_dict["x"]
+        if utils.key_exists_in_dict(data_dict, "y"):
+            obj.y = data_dict["y"]
+        if utils.key_exists_in_dict(data_dict, "width"):
+            obj.width = data_dict["width"]
+        if utils.key_exists_in_dict(data_dict, "height"):
+            obj.height = data_dict["height"]
+
+        return obj
 
     def to_dict(self) -> dict:
         data = dict()
@@ -91,6 +132,21 @@ class HSDevice:
 
     def load_device_data(self, path: Union[str, Path]) -> None:
         pass
+
+    @classmethod
+    def from_dict(cls, device_data: dict):
+        obj = cls()
+        if utils.key_exists_in_dict(device_data, "device_type"):
+            obj.device_type = device_data["device_type"]
+        if utils.key_exists_in_dict(device_data, "calib_wavelength_data"):
+            calib_wavelength_data_dict = device_data["calib_wavelength_data"]
+            calib_wavelength_data = \
+                [HSCalibrationWavelengthData.from_dict(v) for v in calib_wavelength_data_dict.values()]
+            obj.calib_wavelength_data = calib_wavelength_data
+        if utils.key_exists_in_dict(device_data, "roi"):
+            obj.roi = HSROI.from_dict(device_data["roi"])
+
+        return obj
 
     def to_dict(self):
         device_data = dict()
