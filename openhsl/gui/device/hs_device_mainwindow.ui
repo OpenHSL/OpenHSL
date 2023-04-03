@@ -310,7 +310,7 @@
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="settingsSave_pushButton">
+           <widget class="QPushButton" name="deviceSettingsSave_pushButton">
             <property name="text">
              <string>Save</string>
             </property>
@@ -353,8 +353,13 @@
     <property name="title">
      <string>File</string>
     </property>
+    <widget class="QMenu" name="recentDevices_menu">
+     <property name="title">
+      <string>Recent devices</string>
+     </property>
+    </widget>
     <addaction name="fileOpen_action"/>
-    <addaction name="recentDevices_action"/>
+    <addaction name="recentDevices_menu"/>
     <addaction name="separator"/>
     <addaction name="fileExit_action"/>
    </widget>
@@ -381,11 +386,6 @@
   <action name="helpAbout_action">
    <property name="text">
     <string>About</string>
-   </property>
-  </action>
-  <action name="recentDevices_action">
-   <property name="text">
-    <string>Recent devices</string>
    </property>
   </action>
  </widget>

@@ -46,7 +46,7 @@ class HSDeviceGUI(QMainWindow):
         self.ui_menu_bar: QMenuBar = self.findChild(QMenuBar, "menubar")
         self.ui_file_menu: QMenu = self.findChild(QMenu, "file_menu")
         self.ui_file_open_action: QAction = self.findChild(QAction, "fileOpen_action")
-        self.ui_recent_devices_action: QAction = self.findChild(QAction, "recentDevices_action")
+        self.ui_recent_devices_menu: QMenu = self.findChild(QMenu, "recentDevices_menu")
         self.ui_file_exit_action: QAction = self.findChild(QAction, "fileExit_action")
         self.ui_help_menu: QMenu = self.findChild(QMenu, "help_menu")
         self.ui_help_about_action: QAction = self.findChild(QAction, "helpAbout_action")
