@@ -10,8 +10,8 @@ from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, 
     QSlider, QSpinBox, QToolBar, QToolButton, QWidget
 from PyQt6 import uic
 from typing import Any, Dict, List
-from openhsl.hs_device import HSDevice, HSDeviceType
-from openhsl.utils import dir_exists, get_current_date, get_current_time, key_exists_in_dict
+from openhsl.hs_device import HSDevice, HSDeviceType, HSROI, HSCalibrationWavelengthData
+import openhsl.utils as utils
 
 
 class HSDeviceQ(HSDevice, QObject):
@@ -83,15 +83,16 @@ class HSDeviceGUI(QMainWindow):
     def initialize_settings_dict(self):
         settings_dict = {
             "program": "HSDeviceGUI",
-            "generation_date": get_current_date(),
+            "generation_date": utils.get_current_date(),
             "recent_device_settings_path_list": self.recent_device_settings_path_list,
             "last_device_settings_path": self.device_settings_path,
         }
         return settings_dict
 
     def save_settings(self):
-        self.settings_dict["generation_date"] = get_current_date()
-        self.settings_dict["generation_time"] = get_current_time()
+        self.recent_device_settings_path_list = list(set(self.recent_device_settings_path_list))
+        self.settings_dict["generation_date"] = utils.get_current_date()
+        self.settings_dict["generation_time"] = utils.get_current_time()
         self.settings_dict["recent_device_settings_path_list"] = self.recent_device_settings_path_list
         self.settings_dict["last_device_settings_path"] = self.last_device_settings_path
 
@@ -100,11 +101,11 @@ class HSDeviceGUI(QMainWindow):
 
     def load_settings(self):
         settings_filename = self.settings_name
-        if dir_exists(settings_filename):
+        if utils.dir_exists(settings_filename):
             with open(settings_filename) as settings_file:
                 self.settings_dict = json.load(settings_file)
             # Settings tab
-            if key_exists_in_dict(self.settings_dict, "recent_device_settings_path_list"):
+            if utils.key_exists_in_dict(self.settings_dict, "recent_device_settings_path_list"):
                 self.recent_device_settings_path_list = self.settings_dict["recent_device_settings_path_list"]
 
     def on_main_window_is_shown(self):
