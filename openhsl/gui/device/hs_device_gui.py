@@ -32,7 +32,6 @@ class HSDeviceGUI(QMainWindow):
         openhsl_id = 'locus.openhsl.hs_device_gui.0.0.1'  # arbitrary string
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(openhsl_id)
 
-        with open("./Resources/Dark.qss", 'r') as f:
         qss_path = "./Resources/Dark.qss"
 
         with open(qss_path, 'r') as f:
