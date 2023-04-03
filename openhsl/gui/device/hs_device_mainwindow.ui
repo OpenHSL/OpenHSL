@@ -249,7 +249,7 @@
            <widget class="QLineEdit" name="deviceSettingsPath_lineEdit"/>
           </item>
           <item row="1" column="2">
-           <widget class="QPushButton" name="deviceSettingsPathOpen_pushButton">
+           <widget class="QPushButton" name="deviceSettingsPathSave_pushButton">
             <property name="maximumSize">
              <size>
               <width>24</width>
