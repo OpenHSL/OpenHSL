@@ -61,12 +61,15 @@ class HSDeviceGUI(QMainWindow):
         self.ui_device_settings_path_line_edit: QLineEdit = self.findChild(QLineEdit, "deviceSettingsPath_lineEdit")
         self.ui_device_settings_path_save_button: QPushButton = self.findChild(QPushButton,
                                                                                'deviceSettingsPathOpen_pushButton')
+        self.ui_device_settings_save_button: QPushButton = self.findChild(QPushButton,
+                                                                          'deviceSettingsSave_pushButton')
 
         # Signal and slot connections
         # Slit angle tab
         self.ui_slit_image_path_open_button.clicked.connect(self.on_slit_image_path_button_clicked)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
+        self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
 
         self.slit_image_path = ""
         self.recent_device_settings_path_list = []
@@ -135,6 +138,12 @@ class HSDeviceGUI(QMainWindow):
         if self.device_settings_path != "":
             self.ui_device_settings_path_line_edit.setText(self.device_settings_path)
             self.device_settings_name = utils.get_file_complete_name(self.device_settings_path)
+
+    def on_ui_device_settings_save_button_clicked(self):
+        utils.save_dict_to_json(self.hsd.to_dict(), self.device_settings_path)
+        self.last_device_settings_path = self.device_settings_path
+        # TODO rewrite
+        self.recent_device_settings_path_list.append(self.last_device_settings_path)
 
     def closeEvent(self, event):
         self.t_hsd.exit()
