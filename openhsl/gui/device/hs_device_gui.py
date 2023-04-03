@@ -75,6 +75,8 @@ class HSDeviceGUI(QMainWindow):
         self.slit_image_path = ""
         self.recent_device_settings_path_list = []
         self.ui_recent_device_settings_action_list: List[QAction] = []
+        # Recent device settings action triggered signal mapper for actions
+        self.recent_device_settings_action_triggered_signal_mapper = QSignalMapper(self)
         self.device_settings_path = ""
         self.device_settings_name = ""
         self.last_device_settings_path = ""
@@ -104,6 +106,12 @@ class HSDeviceGUI(QMainWindow):
             action = QAction(path, self.ui_recent_devices_menu)
             self.ui_recent_devices_menu.addAction(action)
             self.ui_recent_device_settings_action_list.append(action)
+
+        for action in self.ui_recent_device_settings_action_list:
+            self.recent_device_settings_action_triggered_signal_mapper.setMapping(action, action.text())
+            action.triggered.connect(self.recent_device_settings_action_triggered_signal_mapper.map)
+        self.recent_device_settings_action_triggered_signal_mapper.mappedString.connect(
+            self.on_ui_recent_device_settings_action_triggered)
 
     def initialize_settings_dict(self):
         settings_dict = {
@@ -136,6 +144,16 @@ class HSDeviceGUI(QMainWindow):
 
     def on_main_window_is_shown(self):
         self.load_settings()
+
+    def on_ui_recent_device_settings_action_triggered(self, path: str):
+        if utils.dir_exists(path):
+            self.device_settings_path = path
+            self.ui_device_settings_path_line_edit.setText(self.device_settings_path)
+            self.last_device_settings_path = self.device_settings_path
+            # TODO add load data
+        else:
+            # TODO remove action from list
+            pass
 
     def on_slit_image_path_button_clicked(self):
         self.slit_image_path = QFileDialog.getOpenFileName(self, "Choose file", "", "Image file (*.bmp *.png *.jpg *.tif)")
