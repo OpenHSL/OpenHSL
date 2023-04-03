@@ -33,6 +33,9 @@ class HSDeviceGUI(QMainWindow):
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(openhsl_id)
 
         with open("./Resources/Dark.qss", 'r') as f:
+        qss_path = "./Resources/Dark.qss"
+
+        with open(qss_path, 'r') as f:
             strings = f.read()
             self.setStyleSheet(strings)
 
