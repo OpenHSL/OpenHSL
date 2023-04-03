@@ -16,8 +16,8 @@ from openhsl.utils import dir_exists, get_current_date, get_current_time, key_ex
 
 class HSDeviceQ(HSDevice, QObject):
     def __init__(self):
-        super(HSDevice, self).__init__()
-        super(QObject, self).__init__()
+        HSDevice.__init__(self)
+        QObject.__init__(self)
 
 
 # noinspection PyTypeChecker
