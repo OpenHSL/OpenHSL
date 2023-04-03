@@ -58,14 +58,20 @@ class HSDeviceGUI(QMainWindow):
         self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
         self.ui_device_type_combobox.addItem("test1")
         self.ui_device_type_combobox.addItem("test2")
+        self.ui_device_settings_path_line_edit: QLineEdit = self.findChild(QLineEdit, "deviceSettingsPath_lineEdit")
+        self.ui_device_settings_path_save_button: QPushButton = self.findChild(QPushButton,
+                                                                               'deviceSettingsPathOpen_pushButton')
 
         # Signal and slot connections
         # Slit angle tab
         self.ui_slit_image_path_open_button.clicked.connect(self.on_slit_image_path_button_clicked)
+        # Settings tab
+        self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
 
         self.slit_image_path = ""
         self.recent_device_settings_path_list = []
         self.device_settings_path = ""
+        self.device_settings_name = ""
         self.last_device_settings_path = ""
         self.settings_name = 'hs_device_gui_settings.json'
         self.settings_dict = self.initialize_settings_dict()
@@ -121,6 +127,14 @@ class HSDeviceGUI(QMainWindow):
 
     def on_slit_image_path_button_clicked(self):
         self.slit_image_path = QFileDialog.getOpenFileName(self, "Choose file", "", "Image file (*.bmp *.png *.jpg *.tif)")
+
+    def on_ui_device_settings_path_save_button_clicked(self):
+        self.device_settings_path, _filter = QFileDialog.getSaveFileName(self, "Save file", "",
+                                                                         "Settings file (*.json)")
+
+        if self.device_settings_path != "":
+            self.ui_device_settings_path_line_edit.setText(self.device_settings_path)
+            self.device_settings_name = utils.get_file_complete_name(self.device_settings_path)
 
     def closeEvent(self, event):
         self.t_hsd.exit()
