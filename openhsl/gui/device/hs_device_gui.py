@@ -55,6 +55,7 @@ class HSDeviceGUI(QMainWindow):
 
         # Slit angle tab
         self.ui_slit_image_path_open_button: QPushButton = self.findChild(QPushButton, 'slitImagePathOpen_pushButton')
+        self.ui_slit_image_path_line_edit: QLineEdit = self.findChild(QLineEdit, 'slitImagePath_lineEdit')
         # self.ui_slit_image_path_open_button.setIcon(QIcon(QPixmap("icons:three-dots.svg")))
         # Settings tab
         self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
