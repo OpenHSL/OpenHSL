@@ -56,6 +56,7 @@ class HSDeviceGUI(QMainWindow):
         # Slit angle tab
         self.ui_slit_image_path_open_button: QPushButton = self.findChild(QPushButton, 'slitImagePathOpen_pushButton')
         self.ui_slit_image_path_line_edit: QLineEdit = self.findChild(QLineEdit, 'slitImagePath_lineEdit')
+        self.ui_load_slit_image_button: QPushButton = self.findChild(QPushButton, 'loadSlitImage_pushButton')
         # self.ui_slit_image_path_open_button.setIcon(QIcon(QPixmap("icons:three-dots.svg")))
         # Settings tab
         self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
@@ -68,6 +69,7 @@ class HSDeviceGUI(QMainWindow):
         # Signal and slot connections
         # Slit angle tab
         self.ui_slit_image_path_open_button.clicked.connect(self.on_ui_slit_image_path_button_clicked)
+        self.ui_load_slit_image_button.clicked.connect(self.on_ui_load_slit_image_button_clicked)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -174,8 +176,14 @@ class HSDeviceGUI(QMainWindow):
             pass
 
     def on_ui_slit_image_path_button_clicked(self):
-        self.slit_image_path = QFileDialog.getOpenFileName(self, "Choose file", "",
-                                                           "Image file (*.bmp *.png *.jpg *.tif)")
+        file_path, _filter = QFileDialog.getOpenFileName(self, "Choose file", "",
+                                                "Image file (*.bmp *.png *.jpg *.tif)")
+        if file_path != "":
+            self.slit_image_path = file_path
+            self.ui_slit_image_path_line_edit.setText(self.slit_image_path)
+
+    def on_ui_load_slit_image_button_clicked(self):
+        self.slit_image = cv.imread(self.slit_image_path, cv.IMREAD_COLOR)
 
     def on_ui_device_settings_path_save_button_clicked(self):
         self.device_settings_path, _filter = QFileDialog.getSaveFileName(self, "Save file", "",
