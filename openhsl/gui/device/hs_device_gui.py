@@ -5,8 +5,11 @@ import json
 import sys
 from PyQt6.QtCore import Qt, QDir, QFileInfo, QEvent, QObject, QSignalMapper, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QAction, QActionGroup, QFont, QIcon, QImage, QPixmap
+from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
     QGraphicsPixmapItem, QGraphicsScene, QGraphicsView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QPushButton, \
+    QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsTextItem, \
+    QGraphicsScene, QGraphicsView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QPushButton, \
     QSlider, QSpinBox, QToolBar, QToolButton, QWidget
 from PyQt6 import uic
 from typing import Any, Dict, List
@@ -52,6 +55,7 @@ class HSDeviceGUI(QMainWindow):
         self.ui_slit_image_path_open_button: QPushButton = self.findChild(QPushButton, 'slitImagePathOpen_pushButton')
         self.ui_slit_image_path_line_edit: QLineEdit = self.findChild(QLineEdit, 'slitImagePath_lineEdit')
         self.ui_load_slit_image_button: QPushButton = self.findChild(QPushButton, 'loadSlitImage_pushButton')
+        self.ui_slit_angle_graphics_view: QGraphicsView = self.findChild(QGraphicsView, 'slitAngle_graphicsView')
         # self.ui_slit_image_path_open_button.setIcon(QIcon(QPixmap("icons:three-dots.svg")))
         # Settings tab
         self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
@@ -69,7 +73,12 @@ class HSDeviceGUI(QMainWindow):
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
 
+        # Slit angle tab graphics
+        self.slit_angle_graphics_scene = QGraphicsScene(self)
         self.slit_image_path = ""
+        self.slit_graphics_line_item = QGraphicsLineItem()
+        self.slit_graphics_text_item = QGraphicsTextItem()
+
         self.recent_device_settings_path_list = []
         self.ui_recent_device_settings_action_list: List[QAction] = []
         # Recent device settings action triggered signal mapper for actions
@@ -93,6 +102,36 @@ class HSDeviceGUI(QMainWindow):
         wl_2 = HSCalibrationWavelengthData()
         wl_2.wavelength = 705
         self.hsd.calib_wavelength_data = [wl_1, wl_2]
+
+        gv_hints = QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform | \
+                   QPainter.RenderHint.TextAntialiasing
+
+        self.ui_slit_angle_graphics_view.setScene(self.slit_angle_graphics_scene)
+        self.ui_slit_angle_graphics_view.setRenderHints(gv_hints)
+
+        dashed_pen = QPen(QColor("white"))
+        dashed_pen.setStyle(Qt.PenStyle.DashLine)
+        dashed_pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        dashed_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        dashed_pen.setWidth(2)
+
+        dashed_pen_slit = QPen(QColor("red"))
+        dashed_pen_slit.setStyle(Qt.PenStyle.DashLine)
+        dashed_pen_slit.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        dashed_pen_slit.setCapStyle(Qt.PenCapStyle.RoundCap)
+        dashed_pen_slit.setWidth(2)
+
+        circle_pen = QPen(QColor("red"))
+        circle_pen.setWidth(2)
+
+        polygon_pen = QPen(QColor("white"))
+        polygon_pen.setWidth(2)
+
+        polygon_brush = QBrush(QColor("red"))
+        polygon_brush.setStyle(Qt.BrushStyle.SolidPattern)
+
+        self.slit_graphics_line_item.setPen(dashed_pen_slit)
+        self.slit_graphics_line_item.setOpacity(0.5)
 
     def fill_device_type_combobox(self):
         d = HSDeviceType.to_dict()
@@ -158,6 +197,11 @@ class HSDeviceGUI(QMainWindow):
                 self.hsd = HSDeviceQ.from_dict(device_data_dict)
                 self.hsd.load_dict(device_data_dict)
 
+    @staticmethod
+    def flush_graphics_scene_data(graphics_scene: QGraphicsScene):
+        for item in graphics_scene.items():
+            graphics_scene.removeItem(item)
+
     def on_main_window_is_shown(self):
         self.load_settings()
 
@@ -180,6 +224,7 @@ class HSDeviceGUI(QMainWindow):
 
     def on_ui_load_slit_image_button_clicked(self):
         self.slit_image = cv.imread(self.slit_image_path, cv.IMREAD_COLOR)
+        self.flush_graphics_scene_data(self.slit_angle_graphics_scene)
 
     def on_ui_device_settings_path_save_button_clicked(self):
         self.device_settings_path, _filter = QFileDialog.getSaveFileName(self, "Save file", "",
