@@ -3,14 +3,14 @@ import ctypes
 import itertools
 import json
 import sys
-from PyQt6.QtCore import Qt, QDir, QFileInfo, QEvent, QObject, QSignalMapper, QThread, QTimer, pyqtSignal
+from PyQt6.QtCore import Qt, QDir, QFileInfo, QEvent, QObject, QSignalMapper, QThread, QTimer, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
     QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsTextItem, \
     QGraphicsScene, QGraphicsView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QPushButton, \
     QSlider, QSpinBox, QToolBar, QToolButton, QWidget
 from PyQt6 import uic
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from openhsl.hs_device import HSDevice, HSDeviceType, HSROI, HSCalibrationWavelengthData
 from openhsl.gui.device.hs_device_qt import HSDeviceQt
 import openhsl.utils as utils
@@ -67,6 +67,7 @@ class HSDeviceGUI(QMainWindow):
         # Slit angle tab
         self.ui_slit_image_path_open_button.clicked.connect(self.on_ui_slit_image_path_button_clicked)
         self.ui_load_slit_image_button.clicked.connect(self.on_ui_load_slit_image_button_clicked)
+        self.hsd.send_slit_image.connect(self.receive_slit_image)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -74,6 +75,7 @@ class HSDeviceGUI(QMainWindow):
         # Slit angle tab graphics
         self.slit_angle_graphics_scene = QGraphicsScene(self)
         self.slit_image_path = ""
+        self.slit_image_qt: Optional[QImage] = None
         self.slit_graphics_line_item = QGraphicsLineItem()
         self.slit_graphics_text_item = QGraphicsTextItem()
 
@@ -199,6 +201,13 @@ class HSDeviceGUI(QMainWindow):
         for item in graphics_scene.items():
             graphics_scene.removeItem(item)
 
+    @pyqtSlot(QImage)
+    def receive_slit_image(self, slit_image_qt):
+        self.slit_image_qt = slit_image_qt
+        self.slit_angle_graphics_scene.removeItem(self.slit_graphics_text_item)
+        pixmap_item = QGraphicsPixmapItem(QPixmap.fromImage(self.slit_image_qt))
+        self.slit_angle_graphics_scene.addItem(pixmap_item)
+
     def on_main_window_is_shown(self):
         self.load_settings()
 
@@ -221,6 +230,7 @@ class HSDeviceGUI(QMainWindow):
 
     def on_ui_load_slit_image_button_clicked(self):
         self.flush_graphics_scene_data(self.slit_angle_graphics_scene)
+        self.hsd.read_slit_image(self.slit_image_path)
 
     def on_ui_device_settings_path_save_button_clicked(self):
         self.device_settings_path, _filter = QFileDialog.getSaveFileName(self, "Save file", "",
