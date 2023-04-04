@@ -4,10 +4,8 @@ import itertools
 import json
 import sys
 from PyQt6.QtCore import Qt, QDir, QFileInfo, QEvent, QObject, QSignalMapper, QThread, QTimer, pyqtSignal
-from PyQt6.QtGui import QAction, QActionGroup, QFont, QIcon, QImage, QPixmap
 from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
-    QGraphicsPixmapItem, QGraphicsScene, QGraphicsView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QPushButton, \
     QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsTextItem, \
     QGraphicsScene, QGraphicsView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QPushButton, \
     QSlider, QSpinBox, QToolBar, QToolButton, QWidget
@@ -194,7 +192,6 @@ class HSDeviceGUI(QMainWindow):
                 self.ui_slit_image_path_line_edit.setText(self.slit_image_path)
             if utils.key_exists_in_dict(self.device_settings_dict, "device_metadata"):
                 device_data_dict = self.device_settings_dict["device_metadata"]
-                self.hsd = HSDeviceQ.from_dict(device_data_dict)
                 self.hsd.load_dict(device_data_dict)
 
     @staticmethod
@@ -223,7 +220,6 @@ class HSDeviceGUI(QMainWindow):
             self.ui_slit_image_path_line_edit.setText(self.slit_image_path)
 
     def on_ui_load_slit_image_button_clicked(self):
-        self.slit_image = cv.imread(self.slit_image_path, cv.IMREAD_COLOR)
         self.flush_graphics_scene_data(self.slit_angle_graphics_scene)
 
     def on_ui_device_settings_path_save_button_clicked(self):
