@@ -11,13 +11,8 @@ from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, 
 from PyQt6 import uic
 from typing import Any, Dict, List
 from openhsl.hs_device import HSDevice, HSDeviceType, HSROI, HSCalibrationWavelengthData
+from openhsl.gui.device.hs_device_qt import HSDeviceQt
 import openhsl.utils as utils
-
-
-class HSDeviceQ(HSDevice, QObject):
-    def __init__(self):
-        HSDevice.__init__(self)
-        QObject.__init__(self)
 
 
 # noinspection PyTypeChecker
@@ -38,7 +33,7 @@ class HSDeviceGUI(QMainWindow):
             strings = f.read()
             self.setStyleSheet(strings)
 
-        self.hsd = HSDeviceQ()
+        self.hsd = HSDeviceQt()
         self.t_hsd = QThread()
         self.t_hsd.start()
         self.hsd.moveToThread(self.t_hsd)
