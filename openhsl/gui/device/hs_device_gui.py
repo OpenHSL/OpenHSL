@@ -156,6 +156,7 @@ class HSDeviceGUI(QMainWindow):
             if utils.key_exists_in_dict(self.device_settings_dict, "device_metadata"):
                 device_data_dict = self.device_settings_dict["device_metadata"]
                 self.hsd = HSDeviceQ.from_dict(device_data_dict)
+                self.hsd.load_dict(device_data_dict)
 
     def on_main_window_is_shown(self):
         self.load_settings()
