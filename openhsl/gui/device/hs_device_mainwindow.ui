@@ -26,7 +26,7 @@
        </attribute>
        <layout class="QGridLayout" name="gridLayout_4">
         <item row="0" column="0">
-         <widget class="QGraphicsView" name="slitAngle_graphicsView">
+         <widget class="HSGraphicsView" name="slitAngle_graphicsView">
           <property name="backgroundBrush">
            <brush brushstyle="SolidPattern">
             <color alpha="255">
@@ -411,6 +411,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>HSGraphicsView</class>
+   <extends>QGraphicsView</extends>
+   <header>openhsl.gui.device.hs_graphics_view</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

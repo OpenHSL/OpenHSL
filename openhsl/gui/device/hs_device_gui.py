@@ -3,16 +3,18 @@ import ctypes
 import itertools
 import json
 import sys
-from PyQt6.QtCore import Qt, QDir, QFileInfo, QEvent, QObject, QSignalMapper, QThread, QTimer, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import Qt, QDir, QFileInfo, QEvent, QObject, QPointF, QRect, QRectF, QSignalMapper, QThread, QTimer, \
+    pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
-    QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsTextItem, \
-    QGraphicsScene, QGraphicsView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QPushButton, \
+    QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsRectItem, \
+    QGraphicsTextItem, QGraphicsScene, QGraphicsView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QPushButton, \
     QSlider, QSpinBox, QToolBar, QToolButton, QWidget
 from PyQt6 import uic
 from typing import Any, Dict, List, Optional
 from openhsl.hs_device import HSDevice, HSDeviceType, HSROI, HSCalibrationWavelengthData
 from openhsl.gui.device.hs_device_qt import HSDeviceQt
+from openhsl.gui.device.hs_graphics_view import HSGraphicsView
 import openhsl.utils as utils
 
 
@@ -53,7 +55,7 @@ class HSDeviceGUI(QMainWindow):
         self.ui_slit_image_path_open_button: QPushButton = self.findChild(QPushButton, 'slitImagePathOpen_pushButton')
         self.ui_slit_image_path_line_edit: QLineEdit = self.findChild(QLineEdit, 'slitImagePath_lineEdit')
         self.ui_load_slit_image_button: QPushButton = self.findChild(QPushButton, 'loadSlitImage_pushButton')
-        self.ui_slit_angle_graphics_view: QGraphicsView = self.findChild(QGraphicsView, 'slitAngle_graphicsView')
+        self.ui_slit_angle_graphics_view: HSGraphicsView = self.findChild(HSGraphicsView, 'slitAngle_graphicsView')
         # self.ui_slit_image_path_open_button.setIcon(QIcon(QPixmap("icons:three-dots.svg")))
         # Settings tab
         self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
@@ -77,6 +79,7 @@ class HSDeviceGUI(QMainWindow):
         self.slit_image_path = ""
         self.slit_image_qt: Optional[QImage] = None
         self.slit_graphics_line_item = QGraphicsLineItem()
+        self.slit_graphics_marquee_area_rect_item = QGraphicsRectItem()
         self.slit_graphics_text_item = QGraphicsTextItem()
 
         self.recent_device_settings_path_list = []
@@ -91,6 +94,7 @@ class HSDeviceGUI(QMainWindow):
         self.settings_dict = self.initialize_settings_dict()
 
         self.prepare_ui()
+        # self.installEventFilter(self)
 
     def prepare_ui(self):
         self.fill_device_type_combobox()
@@ -108,6 +112,9 @@ class HSDeviceGUI(QMainWindow):
 
         self.ui_slit_angle_graphics_view.setScene(self.slit_angle_graphics_scene)
         self.ui_slit_angle_graphics_view.setRenderHints(gv_hints)
+        self.ui_slit_angle_graphics_view.setMouseTracking(True)
+        self.ui_slit_angle_graphics_view.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
+        self.ui_slit_angle_graphics_view.marquee_area_changed.connect(self.on_marquee_area_changed)
 
         dashed_pen = QPen(QColor("white"))
         dashed_pen.setStyle(Qt.PenStyle.DashLine)
@@ -115,11 +122,14 @@ class HSDeviceGUI(QMainWindow):
         dashed_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         dashed_pen.setWidth(2)
 
-        dashed_pen_slit = QPen(QColor("red"))
-        dashed_pen_slit.setStyle(Qt.PenStyle.DashLine)
-        dashed_pen_slit.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
-        dashed_pen_slit.setCapStyle(Qt.PenCapStyle.RoundCap)
-        dashed_pen_slit.setWidth(2)
+        dashed_pen_marquee = QPen(QColor("white"))
+        dashed_pen_marquee.setStyle(Qt.PenStyle.DashLine)
+        dashed_pen_marquee.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        dashed_pen_marquee.setCapStyle(Qt.PenCapStyle.RoundCap)
+        dashed_pen_marquee.setWidth(2)
+
+        brush_marquee = QBrush(QColor(255, 255, 255, 128))
+        brush_marquee.setStyle(Qt.BrushStyle.BDiagPattern)
 
         circle_pen = QPen(QColor("red"))
         circle_pen.setWidth(2)
@@ -130,8 +140,20 @@ class HSDeviceGUI(QMainWindow):
         polygon_brush = QBrush(QColor("red"))
         polygon_brush.setStyle(Qt.BrushStyle.SolidPattern)
 
-        self.slit_graphics_line_item.setPen(dashed_pen_slit)
+        self.slit_graphics_line_item.setPen(dashed_pen_marquee)
         self.slit_graphics_line_item.setOpacity(0.5)
+
+        self.slit_graphics_marquee_area_rect_item.setPen(dashed_pen_marquee)
+        self.slit_graphics_marquee_area_rect_item.setBrush(brush_marquee)
+        self.slit_graphics_marquee_area_rect_item.setOpacity(0.5)
+
+    def initialize_texts(self):
+        text_font = QFont("Century Gothic", 20, QFont.Weight.Light)
+        text_font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)
+
+        self.slit_graphics_text_item.setDefaultTextColor(QColor("white"))
+        self.slit_graphics_text_item.setFont(text_font)
+        self.slit_graphics_text_item.setOpacity(0.5)
 
     def fill_device_type_combobox(self):
         d = HSDeviceType.to_dict()
@@ -245,6 +267,57 @@ class HSDeviceGUI(QMainWindow):
         self.last_device_settings_path = self.device_settings_path
         # TODO rewrite
         self.recent_device_settings_path_list.append(self.last_device_settings_path)
+
+    def on_marquee_area_changed(self, top_left: QRectF, bottom_right: QRectF):
+        graphics_view: Optional[QGraphicsView, HSGraphicsView] = QObject.sender(self)
+        top_left_on_scene = graphics_view.mapToScene(top_left)
+        bottom_right_on_scene = graphics_view.mapToScene(bottom_right)
+        marquee_area_rect = QRectF(top_left_on_scene, bottom_right_on_scene)
+        marquee_area_graphics_rect_item: Optional[QGraphicsRectItem] = None
+
+        if graphics_view == self.ui_slit_angle_graphics_view:
+            marquee_area_graphics_rect_item = self.slit_graphics_marquee_area_rect_item
+
+        if marquee_area_graphics_rect_item is not None:
+            marquee_area_graphics_rect_item.setRect(marquee_area_rect)
+            if marquee_area_graphics_rect_item not in graphics_view.scene().items():
+                graphics_view.scene().addItem(marquee_area_graphics_rect_item)
+
+    def eventFilter(self, obj, event):
+        # if obj == self.ui_slit_angle_graphics_view:
+        #     if event.type() == QEvent.Type.MouseButtonPress:
+        #         if Qt.KeyboardModifier.ControlModifier == QApplication.keyboardModifiers():
+        #             if event.button() == Qt.MouseButton.LeftButton:
+        #                 self.slit_angle_graphics_scene.removeItem(self.slit_graphics_rect_item)
+        #                 relative_origin = self.ui_slit_angle_graphics_view.mapToScene(event.pos())
+        #                 rect_qt = QRectF(relative_origin, QPointF(30, 20))
+        #                 rect_qt = QRectF(relative_origin, relative_origin)
+        #                 self.slit_graphics_rect_item.setRect(rect_qt)
+        #                 self.slit_angle_graphics_scene.addItem(self.slit_graphics_rect_item)
+        #                 print(relative_origin)
+        #                 return True
+        #     elif event.type() == QEvent.Type.MouseMove:
+        #         if Qt.KeyboardModifier.ControlModifier == QApplication.keyboardModifiers():
+        #             if event.button() == Qt.MouseButton.LeftButton:
+        #                 relative_origin = self.ui_slit_angle_graphics_view.mapToScene(event.pos())
+        #                 print(self.ui_slit_angle_graphics_view.mapToScene(event.pos()))
+        #                 rect_qt = self.slit_graphics_rect_item.rect()
+        #                 rect_qt.setBottomRight(relative_origin)
+        #                 self.slit_graphics_rect_item.setRect(rect_qt)
+        #         print("mm")
+        #     elif event.type() == QEvent.Type.MouseButtonRelease:
+        #         if Qt.KeyboardModifier.ControlModifier == QApplication.keyboardModifiers():
+        #             if event.button() == Qt.MouseButton.LeftButton:
+        #                 relative_origin = self.ui_slit_angle_graphics_view.mapToScene(event.pos())
+        #                 rect_qt = self.slit_graphics_rect_item.rect()
+        #                 rect_qt.setBottomRight(relative_origin)
+        #                 self.slit_graphics_rect_item.setRect(rect_qt)
+        #                 # self.slit_angle_graphics_scene.addItem(self.slit_graphics_rect_item)
+        #                 print(rect_qt)
+        #                 print(relative_origin)
+        #                 return True
+
+        return super(HSDeviceGUI, self).eventFilter(obj, event)
 
     def closeEvent(self, event):
         self.t_hsd.exit()
