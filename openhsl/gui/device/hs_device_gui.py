@@ -122,11 +122,10 @@ class HSDeviceGUI(QMainWindow):
         dashed_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         dashed_pen.setWidth(2)
 
-        dashed_pen_marquee = QPen(QColor("white"))
-        dashed_pen_marquee.setStyle(Qt.PenStyle.DashLine)
-        dashed_pen_marquee.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
-        dashed_pen_marquee.setCapStyle(Qt.PenCapStyle.RoundCap)
-        dashed_pen_marquee.setWidth(2)
+        dashed_pen_marquee = QPen(dashed_pen)
+
+        dashed_pen_slit = QPen(dashed_pen_marquee)
+        dashed_pen_slit.setColor(QColor("red"))
 
         brush_marquee = QBrush(QColor(255, 255, 255, 128))
         brush_marquee.setStyle(Qt.BrushStyle.BDiagPattern)
@@ -140,7 +139,7 @@ class HSDeviceGUI(QMainWindow):
         polygon_brush = QBrush(QColor("red"))
         polygon_brush.setStyle(Qt.BrushStyle.SolidPattern)
 
-        self.slit_graphics_line_item.setPen(dashed_pen_marquee)
+        self.slit_graphics_line_item.setPen(dashed_pen_slit)
         self.slit_graphics_line_item.setOpacity(0.5)
 
         self.slit_graphics_marquee_area_rect_item.setPen(dashed_pen_marquee)
@@ -282,6 +281,13 @@ class HSDeviceGUI(QMainWindow):
             if marquee_area_graphics_rect_item not in graphics_view.scene().items():
                 graphics_view.scene().addItem(marquee_area_graphics_rect_item)
             graphics_view.update()
+
+    def draw_slit_line(self):
+        self.slit_angle_graphics_scene.removeItem(self.slit_graphics_line_item)
+        self.slit_graphics_line_item.setLine(
+            QLineF(0, self.hsd.roi.slit_intercept, self.slit_image_qt.width(),
+                   self.hsd.roi.slit_slope * self.slit_image_qt.width() + self.hsd.roi.slit_intercept))
+        self.slit_angle_graphics_scene.addItem(self.slit_graphics_line_item)
 
     def eventFilter(self, obj, event):
         # if obj == self.ui_slit_angle_graphics_view:
