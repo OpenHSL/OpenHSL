@@ -56,7 +56,7 @@ class HSDeviceGUI(QMainWindow):
         self.ui_slit_image_path_open_button: QPushButton = self.findChild(QPushButton, 'slitImagePathOpen_pushButton')
         self.ui_slit_image_path_line_edit: QLineEdit = self.findChild(QLineEdit, 'slitImagePath_lineEdit')
         self.ui_load_slit_image_button: QPushButton = self.findChild(QPushButton, 'loadSlitImage_pushButton')
-        self.ui_calc_angle_button: QPushButton = self.findChild(QPushButton, 'calcSlitAngle_pushButton')
+        self.ui_calc_slit_angle_button: QPushButton = self.findChild(QPushButton, 'calcSlitAngle_pushButton')
         # self.ui_slit_image_path_open_button.setIcon(QIcon(QPixmap("icons:three-dots.svg")))
         # Settings tab
         self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
@@ -70,7 +70,7 @@ class HSDeviceGUI(QMainWindow):
         # Slit angle tab
         self.ui_slit_image_path_open_button.clicked.connect(self.on_ui_slit_image_path_button_clicked)
         self.ui_load_slit_image_button.clicked.connect(self.on_ui_load_slit_image_button_clicked)
-        self.ui_calc_angle_button.clicked.connect(self.on_ui_calc_angle_button_clicked)
+        self.ui_calc_slit_angle_button.clicked.connect(self.on_ui_calc_slit_angle_button_clicked)
         self.hsd.send_slit_image.connect(self.receive_slit_image)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
@@ -255,7 +255,7 @@ class HSDeviceGUI(QMainWindow):
         self.flush_graphics_scene_data(self.slit_angle_graphics_scene)
         self.hsd.read_slit_image(self.slit_image_path)
 
-    def on_ui_calc_angle_button_clicked(self):
+    def on_ui_calc_slit_angle_button_clicked(self):
         self.hsd.compute_slit_angle(self.slit_graphics_marquee_area_rect_item.rect(), 40)
         self.draw_slit_line()
 
