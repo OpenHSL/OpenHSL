@@ -268,10 +268,9 @@ class HSDeviceGUI(QMainWindow):
         # TODO rewrite
         self.recent_device_settings_path_list.append(self.last_device_settings_path)
 
-    def on_marquee_area_changed(self, top_left: QRectF, bottom_right: QRectF):
+    def on_marquee_area_changed(self, top_left_on_scene: QPointF, bottom_right_on_scene: QPointF):
         graphics_view: Optional[QGraphicsView, HSGraphicsView] = QObject.sender(self)
-        top_left_on_scene = graphics_view.mapToScene(top_left)
-        bottom_right_on_scene = graphics_view.mapToScene(bottom_right)
+
         marquee_area_rect = QRectF(top_left_on_scene, bottom_right_on_scene)
         marquee_area_graphics_rect_item: Optional[QGraphicsRectItem] = None
 
@@ -282,6 +281,7 @@ class HSDeviceGUI(QMainWindow):
             marquee_area_graphics_rect_item.setRect(marquee_area_rect)
             if marquee_area_graphics_rect_item not in graphics_view.scene().items():
                 graphics_view.scene().addItem(marquee_area_graphics_rect_item)
+            graphics_view.update()
 
     def eventFilter(self, obj, event):
         # if obj == self.ui_slit_angle_graphics_view:
