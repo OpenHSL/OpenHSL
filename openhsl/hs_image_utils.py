@@ -1,5 +1,9 @@
+import copy
+import cv2 as cv
 import enum
 import numpy as np
+from sklearn.linear_model import LinearRegression
+from typing import Optional, Tuple
 
 
 class BaseIntEnum(enum.IntEnum):
@@ -17,6 +21,33 @@ class BaseIntEnum(enum.IntEnum):
     def to_dict(cls):
         return {i.name: i.value for i in cls}
 
+
+def compute_slit_angle(frame: np.ndarray, x: int, y: int, w: int, h: int,
+                       threshold_value: int, threshold_type=0) -> Tuple[float, float, int]:
+    slope = 1
+    angle = 0.0
+    intercept = 0
+    frame_channel: Optional[np.ndarray] = None
+
+    if len(frame.shape) == 2:
+        frame_channel = copy.deepcopy(frame)
+    elif len(frame.shape) == 3:
+        frame_channel = frame[:, :, 1]
+
+    frame_channel = frame_channel[y: y + h, x: x + w]
+
+    frame_thresholded: Optional[np.ndarray] = None
+
+    _, frame_thresholded = cv.threshold(frame_channel, threshold_value, 255, threshold_type)
+    points = np.argwhere(frame_thresholded > 0)
+    ya = points[:, 0]
+    xa = points[:, 1]
+    regr = LinearRegression().fit(xa.reshape(-1, 1), ya)
+    slope = regr.coef_
+    angle = np.arctan(slope) * 180 / np.pi
+    intercept = np.rint(regr.intercept_ + y)
+
+    return slope, angle, intercept
 
 def get_slit_angle(frame: np.ndarray) -> float:
     pass
