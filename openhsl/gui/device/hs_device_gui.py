@@ -3,7 +3,7 @@ import ctypes
 import itertools
 import json
 import sys
-from PyQt6.QtCore import Qt, QDir, QFileInfo, QEvent, QObject, QPointF, QRect, QRectF, QSignalMapper, QThread, QTimer, \
+from PyQt6.QtCore import Qt, QDir, QEvent, QLineF ,QObject, QPointF, QRect, QRectF, QSignalMapper, QThread, QTimer, \
     pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
