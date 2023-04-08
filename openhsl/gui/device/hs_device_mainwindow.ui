@@ -174,7 +174,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="calcAngle_pushButton">
+           <widget class="QPushButton" name="calcSlitAngle_pushButton">
             <property name="text">
              <string>Calc angle</string>
             </property>
