@@ -1,9 +1,10 @@
 import cv2 as cv
 import numpy as np
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, QRectF, pyqtSignal
 from PyQt6.QtGui import QImage
 from typing import Optional
 from openhsl.hs_device import HSDevice
+import openhsl.hs_image_utils as hsiutils
 
 class HSDeviceQt(QObject, HSDevice):
     send_slit_image = pyqtSignal(QImage)
@@ -24,3 +25,9 @@ class HSDeviceQt(QObject, HSDevice):
         image_to_draw_qt = QImage(self.slit_image_to_send, self.slit_image_to_send.shape[1],
                                   self.slit_image_to_send.shape[0], QImage.Format.Format_RGB888)
         self.send_slit_image.emit(image_to_draw_qt)
+
+    def compute_slit_angle(self, area_rect: QRectF, threshold_value, threshold_type = 0):
+        x, y, w, h = area_rect.topLeft().x(), area_rect.topLeft().y(), area_rect.width(), area_rect.height()
+        self.roi.slit_slope, self.roi.slit_angle, self.roi.slit_intercept = \
+            hsiutils.compute_slit_angle_bad(self.slit_image, int(x), int(y), int(w), int(h),
+                                        threshold_value, threshold_type)
