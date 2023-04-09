@@ -18,26 +18,36 @@ class HSDeviceQt(QObject, HSDevice):
 
         self.slit_image: Optional[np.ndarray] = None
         self.slit_image_to_send: Optional[np.ndarray] = None
-        self.row_count = 0
-        self.col_count = 0
+        self.slit_image_height = 0
+        self.slit_image_width = 0
         self.threshold_value = 40
         self.threshold_type = 0
+
+        self.slit_intercept_min = 0
+        self.slit_intercept_max = 0
+
+    def get_slit_intercept_min(self):
+        return self.slit_intercept_min
+
+    def get_slit_intercept_max(self):
+        return self.slit_intercept_max
 
     @pyqtSlot(str)
     def on_read_slit_image(self, path: str):
         self.slit_image = cv.imread(path, cv.IMREAD_ANYCOLOR)
 
-        if len(self.slit_image.shape) == 2:
-            self.slit_image_to_send = cv.cvtColor(self.slit_image, cv.COLOR_GRAY2RGB)
-        else:
-            self.slit_image = cv.cvtColor(self.slit_image, cv.COLOR_BGR2RGB)
-            self.slit_image_to_send = copy.deepcopy(self.slit_image)
-        self.col_count, self.row_count = self.slit_image.shape[0:2]
-        image_to_draw_qt = QImage(self.slit_image_to_send, self.slit_image_to_send.shape[1],
-                                  self.slit_image_to_send.shape[0], QImage.Format.Format_RGB888)
-        # QImage references ndarray data, so we need to copy QImage
-        # See: https://stackoverflow.com/a/49516303
-        self.send_slit_image.emit(image_to_draw_qt.copy())
+        if self.slit_image is not None:
+            if len(self.slit_image.shape) == 2:
+                self.slit_image_to_send = cv.cvtColor(self.slit_image, cv.COLOR_GRAY2RGB)
+            else:
+                self.slit_image = cv.cvtColor(self.slit_image, cv.COLOR_BGR2RGB)
+                self.slit_image_to_send = copy.deepcopy(self.slit_image)
+            self.slit_image_width, self.slit_image_height = self.slit_image.shape[0:2]
+            image_to_draw_qt = QImage(self.slit_image_to_send, self.slit_image_to_send.shape[1],
+                                      self.slit_image_to_send.shape[0], QImage.Format.Format_RGB888)
+            # QImage references ndarray data, so we need to copy QImage
+            # See: https://stackoverflow.com/a/49516303
+            self.send_slit_image.emit(image_to_draw_qt.copy())
 
     @pyqtSlot(QRectF)
     def on_compute_slit_angle(self, area_rect: QRectF):
@@ -45,6 +55,15 @@ class HSDeviceQt(QObject, HSDevice):
         self.roi.slit_slope, self.roi.slit_angle, self.roi.slit_intercept = \
             hsiutils.compute_slit_angle(self.slit_image, int(x), int(y), int(w), int(h),
                                         self.threshold_value, self.threshold_type)
+        # Compute min and max intercept for GUI
+        limits = []
+        if self.get_slit_slope() > 0:
+            limits = [self.get_slit_slope() * self.slit_image_width, self.slit_image_height]
+        else:
+            limits = [0, self.slit_image_height - self.get_slit_slope() * self.slit_image_width]
+        limits = np.rint(limits).astype(int).tolist()
+        self.slit_intercept_min, self.slit_intercept_max = limits
+
         self.compute_slit_angle_finished.emit()
 
     def on_threshold_slit_image(self):
