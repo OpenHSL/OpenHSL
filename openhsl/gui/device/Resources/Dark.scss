@@ -4,6 +4,7 @@ $bg-border: #9b9b9b;
 $bg-border-dark: #000000;
 $bg-hover: #654321;
 $bg-pressed: #2e2f30;
+$bg-disabled: #535455;
 $fg-text: #d0d0d0;
 $fg-text-selected: white;
 $fg-text-disabled: #9b9b9b;
@@ -11,8 +12,9 @@ $bg-menu: #404142;
 $bg-menu-selected: #5b5c5d;
 $bg-menu-hover: #654321;
 $bg-menu-pressed: #545556;
-$bg-button: #535455;
+$bg-button: #38393a; //#535455
 $bg-button-hover: #654321;
+$bg-button-pressed: #432d15;
 $bg-tab-hover: #654321;
 $bg-tab-selected: #565656;
 $bg-contrast: #cc870f;
@@ -50,6 +52,14 @@ QCheckBox {
 		&:hover {
 			background-color: $bg-hover;
 		}
+
+		&:disabled {
+			background-color: $bg-disabled;
+		}
+	}
+
+	&:disabled {
+		color: $fg-text-disabled;
 	}
 }
 
@@ -311,7 +321,12 @@ QPushButton {
 	}
 
 	&:pressed {
-		background-color: $bg-pressed;
+		background-color: $bg-button-pressed;
+	}
+
+	&:disabled {
+		background-color: $bg-disabled;
+		color: $fg-text-disabled;
 	}
 
 	&[id="open"] {
@@ -326,7 +341,7 @@ QPushButton {
 
 		&:pressed {
 			image: url(icons:three-dots-pressed.svg);
-			background-color: $bg-pressed;
+			background-color: $bg-button-pressed;
 		}
 	}
 

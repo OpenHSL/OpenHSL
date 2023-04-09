@@ -32,6 +32,14 @@ QCheckBox:indicator:hover {
   background-color: #654321;
 }
 
+QCheckBox:indicator:disabled {
+  background-color: #535455;
+}
+
+QCheckBox:disabled {
+  color: #9b9b9b;
+}
+
 /****************************************
  *              QComboBox               *
  ****************************************/
@@ -253,7 +261,7 @@ QMenuBar::item:pressed {
 }
 
 QPushButton {
-  background-color: #535455;
+  background-color: #38393a;
   border: 1px solid gray;
   border-radius: 0px;
   color: #d0d0d0;
@@ -267,7 +275,12 @@ QPushButton:hover {
 }
 
 QPushButton:pressed {
-  background-color: #2e2f30;
+  background-color: #432d15;
+}
+
+QPushButton:disabled {
+  background-color: #535455;
+  color: #9b9b9b;
 }
 
 QPushButton[id="open"] {
@@ -283,7 +296,7 @@ QPushButton[id="open"]:hover {
 
 QPushButton[id="open"]:pressed {
   image: url(icons:three-dots-pressed.svg);
-  background-color: #2e2f30;
+  background-color: #432d15;
 }
 
 QPushButton[id="add"] {
