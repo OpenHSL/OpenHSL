@@ -19,6 +19,41 @@ $bg-contrast: #cc870f;
 //$bg-tab-selected: #5b5c5d;
 
 /****************************************
+ *              QCheckBox               *
+ ****************************************/
+
+QCheckBox {
+	color: $fg-text;
+
+	&:indicator {
+		background-color: transparent;
+		image: url(icons:check-square.svg);
+
+		&:unchecked {
+			background-color: transparent;
+			image: url(icons:check-square.svg);
+
+			&:hover {
+				image: url(icons:check-square-hover.svg);
+			}
+		}
+
+		&:checked {
+			background-color: transparent;
+			image: url(icons:check-square-checked.svg);
+
+			&:hover {
+				image: url(icons:check-square-checked-hover.svg);
+			}
+		}
+
+		&:hover {
+			background-color: $bg-hover;
+		}
+	}
+}
+
+/****************************************
  *              QComboBox               *
  ****************************************/
 

@@ -1,4 +1,38 @@
 /****************************************
+ *              QCheckBox               *
+ ****************************************/
+QCheckBox {
+  color: #d0d0d0;
+}
+
+QCheckBox:indicator {
+  background-color: transparent;
+  image: url(icons:check-square.svg);
+}
+
+QCheckBox:indicator:unchecked {
+  background-color: transparent;
+  image: url(icons:check-square.svg);
+}
+
+QCheckBox:indicator:unchecked:hover {
+  image: url(icons:check-square-hover.svg);
+}
+
+QCheckBox:indicator:checked {
+  background-color: transparent;
+  image: url(icons:check-square-checked.svg);
+}
+
+QCheckBox:indicator:checked:hover {
+  image: url(icons:check-square-checked-hover.svg);
+}
+
+QCheckBox:indicator:hover {
+  background-color: #654321;
+}
+
+/****************************************
  *              QComboBox               *
  ****************************************/
 QComboBox {
