@@ -303,9 +303,9 @@ QSlider::handle:horizontal:hover {
 }
 
 QSlider::sub-page:horizontal {
-  border: 1px solid #9b9b9b;
+  border: 1px solid #2e2f30;
   border-radius: 4px;
-  background-color: #2e2f30;
+  background-color: #cc870f;
 }
 
 /****************************************
