@@ -382,6 +382,7 @@ QSlider {
 
 			&:hover {
 				background-color: $bg-hover;
+				border-color: $fg-text;
 			}
 		}
 	}

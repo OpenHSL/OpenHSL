@@ -334,6 +334,7 @@ QSlider::handle:horizontal {
 
 QSlider::handle:horizontal:hover {
   background-color: #654321;
+  border-color: #d0d0d0;
 }
 
 QSlider::sub-page:horizontal {
