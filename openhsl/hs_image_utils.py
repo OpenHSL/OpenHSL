@@ -23,7 +23,7 @@ class BaseIntEnum(enum.IntEnum):
 
 
 def compute_slit_angle(frame: np.ndarray, x: int, y: int, w: int, h: int,
-                       threshold_value: int, threshold_type=0) -> Tuple[float, float, int]:
+                       threshold_value: int, threshold_type=0) -> Tuple[float, float, float]:
     slope = 1
     angle = 0.0
     intercept = 0
@@ -43,9 +43,9 @@ def compute_slit_angle(frame: np.ndarray, x: int, y: int, w: int, h: int,
     ya = points[:, 0]
     xa = points[:, 1]
     regr = LinearRegression().fit(xa.reshape(-1, 1), ya)
-    slope = regr.coef_
-    angle = np.arctan(slope) * 180 / np.pi
-    intercept = np.rint(regr.intercept_ + y)
+    slope = float(regr.coef_)
+    angle = float(np.arctan(slope) * 180 / np.pi)
+    intercept = float(regr.intercept_ + y)
 
     return slope, angle, intercept
 
