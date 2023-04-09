@@ -1,3 +1,4 @@
+import numpy as np
 from openhsl.hs_image_utils import BaseIntEnum
 from pathlib import Path
 from typing import List, Optional, Union
@@ -142,6 +143,17 @@ class HSDevice:
         self.device_type: HSDeviceType = HSDeviceType.Undef
         self.calib_wavelength_data: Optional[List[HSCalibrationWavelengthData]] = None
         self.roi: Optional[HSROI] = None
+
+    def get_slit_slope(self):
+        return self.roi.slit_slope
+
+    def get_slit_angle(self):
+        return self.roi.slit_angle
+
+    def get_slit_intercept(self, to_int = False):
+        if to_int:
+            return int(np.rint(self.roi.slit_intercept))
+        return self.roi.slit_intercept
 
     def load_calibration_wavelength_data(self, path: Union[str, Path]) -> None:
         pass
