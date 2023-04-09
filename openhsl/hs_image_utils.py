@@ -38,7 +38,7 @@ def compute_slit_angle(frame: np.ndarray, x: int, y: int, w: int, h: int,
 
     frame_thresholded: Optional[np.ndarray] = None
 
-    _, frame_thresholded = cv.threshold(frame_channel, threshold_value, 255, threshold_type)
+    frame_thresholded = threshold_image(frame_channel, threshold_value, 255, threshold_type)
     points = np.argwhere(frame_thresholded > 0)
     ya = points[:, 0]
     xa = points[:, 1]
@@ -49,5 +49,7 @@ def compute_slit_angle(frame: np.ndarray, x: int, y: int, w: int, h: int,
 
     return slope, angle, intercept
 
-def get_slit_angle(frame: np.ndarray) -> float:
-    pass
+
+def threshold_image(image: np.ndarray, threshold_value: int, max_value, threshold_type = 0):
+    _, image_thresholded = cv.threshold(image, threshold_value, max_value, threshold_type)
+    return image_thresholded

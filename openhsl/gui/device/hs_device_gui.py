@@ -20,6 +20,9 @@ import openhsl.utils as utils
 
 # noinspection PyTypeChecker
 class HSDeviceGUI(QMainWindow):
+    read_slit_image = pyqtSignal(str)
+    threshold_slit_image = pyqtSignal()
+    compute_slit_angle = pyqtSignal(QRectF)
     def __init__(self):
         super(HSDeviceGUI, self).__init__()
         uic.loadUi('hs_device_mainwindow.ui', self)
@@ -53,6 +56,12 @@ class HSDeviceGUI(QMainWindow):
 
         # Slit angle tab
         self.ui_slit_angle_graphics_view: HSGraphicsView = self.findChild(HSGraphicsView, 'slitAngle_graphicsView')
+        self.ui_slit_image_threshold_value_checkbox: QCheckBox = self.findChild(QCheckBox,
+                                                                                'slitImageThresholdValue_checkBox')
+        self.ui_slit_image_threshold_value_horizontal_slider: QSlider = \
+            self.findChild(QSlider, 'slitImageThresholdValue_horizontalSlider')
+        self.ui_slit_image_threshold_value_spinbox: QSpinBox = self.findChild(QSpinBox,
+                                                                              'slitImageThresholdValue_spinBox')
         self.ui_slit_image_path_open_button: QPushButton = self.findChild(QPushButton, 'slitImagePathOpen_pushButton')
         self.ui_slit_image_path_line_edit: QLineEdit = self.findChild(QLineEdit, 'slitImagePath_lineEdit')
         self.ui_load_slit_image_button: QPushButton = self.findChild(QPushButton, 'loadSlitImage_pushButton')
@@ -68,10 +77,21 @@ class HSDeviceGUI(QMainWindow):
 
         # Signal and slot connections
         # Slit angle tab
+        self.ui_slit_image_threshold_value_checkbox.clicked.connect(
+            self.on_ui_slit_image_threshold_value_checkbox_clicked)
+        self.ui_slit_image_threshold_value_horizontal_slider.valueChanged.connect(
+            self.on_ui_slit_image_threshold_value_horizontal_slider_value_changed)
+        self.ui_slit_image_threshold_value_spinbox.valueChanged.connect(
+            self.on_ui_slit_image_threshold_value_spinbox_value_changed)
         self.ui_slit_image_path_open_button.clicked.connect(self.on_ui_slit_image_path_button_clicked)
         self.ui_load_slit_image_button.clicked.connect(self.on_ui_load_slit_image_button_clicked)
         self.ui_calc_slit_angle_button.clicked.connect(self.on_ui_calc_slit_angle_button_clicked)
-        self.hsd.send_slit_image.connect(self.receive_slit_image)
+        self.read_slit_image.connect(self.hsd.on_read_slit_image, Qt.ConnectionType.QueuedConnection)
+        self.hsd.send_slit_image.connect(self.receive_slit_image, Qt.ConnectionType.QueuedConnection)
+        self.hsd.send_slit_preview_image.connect(self.receive_slit_preview_image, Qt.ConnectionType.QueuedConnection)
+        self.threshold_slit_image.connect(self.hsd.on_threshold_slit_image, Qt.ConnectionType.QueuedConnection)
+        self.compute_slit_angle.connect(self.hsd.on_compute_slit_angle)
+        self.hsd.compute_slit_angle_finished.connect(self.on_compute_slit_angle_finished)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -80,6 +100,7 @@ class HSDeviceGUI(QMainWindow):
         self.slit_angle_graphics_scene = QGraphicsScene(self)
         self.slit_image_path = ""
         self.slit_image_qt: Optional[QImage] = None
+        self.slit_graphics_pixmap_item = QGraphicsPixmapItem()
         self.slit_graphics_line_item = QGraphicsLineItem()
         self.slit_graphics_marquee_area_rect_item = QGraphicsRectItem()
         self.slit_graphics_text_item = QGraphicsTextItem()
@@ -228,8 +249,18 @@ class HSDeviceGUI(QMainWindow):
     def receive_slit_image(self, slit_image_qt):
         self.slit_image_qt = slit_image_qt
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_text_item)
-        pixmap_item = QGraphicsPixmapItem(QPixmap.fromImage(self.slit_image_qt))
-        self.slit_angle_graphics_scene.addItem(pixmap_item)
+        self.slit_angle_graphics_scene.removeItem(self.slit_graphics_pixmap_item)
+        # pixmap_item = QGraphicsPixmapItem(QPixmap.fromImage(self.slit_image_qt))
+        self.slit_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.slit_image_qt))
+        self.slit_angle_graphics_scene.addItem(self.slit_graphics_pixmap_item)
+
+    @pyqtSlot(QImage)
+    def receive_slit_preview_image(self, image_qt):
+        self.slit_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
+
+    @pyqtSlot()
+    def on_compute_slit_angle_finished(self):
+        self.draw_slit_line()
 
     def on_main_window_is_shown(self):
         self.load_settings()
@@ -244,6 +275,26 @@ class HSDeviceGUI(QMainWindow):
             # TODO remove action from list
             pass
 
+    def on_ui_slit_image_threshold_value_checkbox_clicked(self, checked: bool):
+        if checked:
+            self.threshold_slit_image.emit()
+        else:
+            self.slit_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.slit_image_qt))
+
+    def on_ui_slit_image_threshold_value_horizontal_slider_value_changed(self, value):
+        self.hsd.threshold_value = value
+        self.ui_slit_image_threshold_value_spinbox.setValue(value)
+
+        if self.ui_slit_image_threshold_value_checkbox.isChecked():
+            self.threshold_slit_image.emit()
+
+    def on_ui_slit_image_threshold_value_spinbox_value_changed(self, value):
+        self.hsd.threshold_value = value
+        self.ui_slit_image_threshold_value_horizontal_slider.setValue(value)
+
+        if self.ui_slit_image_threshold_value_checkbox.isChecked():
+            self.threshold_slit_image.emit()
+
     def on_ui_slit_image_path_button_clicked(self):
         file_path, _filter = QFileDialog.getOpenFileName(self, "Choose file", "",
                                                 "Image file (*.bmp *.png *.jpg *.tif)")
@@ -253,11 +304,10 @@ class HSDeviceGUI(QMainWindow):
 
     def on_ui_load_slit_image_button_clicked(self):
         self.flush_graphics_scene_data(self.slit_angle_graphics_scene)
-        self.hsd.read_slit_image(self.slit_image_path)
+        self.read_slit_image.emit(self.slit_image_path)
 
     def on_ui_calc_slit_angle_button_clicked(self):
-        self.hsd.compute_slit_angle(self.slit_graphics_marquee_area_rect_item.rect(), 40)
-        self.draw_slit_line()
+        self.compute_slit_angle.emit(self.slit_graphics_marquee_area_rect_item.rect())
 
     def on_ui_device_settings_path_save_button_clicked(self):
         self.device_settings_path, _filter = QFileDialog.getSaveFileName(self, "Save file", "",
