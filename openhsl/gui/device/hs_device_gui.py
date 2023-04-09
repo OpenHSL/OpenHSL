@@ -56,24 +56,28 @@ class HSDeviceGUI(QMainWindow):
 
         # Slit angle tab
         self.ui_slit_angle_graphics_view: HSGraphicsView = self.findChild(HSGraphicsView, 'slitAngle_graphicsView')
-        self.ui_slit_image_threshold_value_checkbox: QCheckBox = self.findChild(QCheckBox,
-                                                                                'slitImageThresholdValue_checkBox')
+        self.ui_slit_image_threshold_value_checkbox: QCheckBox = \
+            self.findChild(QCheckBox, 'slitImageThresholdValue_checkBox')
         self.ui_slit_image_threshold_value_horizontal_slider: QSlider = \
             self.findChild(QSlider, 'slitImageThresholdValue_horizontalSlider')
-        self.ui_slit_image_threshold_value_spinbox: QSpinBox = self.findChild(QSpinBox,
-                                                                              'slitImageThresholdValue_spinBox')
+        self.ui_slit_image_threshold_value_spinbox: QSpinBox = \
+            self.findChild(QSpinBox, 'slitImageThresholdValue_spinBox')
+        self.ui_slit_angle_horizontal_slider: QSlider = self.findChild(QSlider, 'slitAngle_horizontalSlider')
+        self.ui_slit_angle_double_spinbox: QDoubleSpinBox = self.findChild(QDoubleSpinBox, 'slitAngle_doubleSpinBox')
+        self.ui_slit_intercept_horizontal_slider: QSlider = self.findChild(QSlider, 'slitIntercept_horizontalSlider')
+        self.ui_slit_intercept_double_spinbox: QDoubleSpinBox = \
+            self.findChild(QDoubleSpinBox, 'slitIntercept_doubleSpinBox')
         self.ui_slit_image_path_open_button: QPushButton = self.findChild(QPushButton, 'slitImagePathOpen_pushButton')
         self.ui_slit_image_path_line_edit: QLineEdit = self.findChild(QLineEdit, 'slitImagePath_lineEdit')
         self.ui_load_slit_image_button: QPushButton = self.findChild(QPushButton, 'loadSlitImage_pushButton')
         self.ui_calc_slit_angle_button: QPushButton = self.findChild(QPushButton, 'calcSlitAngle_pushButton')
-        # self.ui_slit_image_path_open_button.setIcon(QIcon(QPixmap("icons:three-dots.svg")))
         # Settings tab
         self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
         self.ui_device_settings_path_line_edit: QLineEdit = self.findChild(QLineEdit, "deviceSettingsPath_lineEdit")
-        self.ui_device_settings_path_save_button: QPushButton = self.findChild(QPushButton,
-                                                                               'deviceSettingsPathSave_pushButton')
-        self.ui_device_settings_save_button: QPushButton = self.findChild(QPushButton,
-                                                                          'deviceSettingsSave_pushButton')
+        self.ui_device_settings_path_save_button: QPushButton = \
+            self.findChild(QPushButton, 'deviceSettingsPathSave_pushButton')
+        self.ui_device_settings_save_button: QPushButton = \
+            self.findChild(QPushButton, 'deviceSettingsSave_pushButton')
 
         # Signal and slot connections
         # Slit angle tab
@@ -104,6 +108,7 @@ class HSDeviceGUI(QMainWindow):
         self.slit_graphics_line_item = QGraphicsLineItem()
         self.slit_graphics_marquee_area_rect_item = QGraphicsRectItem()
         self.slit_graphics_text_item = QGraphicsTextItem()
+        self.slit_angle_slider_mult = 10000000
 
         self.recent_device_settings_path_list = []
         self.ui_recent_device_settings_action_list: List[QAction] = []
@@ -260,6 +265,17 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot()
     def on_compute_slit_angle_finished(self):
+        self.ui_slit_angle_horizontal_slider.setValue(int(self.hsd.get_slit_angle() * self.slit_angle_slider_mult))
+        self.ui_slit_angle_double_spinbox.setValue(self.hsd.get_slit_angle())
+
+        self.ui_slit_intercept_horizontal_slider.setRange(self.hsd.get_slit_intercept_min(),
+                                                          self.hsd.get_slit_intercept_max())
+        self.ui_slit_intercept_horizontal_slider.setValue(self.hsd.get_slit_intercept(to_int=True))
+
+        self.ui_slit_intercept_double_spinbox.setRange(self.hsd.get_slit_intercept_min(),
+                                                       self.hsd.get_slit_intercept_max())
+        self.ui_slit_intercept_double_spinbox.setValue(self.hsd.get_slit_intercept(to_int=True))
+
         self.draw_slit_line()
 
     def on_main_window_is_shown(self):
