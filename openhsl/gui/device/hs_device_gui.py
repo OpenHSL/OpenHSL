@@ -174,6 +174,9 @@ class HSDeviceGUI(QMainWindow):
         self.slit_graphics_marquee_area_rect_item.setBrush(brush_marquee)
         self.slit_graphics_marquee_area_rect_item.setOpacity(0.5)
 
+        self.ui_slit_image_threshold_value_checkbox.setEnabled(False)
+        self.ui_calc_slit_angle_button.setEnabled(False)
+
     def initialize_texts(self):
         text_font = QFont("Century Gothic", 20, QFont.Weight.Light)
         text_font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)
@@ -258,6 +261,8 @@ class HSDeviceGUI(QMainWindow):
         # pixmap_item = QGraphicsPixmapItem(QPixmap.fromImage(self.slit_image_qt))
         self.slit_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.slit_image_qt))
         self.slit_angle_graphics_scene.addItem(self.slit_graphics_pixmap_item)
+        self.ui_slit_image_threshold_value_checkbox.setEnabled(True)
+        self.ui_calc_slit_angle_button.setEnabled(True)
 
     @pyqtSlot(QImage)
     def receive_slit_preview_image(self, image_qt):
