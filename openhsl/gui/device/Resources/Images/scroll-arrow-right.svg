@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="128"
+   height="128"
+   fill="#9b9b9b"
+   class="bi bi-caret-up-fill"
+   viewBox="0 0 16 16"
+   version="1.1"
+   id="svg1399"
+   sodipodi:docname="scroll-arrow-right.svg"
+   inkscape:version="1.2 (dc2aedaf03, 2022-05-15)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1423" />
+  <sodipodi:namedview
+     id="namedview1421"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="8.0234375"
+     inkscape:cx="44.930867"
+     inkscape:cy="63.937683"
+     inkscape:window-width="2560"
+     inkscape:window-height="1369"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1399" />
+  <path
+     d="m 11.399511,7.2477465 -5.4810009,-4.796 c -0.647,-0.566 -1.659,-0.106 -1.659,0.753 v 9.5919995 a 1,1 0 0 0 1.659,0.753 L 11.398511,8.7537465 a 1,1 0 0 0 0,-1.506 z"
+     id="path1397" />
+</svg>

@@ -324,6 +324,154 @@ QPushButton[id="big"] {
 }
 
 /****************************************
+ *             QScrollBar               *
+ ****************************************/
+QScrollBar:horizontal {
+  border: 1px solid #9b9b9b;
+  background: #787878;
+  height: 15px;
+  margin: 0px 22px 0 22px;
+}
+
+QScrollBar:vertical {
+  border: 1px solid #9b9b9b;
+  background: #787878;
+  width: 15px;
+  margin: 22px 0 22px 0;
+}
+
+QScrollBar:handle {
+  background: #383838;
+}
+
+QScrollBar:handle:horizontal {
+  image: url(icons:scroll-handle-grip-horizontal.svg);
+  min-width: 39px;
+}
+
+QScrollBar:handle:horizontal:hover {
+  background: #404040;
+  image: url(icons:scroll-handle-grip-horizontal-hover.svg);
+}
+
+QScrollBar:handle:horizontal:pressed {
+  background: #2e2f30;
+  image: url(icons:scroll-handle-grip-horizontal.svg);
+}
+
+QScrollBar:handle:vertical {
+  image: url(icons:scroll-handle-grip-vertical.svg);
+  min-height: 39px;
+}
+
+QScrollBar:handle:vertical:hover {
+  background: #404040;
+  image: url(icons:scroll-handle-grip-vertical-hover.svg);
+}
+
+QScrollBar:handle:vertical:pressed {
+  background: #2e2f30;
+  image: url(icons:scroll-handle-grip-vertical.svg);
+}
+
+QScrollBar:add-line:horizontal {
+  border: 1px solid #9b9b9b;
+  background: #383838;
+  image: url(icons:scroll-arrow-right.svg);
+  width: 20px;
+  subcontrol-position: right;
+  subcontrol-origin: margin;
+}
+
+QScrollBar:add-line:horizontal:hover {
+  background: #404040;
+  image: url(icons:scroll-arrow-right-hover.svg);
+}
+
+QScrollBar:add-line:horizontal:pressed {
+  background: #2e2f30;
+  image: url(icons:scroll-arrow-right.svg);
+}
+
+QScrollBar:add-line:vertical {
+  border: 1px solid #9b9b9b;
+  background: #383838;
+  image: url(icons:scroll-arrow-down.svg);
+  height: 20px;
+  subcontrol-position: bottom;
+  subcontrol-origin: margin;
+}
+
+QScrollBar:add-line:vertical:hover {
+  background: #404040;
+  image: url(icons:scroll-arrow-down-hover.svg);
+}
+
+QScrollBar:add-line:vertical:pressed {
+  background: #2e2f30;
+  image: url(icons:scroll-arrow-down.svg);
+}
+
+QScrollBar:sub-line:horizontal {
+  border: 1px solid #9b9b9b;
+  background: #383838;
+  image: url(icons:scroll-arrow-left.svg);
+  width: 20px;
+  subcontrol-position: left;
+  subcontrol-origin: margin;
+}
+
+QScrollBar:sub-line:horizontal:hover {
+  background: #404040;
+  image: url(icons:scroll-arrow-left-hover.svg);
+}
+
+QScrollBar:sub-line:horizontal:pressed {
+  background: #2e2f30;
+  image: url(icons:scroll-arrow-left.svg);
+}
+
+QScrollBar:sub-line:vertical {
+  border: 1px solid #9b9b9b;
+  background: #383838;
+  image: url(icons:scroll-arrow-up.svg);
+  height: 20px;
+  subcontrol-position: top;
+  subcontrol-origin: margin;
+}
+
+QScrollBar:sub-line:vertical:hover {
+  background: #404040;
+  image: url(icons:scroll-arrow-up-hover.svg);
+}
+
+QScrollBar:sub-line:vertical:pressed {
+  background: #2e2f30;
+  image: url(icons:scroll-arrow-up.svg);
+}
+
+QScrollBar:add-page:horizontal {
+  background: none;
+}
+
+QScrollBar:add-page:vertical {
+  background: none;
+}
+
+QScrollBar:sub-page:horizontal {
+  background: none;
+}
+
+QScrollBar:sub-page:vertical {
+  background: none;
+}
+
+QAbstractScrollArea:corner {
+  background: #787878;
+  border: none;
+}
+
+/****************************************
  *               QSlider                *
  ****************************************/
 QSlider::groove:horizontal {

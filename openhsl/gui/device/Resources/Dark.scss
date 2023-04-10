@@ -18,6 +18,11 @@ $bg-button-pressed: #432d15;
 $bg-tab-hover: #654321;
 $bg-tab-selected: #565656;
 $bg-contrast: #cc870f;
+//$bg-scroll: #8b8b8b;
+$bg-scroll: #787878;
+//$bg-scroll-handle: #2e2f30;
+$bg-scroll-handle: #383838;
+$bg-scroll-handle-hover: #404040;
 //$bg-tab-selected: #5b5c5d;
 
 /****************************************
@@ -305,7 +310,6 @@ QMenuBar {
 	}
 }
 
-
 QPushButton {
 	background-color: $bg-button;
 	border: 1px solid gray;
@@ -368,6 +372,167 @@ QPushButton {
 		//padding: 2px;
 		padding-left: 6px;
 		padding-right: 6px;
+	}
+}
+
+/****************************************
+ *             QScrollBar               *
+ ****************************************/
+
+QScrollBar {
+	&:horizontal {
+		border: 1px solid $bg-border;
+    	background: $bg-scroll;
+		height: 15px;
+    	margin: 0px 22px 0 22px;
+	}
+
+	&:vertical {
+		border: 1px solid $bg-border;
+		background: $bg-scroll;
+		width: 15px;
+		margin: 22px 0 22px 0;
+	}
+
+	&:handle {
+		background: $bg-scroll-handle;
+
+		&:horizontal {
+			image: url(icons:scroll-handle-grip-horizontal.svg);
+			min-width: 39px;
+
+			&:hover {
+				background: $bg-scroll-handle-hover;
+				image: url(icons:scroll-handle-grip-horizontal-hover.svg);
+			}
+
+			&:pressed {
+				background: $bg-pressed;
+				image: url(icons:scroll-handle-grip-horizontal.svg);
+			}
+		}
+
+		&:vertical {
+			image: url(icons:scroll-handle-grip-vertical.svg);
+			min-height: 39px;
+
+			&:hover {
+				background: $bg-scroll-handle-hover;
+				image: url(icons:scroll-handle-grip-vertical-hover.svg);
+			}
+
+			&:pressed {
+				background: $bg-pressed;
+				image: url(icons:scroll-handle-grip-vertical.svg);
+			}
+		}
+	}
+
+	&:add-line {
+		&:horizontal {
+			border: 1px solid $bg-border;
+			background: $bg-scroll-handle;
+			image: url(icons:scroll-arrow-right.svg);
+			width: 20px;
+			subcontrol-position: right;
+			subcontrol-origin: margin;
+
+			&:hover {
+				background: $bg-scroll-handle-hover;
+				image: url(icons:scroll-arrow-right-hover.svg);
+			}
+
+			&:pressed {
+				background: $bg-pressed;
+				image: url(icons:scroll-arrow-right.svg);
+			}
+		}
+
+		&:vertical {
+			border: 1px solid $bg-border;
+			background: $bg-scroll-handle;
+			image: url(icons:scroll-arrow-down.svg);
+			height: 20px;
+			subcontrol-position: bottom;
+			subcontrol-origin: margin;
+
+			&:hover {
+				background: $bg-scroll-handle-hover;
+				image: url(icons:scroll-arrow-down-hover.svg);
+			}
+
+			&:pressed {
+				background: $bg-pressed;
+				image: url(icons:scroll-arrow-down.svg);
+			}
+		}
+	}
+
+	&:sub-line {
+		&:horizontal {
+			border: 1px solid $bg-border;
+			background: $bg-scroll-handle;
+			image: url(icons:scroll-arrow-left.svg);
+			width: 20px;
+			subcontrol-position: left;
+			subcontrol-origin: margin;
+
+			&:hover {
+				background: $bg-scroll-handle-hover;
+				image: url(icons:scroll-arrow-left-hover.svg);
+			}
+
+			&:pressed {
+				background: $bg-pressed;
+				image: url(icons:scroll-arrow-left.svg);
+			}
+		}
+
+		&:vertical {
+			border: 1px solid $bg-border;
+			background: $bg-scroll-handle;
+			image: url(icons:scroll-arrow-up.svg);
+			height: 20px;
+			subcontrol-position: top;
+			subcontrol-origin: margin;
+
+			&:hover {
+				background: $bg-scroll-handle-hover;
+				image: url(icons:scroll-arrow-up-hover.svg);
+			}
+
+			&:pressed {
+				background: $bg-pressed;
+				image: url(icons:scroll-arrow-up.svg);
+			}
+		}
+	}
+
+	&:add-page {
+		&:horizontal {
+			background: none;
+		}
+
+		&:vertical {
+			background: none;
+		}
+	}
+
+	&:sub-page {
+		&:horizontal {
+			background: none;
+		}
+
+		&:vertical {
+			background: none;
+		}
+	}
+}
+
+QAbstractScrollArea {
+	&:corner {
+		background: $bg-scroll;
+		border: none;
 	}
 }
 
