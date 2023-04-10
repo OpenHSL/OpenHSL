@@ -23,8 +23,17 @@ class HSDeviceQt(QObject, HSDevice):
         self.threshold_value = 40
         self.threshold_type = 0
 
+        self.slit_angle_range = 1
+        self.slit_angle_min = 0
+        self.slit_angle_max = 0
         self.slit_intercept_min = 0
         self.slit_intercept_max = 0
+
+    def get_slit_angle_min(self):
+        return self.slit_angle_min\
+
+    def get_slit_angle_max(self):
+        return self.slit_angle_max
 
     def get_slit_intercept_min(self):
         return self.slit_intercept_min
@@ -59,6 +68,10 @@ class HSDeviceQt(QObject, HSDevice):
         self.calib_slit_data.y = y
         self.calib_slit_data.width = w
         self.calib_slit_data.height = h
+
+        # Compute min and max angle range for GUI
+        self.slit_angle_min = np.floor(self.calib_slit_data.angle) - self.slit_angle_range
+        self.slit_angle_max = np.ceil(self.calib_slit_data.angle) + self.slit_angle_range
 
         # Compute min and max intercept for GUI
         limits = []

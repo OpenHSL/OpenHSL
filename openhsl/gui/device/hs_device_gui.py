@@ -271,6 +271,9 @@ class HSDeviceGUI(QMainWindow):
     @pyqtSlot()
     def on_compute_slit_angle_finished(self):
         self.ui_slit_angle_horizontal_slider.setValue(int(self.hsd.get_slit_angle() * self.slit_angle_slider_mult))
+        self.ui_slit_angle_horizontal_slider.setRange(int(self.hsd.get_slit_angle_min() * self.slit_angle_slider_mult),
+                                                      int(self.hsd.get_slit_angle_max() * self.slit_angle_slider_mult))
+
         self.ui_slit_angle_double_spinbox.setValue(self.hsd.get_slit_angle())
 
         self.ui_slit_intercept_horizontal_slider.setRange(self.hsd.get_slit_intercept_min(),
