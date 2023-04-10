@@ -284,7 +284,7 @@ class HSDeviceGUI(QMainWindow):
                                                        self.hsd.get_slit_intercept_max())
         self.ui_slit_intercept_double_spinbox.setValue(self.hsd.get_slit_intercept(to_int=True))
 
-        self.draw_slit_line()
+        self.draw_slit_data()
 
     def on_main_window_is_shown(self):
         self.load_settings()
@@ -362,7 +362,8 @@ class HSDeviceGUI(QMainWindow):
                 graphics_view.scene().addItem(marquee_area_graphics_rect_item)
             graphics_view.update()
 
-    def draw_slit_line(self):
+    def draw_slit_data(self):
+        self.slit_angle_graphics_scene.removeItem(self.slit_graphics_marquee_area_rect_item)
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_line_item)
         self.slit_graphics_line_item.setLine(
             QLineF(0, self.hsd.get_slit_intercept(), self.slit_image_qt.width(),
