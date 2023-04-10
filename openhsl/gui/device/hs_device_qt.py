@@ -111,6 +111,7 @@ class HSDeviceQt(QObject, HSDevice):
 
         self.compute_slit_angle_finished.emit()
 
+    @pyqtSlot()
     def on_threshold_slit_image(self):
         image_thresholded = hsiutils.threshold_image(copy.deepcopy(self.slit_image_to_send), self.threshold_value, 255,
                                                      self.threshold_type)

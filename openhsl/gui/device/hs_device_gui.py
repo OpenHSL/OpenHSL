@@ -34,6 +34,7 @@ class HSDeviceGUI(QMainWindow):
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(openhsl_id)
 
         qss_path = "./Resources/Dark.qss"
+        # qss_path = "./Resources/Grey.qss"
 
         with open(qss_path, 'r') as f:
             strings = f.read()
@@ -262,7 +263,7 @@ class HSDeviceGUI(QMainWindow):
             graphics_scene.removeItem(item)
 
     @pyqtSlot(QImage)
-    def receive_slit_image(self, slit_image_qt):
+    def receive_slit_image(self, slit_image_qt: QImage):
         self.slit_image_qt = slit_image_qt
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_text_item)
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_pixmap_item)
@@ -273,7 +274,7 @@ class HSDeviceGUI(QMainWindow):
         self.ui_calc_slit_angle_button.setEnabled(True)
 
     @pyqtSlot(QImage)
-    def receive_slit_preview_image(self, image_qt):
+    def receive_slit_preview_image(self, image_qt: QImage):
         self.slit_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
 
     @pyqtSlot()
@@ -300,6 +301,7 @@ class HSDeviceGUI(QMainWindow):
     def on_main_window_is_shown(self):
         self.load_settings()
 
+    @pyqtSlot(str)
     def on_ui_recent_device_settings_action_triggered(self, path: str):
         if utils.dir_exists(path):
             self.device_settings_path = path
@@ -310,27 +312,31 @@ class HSDeviceGUI(QMainWindow):
             # TODO remove action from list
             pass
 
+    @pyqtSlot(bool)
     def on_ui_slit_image_threshold_value_checkbox_clicked(self, checked: bool):
         if checked:
             self.threshold_slit_image.emit()
         else:
             self.slit_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.slit_image_qt))
 
-    def on_ui_slit_image_threshold_value_horizontal_slider_value_changed(self, value):
+    @pyqtSlot(int)
+    def on_ui_slit_image_threshold_value_horizontal_slider_value_changed(self, value: int):
         self.hsd.threshold_value = value
         self.ui_slit_image_threshold_value_spinbox.setValue(value)
 
         if self.ui_slit_image_threshold_value_checkbox.isChecked():
             self.threshold_slit_image.emit()
 
-    def on_ui_slit_image_threshold_value_spinbox_value_changed(self, value):
+    @pyqtSlot(int)
+    def on_ui_slit_image_threshold_value_spinbox_value_changed(self, value: int):
         self.hsd.threshold_value = value
         self.ui_slit_image_threshold_value_horizontal_slider.setValue(value)
 
         if self.ui_slit_image_threshold_value_checkbox.isChecked():
             self.threshold_slit_image.emit()
 
-    def on_ui_slit_angle_horizontal_slider_value_changed(self, value):
+    @pyqtSlot(int)
+    def on_ui_slit_angle_horizontal_slider_value_changed(self, value: int):
         angle = value / self.slit_angle_slider_mult
         # Don't set angle while slider has no focus
         if self.ui_slit_angle_horizontal_slider.hasFocus():
@@ -338,27 +344,31 @@ class HSDeviceGUI(QMainWindow):
         self.ui_slit_angle_double_spinbox.setValue(angle)
         self.draw_slit_data()
 
-    def on_ui_slit_angle_double_spinbox_value_changed(self, value):
+    @pyqtSlot(float)
+    def on_ui_slit_angle_double_spinbox_value_changed(self, value: float):
         # Don't set angle while spinbox has no focus
         if self.ui_slit_angle_double_spinbox.hasFocus():
             self.hsd.set_slit_angle(value)
         self.ui_slit_angle_horizontal_slider.setValue(int(value * self.slit_angle_slider_mult))
         self.draw_slit_data()
 
-    def on_ui_slit_intercept_horizontal_slider_value_changed(self, value):
+    @pyqtSlot(int)
+    def on_ui_slit_intercept_horizontal_slider_value_changed(self, value: int):
         # Don't set intercept while slider has no focus
         if self.ui_slit_intercept_horizontal_slider.hasFocus():
             self.hsd.set_slit_intercept(value)
         self.ui_slit_intercept_double_spinbox.setValue(value)
         self.draw_slit_data()
 
-    def on_ui_slit_intercept_double_spinbox_value_changed(self, value):
+    @pyqtSlot(float)
+    def on_ui_slit_intercept_double_spinbox_value_changed(self, value: float):
         # Don't set intercept while spinbox has no focus
         if self.ui_slit_intercept_double_spinbox.hasFocus():
             self.hsd.set_slit_intercept(value)
         self.ui_slit_intercept_horizontal_slider.setValue(int(value))
         self.draw_slit_data()
 
+    @pyqtSlot()
     def on_ui_slit_image_path_button_clicked(self):
         file_path, _filter = QFileDialog.getOpenFileName(self, "Choose file", "",
                                                 "Image file (*.bmp *.png *.jpg *.tif)")
@@ -366,13 +376,16 @@ class HSDeviceGUI(QMainWindow):
             self.slit_image_path = file_path
             self.ui_slit_image_path_line_edit.setText(self.slit_image_path)
 
+    @pyqtSlot()
     def on_ui_load_slit_image_button_clicked(self):
         self.flush_graphics_scene_data(self.slit_angle_graphics_scene)
         self.read_slit_image.emit(self.slit_image_path)
 
+    @pyqtSlot()
     def on_ui_calc_slit_angle_button_clicked(self):
         self.compute_slit_angle.emit(self.slit_graphics_marquee_area_rect_item.rect())
 
+    @pyqtSlot()
     def on_ui_device_settings_path_save_button_clicked(self):
         self.device_settings_path, _filter = QFileDialog.getSaveFileName(self, "Save file", "",
                                                                          "Settings file (*.json)")
@@ -381,12 +394,14 @@ class HSDeviceGUI(QMainWindow):
             self.ui_device_settings_path_line_edit.setText(self.device_settings_path)
             self.device_settings_name = utils.get_file_complete_name(self.device_settings_path)
 
+    @pyqtSlot()
     def on_ui_device_settings_save_button_clicked(self):
         self.save_device_settings()
         self.last_device_settings_path = self.device_settings_path
         # TODO rewrite
         self.recent_device_settings_path_list.append(self.last_device_settings_path)
 
+    @pyqtSlot(QPointF, QPointF)
     def on_marquee_area_changed(self, top_left_on_scene: QPointF, bottom_right_on_scene: QPointF):
         graphics_view: Optional[QGraphicsView, HSGraphicsView] = QObject.sender(self)
 
