@@ -101,10 +101,10 @@ class HSDeviceQt(QObject, HSDevice):
         self.calib_slit_data.slope, self.calib_slit_data.angle, self.calib_slit_data.intercept = \
             hsiutils.compute_slit_angle(self.slit_image, int(x), int(y), int(w), int(h),
                                         self.threshold_value, self.threshold_type)
-        self.calib_slit_data.x = x
-        self.calib_slit_data.y = y
-        self.calib_slit_data.width = w
-        self.calib_slit_data.height = h
+        self.calib_slit_data.x = int(x)
+        self.calib_slit_data.y = int(y)
+        self.calib_slit_data.width = int(w)
+        self.calib_slit_data.height = int(h)
 
         self.compute_slit_angle_adjusting_range()
         self.compute_slit_intercept_adjusting_range()

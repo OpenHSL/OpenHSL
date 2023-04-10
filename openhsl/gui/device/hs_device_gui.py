@@ -1,6 +1,4 @@
-import csv
 import ctypes
-import itertools
 import json
 import sys
 from PyQt6.QtCore import Qt, QDir, QEvent, QLineF ,QObject, QPointF, QRect, QRectF, QSignalMapper, QThread, QTimer, \
