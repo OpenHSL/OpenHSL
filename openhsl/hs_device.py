@@ -61,7 +61,7 @@ class HSCalibrationSlitData:
     def __init__(self):
         self.slope: float = 0
         self.angle: float = 0
-        self.intercept: int = 0
+        self.intercept: float = 0
         self.x: int = 0
         self.y: int = 0
         self.width: int = 0
@@ -145,13 +145,13 @@ class HSDevice:
         # ROI for slit
         self.calib_slit_data: Optional[HSCalibrationSlitData] = None
 
-    def get_slit_slope(self):
+    def get_slit_slope(self) -> float:
         return self.calib_slit_data.slope
 
-    def get_slit_angle(self):
+    def get_slit_angle(self) -> float:
         return self.calib_slit_data.angle
 
-    def get_slit_intercept(self, to_int = False):
+    def get_slit_intercept(self, to_int = False) -> Union[int, float]:
         if to_int:
             return int(np.rint(self.calib_slit_data.intercept))
         return self.calib_slit_data.intercept
