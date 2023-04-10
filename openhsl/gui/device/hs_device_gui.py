@@ -88,6 +88,7 @@ class HSDeviceGUI(QMainWindow):
         self.ui_slit_image_threshold_value_spinbox.valueChanged.connect(
             self.on_ui_slit_image_threshold_value_spinbox_value_changed)
         self.ui_slit_angle_horizontal_slider.valueChanged.connect(self.on_ui_slit_angle_horizontal_slider_value_changed)
+        self.ui_slit_angle_double_spinbox.valueChanged.connect(self.on_ui_slit_angle_double_spinbox_value_changed)
         self.ui_slit_image_path_open_button.clicked.connect(self.on_ui_slit_image_path_button_clicked)
         self.ui_load_slit_image_button.clicked.connect(self.on_ui_load_slit_image_button_clicked)
         self.ui_calc_slit_angle_button.clicked.connect(self.on_ui_calc_slit_angle_button_clicked)
@@ -97,6 +98,7 @@ class HSDeviceGUI(QMainWindow):
         self.threshold_slit_image.connect(self.hsd.on_threshold_slit_image, Qt.ConnectionType.QueuedConnection)
         self.compute_slit_angle.connect(self.hsd.on_compute_slit_angle)
         self.hsd.compute_slit_angle_finished.connect(self.on_compute_slit_angle_finished)
+        self.hsd.adjsut_slit_angle_range.connect(self.on_adjust_slit_angle_range)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -272,8 +274,6 @@ class HSDeviceGUI(QMainWindow):
     @pyqtSlot()
     def on_compute_slit_angle_finished(self):
         self.ui_slit_angle_horizontal_slider.setValue(int(self.hsd.get_slit_angle() * self.slit_angle_slider_mult))
-        self.ui_slit_angle_horizontal_slider.setRange(int(self.hsd.get_slit_angle_min() * self.slit_angle_slider_mult),
-                                                      int(self.hsd.get_slit_angle_max() * self.slit_angle_slider_mult))
 
         self.ui_slit_angle_double_spinbox.setValue(self.hsd.get_slit_angle())
 
@@ -286,6 +286,13 @@ class HSDeviceGUI(QMainWindow):
         self.ui_slit_intercept_double_spinbox.setValue(self.hsd.get_slit_intercept(to_int=True))
 
         self.draw_slit_data()
+
+    @pyqtSlot(float, float)
+    def on_adjust_slit_angle_range(self, range_min: float, range_max: float):
+        # Don't touch slider while it has focus
+        if not self.ui_slit_angle_horizontal_slider.hasFocus():
+            self.ui_slit_angle_horizontal_slider.setRange(int(range_min * self.slit_angle_slider_mult),
+                                                          int(range_max * self.slit_angle_slider_mult))
 
     def on_main_window_is_shown(self):
         self.load_settings()
@@ -324,6 +331,11 @@ class HSDeviceGUI(QMainWindow):
         angle = value / self.slit_angle_slider_mult
         self.hsd.set_slit_angle(angle)
         self.ui_slit_angle_double_spinbox.setValue(angle)
+        self.draw_slit_data()
+
+    def on_ui_slit_angle_double_spinbox_value_changed(self, value):
+        self.hsd.set_slit_angle(value)
+        self.ui_slit_angle_horizontal_slider.setValue(int(value * self.slit_angle_slider_mult))
         self.draw_slit_data()
 
     def on_ui_slit_image_path_button_clicked(self):
