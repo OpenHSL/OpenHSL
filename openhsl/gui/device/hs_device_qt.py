@@ -11,6 +11,7 @@ class HSDeviceQt(QObject, HSDevice):
     send_slit_image = pyqtSignal(QImage)
     send_slit_preview_image = pyqtSignal(QImage)
     compute_slit_angle_finished = pyqtSignal()
+    adjsut_slit_angle_range = pyqtSignal(float, float)
     # send_slit_angle = pyqtSignal(float)
     # send_slit_offset = pyqtSignal(float)
     def __init__(self):
@@ -44,9 +45,17 @@ class HSDeviceQt(QObject, HSDevice):
     def set_slit_angle(self, value: float):
         self.calib_slit_data.angle = value
         self.calib_slit_data.slope = np.tan(value * np.pi / 180)
+        self.compute_slit_angle_adjusting_range()
 
     def set_slit_intercept(self, value: float):
         self.calib_slit_data.intercept = value
+
+    def compute_slit_angle_adjusting_range(self):
+        # Compute min and max angle adjusting range for GUI
+        self.slit_angle_min = np.floor(self.calib_slit_data.angle) - self.slit_angle_range
+        self.slit_angle_max = np.ceil(self.calib_slit_data.angle) + self.slit_angle_range
+
+        self.adjsut_slit_angle_range.emit(self.slit_angle_min, self.slit_angle_max)
 
     @pyqtSlot(str)
     def on_read_slit_image(self, path: str):
@@ -76,9 +85,7 @@ class HSDeviceQt(QObject, HSDevice):
         self.calib_slit_data.width = w
         self.calib_slit_data.height = h
 
-        # Compute min and max angle range for GUI
-        self.slit_angle_min = np.floor(self.calib_slit_data.angle) - self.slit_angle_range
-        self.slit_angle_max = np.ceil(self.calib_slit_data.angle) + self.slit_angle_range
+        self.compute_slit_angle_adjusting_range()
 
         # Compute min and max intercept for GUI
         limits = []
