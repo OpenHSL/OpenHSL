@@ -52,7 +52,7 @@ class HSDeviceQt(QObject, HSDevice):
     @pyqtSlot(QRectF)
     def on_compute_slit_angle(self, area_rect: QRectF):
         x, y, w, h = area_rect.topLeft().x(), area_rect.topLeft().y(), area_rect.width(), area_rect.height()
-        self.roi.slit_slope, self.roi.slit_angle, self.roi.slit_intercept = \
+        self.calib_slit_data.slope, self.calib_slit_data.angle, self.calib_slit_data.intercept = \
             hsiutils.compute_slit_angle(self.slit_image, int(x), int(y), int(w), int(h),
                                         self.threshold_value, self.threshold_type)
         # Compute min and max intercept for GUI

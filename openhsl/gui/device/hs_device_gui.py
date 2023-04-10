@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, 
     QSlider, QSpinBox, QToolBar, QToolButton, QWidget
 from PyQt6 import uic
 from typing import Any, Dict, List, Optional
-from openhsl.hs_device import HSDevice, HSDeviceType, HSROI, HSCalibrationWavelengthData
+from openhsl.hs_device import HSDevice, HSDeviceType, HSCalibrationSlitData, HSCalibrationWavelengthData
 from openhsl.gui.device.hs_device_qt import HSDeviceQt
 from openhsl.gui.device.hs_graphics_view import HSGraphicsView
 import openhsl.utils as utils
@@ -127,7 +127,7 @@ class HSDeviceGUI(QMainWindow):
     def prepare_ui(self):
         self.fill_device_type_combobox()
         # TODO maybe add default zeros
-        self.hsd.roi = HSROI()
+        self.hsd.calib_slit_data = HSCalibrationSlitData()
         # TODO remove
         wl_1 = HSCalibrationWavelengthData()
         wl_1.wavelength = 415
@@ -362,8 +362,8 @@ class HSDeviceGUI(QMainWindow):
     def draw_slit_line(self):
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_line_item)
         self.slit_graphics_line_item.setLine(
-            QLineF(0, self.hsd.roi.slit_intercept, self.slit_image_qt.width(),
-                   self.hsd.roi.slit_slope * self.slit_image_qt.width() + self.hsd.roi.slit_intercept))
+            QLineF(0, self.hsd.get_slit_intercept(), self.slit_image_qt.width(),
+                   self.hsd.get_slit_slope() * self.slit_image_qt.width() + self.hsd.get_slit_intercept()))
         self.slit_angle_graphics_scene.addItem(self.slit_graphics_line_item)
 
     def eventFilter(self, obj, event):

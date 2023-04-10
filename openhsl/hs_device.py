@@ -57,23 +57,23 @@ class HSDeviceType(BaseIntEnum):
     Custom = 256
 
 
-class HSROI:
+class HSCalibrationSlitData:
     def __init__(self):
-        self.slit_slope: float = 0
-        self.slit_angle: float = 0
-        self.slit_intercept: int = 0
+        self.slope: float = 0
+        self.angle: float = 0
+        self.intercept: int = 0
         self.x: int = 0
         self.y: int = 0
         self.width: int = 0
         self.height: int = 0
 
     def load_dict(self, data_dict: dict):
-        if utils.key_exists_in_dict(data_dict, "slit_slope"):
-            self.slit_slope = data_dict["slit_slope"]
-        if utils.key_exists_in_dict(data_dict, "slit_angle"):
-            self.slit_angle = data_dict["slit_angle"]
-        if utils.key_exists_in_dict(data_dict, "slit_intercept"):
-            self.slit_intercept = data_dict["slit_intercept"]
+        if utils.key_exists_in_dict(data_dict, "slope"):
+            self.slope = data_dict["slope"]
+        if utils.key_exists_in_dict(data_dict, "angle"):
+            self.angle = data_dict["angle"]
+        if utils.key_exists_in_dict(data_dict, "intercept"):
+            self.intercept = data_dict["intercept"]
         if utils.key_exists_in_dict(data_dict, "x"):
             self.x = data_dict["x"]
         if utils.key_exists_in_dict(data_dict, "y"):
@@ -86,12 +86,12 @@ class HSROI:
     @classmethod
     def from_dict(cls, data_dict: dict):
         obj = cls()
-        if utils.key_exists_in_dict(data_dict, "slit_slope"):
-            obj.slit_slope = data_dict["slit_slope"]
-        if utils.key_exists_in_dict(data_dict, "slit_angle"):
-            obj.slit_angle = data_dict["slit_angle"]
-        if utils.key_exists_in_dict(data_dict, "slit_intercept"):
-            obj.slit_intercept = data_dict["slit_intercept"]
+        if utils.key_exists_in_dict(data_dict, "slope"):
+            obj.slope = data_dict["slope"]
+        if utils.key_exists_in_dict(data_dict, "angle"):
+            obj.angle = data_dict["angle"]
+        if utils.key_exists_in_dict(data_dict, "intercept"):
+            obj.intercept = data_dict["intercept"]
         if utils.key_exists_in_dict(data_dict, "x"):
             obj.x = data_dict["x"]
         if utils.key_exists_in_dict(data_dict, "y"):
@@ -105,9 +105,9 @@ class HSROI:
 
     def to_dict(self) -> dict:
         data = dict()
-        data["slit_slope"] = self.slit_slope
-        data["slit_angle"] = self.slit_angle
-        data["slit_intercept"] = self.slit_intercept
+        data["slope"] = self.slope
+        data["angle"] = self.angle
+        data["intercept"] = self.intercept
         data["x"] = self.x
         data["y"] = self.y
         data["width"] = self.width
@@ -142,18 +142,19 @@ class HSDevice:
     def __init__(self):
         self.device_type: HSDeviceType = HSDeviceType.Undef
         self.calib_wavelength_data: Optional[List[HSCalibrationWavelengthData]] = None
-        self.roi: Optional[HSROI] = None
+        # ROI for slit
+        self.calib_slit_data: Optional[HSCalibrationSlitData] = None
 
     def get_slit_slope(self):
-        return self.roi.slit_slope
+        return self.calib_slit_data.slope
 
     def get_slit_angle(self):
-        return self.roi.slit_angle
+        return self.calib_slit_data.angle
 
     def get_slit_intercept(self, to_int = False):
         if to_int:
-            return int(np.rint(self.roi.slit_intercept))
-        return self.roi.slit_intercept
+            return int(np.rint(self.calib_slit_data.intercept))
+        return self.calib_slit_data.intercept
 
     def load_calibration_wavelength_data(self, path: Union[str, Path]) -> None:
         pass
@@ -169,8 +170,8 @@ class HSDevice:
             calib_wavelength_data = \
                 [HSCalibrationWavelengthData.from_dict(v) for v in calib_wavelength_data_dict.values()]
             self.calib_wavelength_data = calib_wavelength_data
-        if utils.key_exists_in_dict(device_data, "roi"):
-            self.roi = HSROI.from_dict(device_data["roi"])
+        if utils.key_exists_in_dict(device_data, "calib_slit_data"):
+            self.calib_slit_data = HSCalibrationSlitData.from_dict(device_data["calib_slit_data"])
 
     @classmethod
     def from_dict(cls, device_data: dict):
@@ -182,8 +183,8 @@ class HSDevice:
             calib_wavelength_data = \
                 [HSCalibrationWavelengthData.from_dict(v) for v in calib_wavelength_data_dict.values()]
             obj.calib_wavelength_data = calib_wavelength_data
-        if utils.key_exists_in_dict(device_data, "roi"):
-            obj.roi = HSROI.from_dict(device_data["roi"])
+        if utils.key_exists_in_dict(device_data, "calib_slit_data"):
+            obj.calib_slit_data = HSCalibrationSlitData.from_dict(device_data["calib_slit_data"])
 
         return obj
 
@@ -199,9 +200,9 @@ class HSDevice:
                 calib_wavelength_data[str(wl.wavelength)] = wl.to_dict()
             device_data["calib_wavelength_data"] = calib_wavelength_data
 
-        if self.roi is None:
-            device_data["roi"] = None
+        if self.calib_slit_data is None:
+            device_data["calib_slit_data"] = None
         else:
-            device_data["roi"] = self.roi.to_dict()
+            device_data["calib_slit_data"] = self.calib_slit_data.to_dict()
 
         return device_data
