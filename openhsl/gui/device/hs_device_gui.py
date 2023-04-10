@@ -87,6 +87,7 @@ class HSDeviceGUI(QMainWindow):
             self.on_ui_slit_image_threshold_value_horizontal_slider_value_changed)
         self.ui_slit_image_threshold_value_spinbox.valueChanged.connect(
             self.on_ui_slit_image_threshold_value_spinbox_value_changed)
+        self.ui_slit_angle_horizontal_slider.valueChanged.connect(self.on_ui_slit_angle_horizontal_slider_value_changed)
         self.ui_slit_image_path_open_button.clicked.connect(self.on_ui_slit_image_path_button_clicked)
         self.ui_load_slit_image_button.clicked.connect(self.on_ui_load_slit_image_button_clicked)
         self.ui_calc_slit_angle_button.clicked.connect(self.on_ui_calc_slit_angle_button_clicked)
@@ -318,6 +319,12 @@ class HSDeviceGUI(QMainWindow):
 
         if self.ui_slit_image_threshold_value_checkbox.isChecked():
             self.threshold_slit_image.emit()
+
+    def on_ui_slit_angle_horizontal_slider_value_changed(self, value):
+        angle = value / self.slit_angle_slider_mult
+        self.hsd.set_slit_angle(angle)
+        self.ui_slit_angle_double_spinbox.setValue(angle)
+        self.draw_slit_data()
 
     def on_ui_slit_image_path_button_clicked(self):
         file_path, _filter = QFileDialog.getOpenFileName(self, "Choose file", "",
