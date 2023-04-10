@@ -115,6 +115,7 @@ class HSDeviceGUI(QMainWindow):
         self.slit_image_qt: Optional[QImage] = None
         self.slit_graphics_pixmap_item = QGraphicsPixmapItem()
         self.slit_graphics_line_item = QGraphicsLineItem()
+        self.slit_graphics_roi_rect_item = QGraphicsRectItem()
         self.slit_graphics_marquee_area_rect_item = QGraphicsRectItem()
         self.slit_graphics_text_item = QGraphicsTextItem()
         self.slit_angle_slider_mult = 10000000
@@ -164,6 +165,9 @@ class HSDeviceGUI(QMainWindow):
         dashed_pen_slit = QPen(dashed_pen_marquee)
         dashed_pen_slit.setColor(QColor("red"))
 
+        dashed_pen_slit_roi_rect = QPen(dashed_pen_marquee)
+        dashed_pen_slit_roi_rect.setColor(QColor("#cc870f"))
+
         brush_marquee = QBrush(QColor(255, 255, 255, 128))
         brush_marquee.setStyle(Qt.BrushStyle.BDiagPattern)
 
@@ -178,6 +182,9 @@ class HSDeviceGUI(QMainWindow):
 
         self.slit_graphics_line_item.setPen(dashed_pen_slit)
         self.slit_graphics_line_item.setOpacity(0.5)
+
+        self.slit_graphics_roi_rect_item.setPen(dashed_pen_slit_roi_rect)
+        self.slit_graphics_roi_rect_item.setOpacity(0.5)
 
         self.slit_graphics_marquee_area_rect_item.setPen(dashed_pen_marquee)
         self.slit_graphics_marquee_area_rect_item.setBrush(brush_marquee)
@@ -425,10 +432,14 @@ class HSDeviceGUI(QMainWindow):
     def draw_slit_data(self):
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_marquee_area_rect_item)
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_line_item)
+        self.slit_angle_graphics_scene.removeItem(self.slit_graphics_roi_rect_item)
         self.slit_graphics_line_item.setLine(
             QLineF(0, self.hsd.get_slit_intercept(), self.slit_image_qt.width(),
                    self.hsd.get_slit_slope() * self.slit_image_qt.width() + self.hsd.get_slit_intercept()))
+        x, y, w, h = self.hsd.get_slit_roi()
+        self.slit_graphics_roi_rect_item.setRect(QRectF(x, y, w, h))
         self.slit_angle_graphics_scene.addItem(self.slit_graphics_line_item)
+        self.slit_angle_graphics_scene.addItem(self.slit_graphics_roi_rect_item)
 
     def eventFilter(self, obj, event):
         # if obj == self.ui_slit_angle_graphics_view:
