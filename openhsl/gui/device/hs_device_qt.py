@@ -55,6 +55,11 @@ class HSDeviceQt(QObject, HSDevice):
         self.calib_slit_data.slope, self.calib_slit_data.angle, self.calib_slit_data.intercept = \
             hsiutils.compute_slit_angle(self.slit_image, int(x), int(y), int(w), int(h),
                                         self.threshold_value, self.threshold_type)
+        self.calib_slit_data.x = x
+        self.calib_slit_data.y = y
+        self.calib_slit_data.width = w
+        self.calib_slit_data.height = h
+
         # Compute min and max intercept for GUI
         limits = []
         if self.get_slit_slope() > 0:
