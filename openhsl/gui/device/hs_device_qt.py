@@ -41,6 +41,13 @@ class HSDeviceQt(QObject, HSDevice):
     def get_slit_intercept_max(self):
         return self.slit_intercept_max
 
+    def set_slit_angle(self, value: float):
+        self.calib_slit_data.angle = value
+        self.calib_slit_data.slope = np.tan(value * np.pi / 180)
+
+    def set_slit_intercept(self, value: float):
+        self.calib_slit_data.intercept = value
+
     @pyqtSlot(str)
     def on_read_slit_image(self, path: str):
         self.slit_image = cv.imread(path, cv.IMREAD_ANYCOLOR)
