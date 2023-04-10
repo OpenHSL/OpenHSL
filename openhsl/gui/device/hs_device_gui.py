@@ -262,16 +262,20 @@ class HSDeviceGUI(QMainWindow):
         for item in graphics_scene.items():
             graphics_scene.removeItem(item)
 
+    @staticmethod
+    def clear_marquee_area(graphics_rect_item: QGraphicsRectItem):
+        graphics_rect_item.setRect(QRectF())
+
     @pyqtSlot(QImage)
     def receive_slit_image(self, slit_image_qt: QImage):
         self.slit_image_qt = slit_image_qt
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_text_item)
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_pixmap_item)
-        # pixmap_item = QGraphicsPixmapItem(QPixmap.fromImage(self.slit_image_qt))
+        self.clear_marquee_area(self.slit_graphics_marquee_area_rect_item)
         self.slit_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.slit_image_qt))
         self.slit_angle_graphics_scene.addItem(self.slit_graphics_pixmap_item)
         self.ui_slit_image_threshold_value_checkbox.setEnabled(True)
-        self.ui_calc_slit_angle_button.setEnabled(True)
+        self.ui_calc_slit_angle_button.setEnabled(False)
 
     @pyqtSlot(QImage)
     def receive_slit_preview_image(self, image_qt: QImage):
@@ -413,6 +417,7 @@ class HSDeviceGUI(QMainWindow):
 
         if marquee_area_graphics_rect_item is not None:
             marquee_area_graphics_rect_item.setRect(marquee_area_rect)
+            self.ui_calc_slit_angle_button.setEnabled(not marquee_area_rect.isEmpty())
             if marquee_area_graphics_rect_item not in graphics_view.scene().items():
                 graphics_view.scene().addItem(marquee_area_graphics_rect_item)
             graphics_view.update()
