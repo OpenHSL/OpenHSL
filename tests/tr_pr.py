@@ -1,10 +1,10 @@
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 from openhsl.models.m1dcnn import M1DCNN
-from matplotlib import pyplot as plt
 from openhsl.Firsov_Legacy.utils import convert_to_color_
 
 from sklearn.metrics import classification_report
+from matplotlib import pyplot as plt
 
 import torch
 
@@ -21,10 +21,12 @@ cnn = M1DCNN(n_classes=mask.n_classes,
              #path_to_weights='../tests/checkpoints/m1_dcnn__net/m1dcnn/2023_03_29_15_07_07_epoch50_0.76.pth',
              device='cuda')
 
-cnn.fit(X=hsi, y=mask, train_sample_percentage=0.5, epochs=10, dataloader_mode="disjoint")
+cnn.fit(X=hsi,
+        y=mask,
+        train_sample_percentage=0.5,
+        epochs=10,
+        dataloader_mode="disjoint")
 
-#print(cnn.losses)
-#print(cnn.val_accs)
 plt.plot(cnn.losses)
 plt.show()
 plt.plot(cnn.val_accs)
@@ -39,7 +41,5 @@ color_pred = convert_to_color_(pred)
 
 plt.imshow(color_pred)
 plt.show()
-
-
 
 print(classification_report(pred.flatten(), mask.get_2d().flatten()))

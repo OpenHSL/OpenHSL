@@ -213,6 +213,8 @@ class HSImage:
         for image_name in images_list:
             img = Image.open(f'{path_to_dir}/{image_name}').convert("L")
             hsi.append(np.array(img))
+        if not hsi:
+            raise Exception("Can't read files!")
 
         self.data = np.array(hsi).transpose((1, 2, 0))
     # ------------------------------------------------------------------------------------------------------------------

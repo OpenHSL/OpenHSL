@@ -14,6 +14,7 @@ class HSMask:
                 Each pixel has value from [0, class_counts - 1]
             3D-Array
                 Each layer is binary image where 1 is class and 0 is not-class
+
         Parameters
         ----------
         mask: np.ndarray
@@ -21,6 +22,10 @@ class HSMask:
             where:
                 X, Y data resolution.
                 Z is a count of channels (1, 3, 4).
+        label_class: dict
+            dictionary where keys are number of the binary layer in mask
+            and values are description class of this layer
+
         Attributes
         ----------
         data: np.ndarray
@@ -38,7 +43,7 @@ class HSMask:
     def __init__(self,
                  mask: Optional[np.array] = None,
                  label_class: Optional[Dict] = None):
-        if mask:
+        if np.any(mask):
             if HSMask.__is_correct_2d_mask(mask):
                 print("got 2d mask")
                 self.data = HSMask.convert_2d_to_3d_mask(mask)
@@ -58,6 +63,7 @@ class HSMask:
 
             self.n_classes = self.data.shape[-1]
         else:
+            print("void mask")
             self.data = None
             self.label_class = None
     # ------------------------------------------------------------------------------------------------------------------
@@ -70,7 +76,10 @@ class HSMask:
     # ------------------------------------------------------------------------------------------------------------------
 
     def __len__(self):
-        return self.data.shape[-1]
+        if np.any(self.data):
+            return self.data.shape[-1]
+        else:
+            return 0
     # ------------------------------------------------------------------------------------------------------------------
 
     def get_2d(self) -> np.ndarray:
@@ -81,8 +90,10 @@ class HSMask:
         return self.data
     # ------------------------------------------------------------------------------------------------------------------
 
-    def __update_label_class(self):
-        pass
+    def __update_label_class(self, label_class: Dict):
+        if HSMask.__is_correct_class_dict(d=label_class,
+                                          class_count=len(self.data)):
+            self.label_class = label_class
     # ------------------------------------------------------------------------------------------------------------------
 
     def delete_layer(self, pos: int):
