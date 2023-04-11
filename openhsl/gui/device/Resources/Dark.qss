@@ -263,7 +263,7 @@ QMenuBar::item:pressed {
 QPushButton {
   background-color: #38393a;
   border: 1px solid gray;
-  border-radius: 0px;
+  border-radius: 2px;
   color: #d0d0d0;
   min-height: 22;
   padding-left: 4px;
@@ -312,6 +312,42 @@ QPushButton[id="add"]:hover {
 
 QPushButton[id="add"]:pressed {
   image: url(icons:plus-lg-pressed.svg);
+  background-color: #2e2f30;
+}
+
+QPushButton[id="add_to_table"] {
+  image: url(icons:ud-download.svg);
+  border-radius: 2px;
+  width: 24px;
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+QPushButton[id="add_to_table"]:hover {
+  image: url(icons:ud-download-hover.svg);
+  background-color: #654321;
+}
+
+QPushButton[id="add_to_table"]:pressed {
+  image: url(icons:ud-download.svg);
+  background-color: #2e2f30;
+}
+
+QPushButton[id="view_from_table"] {
+  image: url(icons:ud-upload.svg);
+  border-radius: 2px;
+  width: 24px;
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+QPushButton[id="view_from_table"]:hover {
+  image: url(icons:ud-upload-hover.svg);
+  background-color: #654321;
+}
+
+QPushButton[id="view_from_table"]:pressed {
+  image: url(icons:ud-upload.svg);
   background-color: #2e2f30;
 }
 
