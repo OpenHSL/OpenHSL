@@ -7,7 +7,7 @@ from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QIm
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
     QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsRectItem, \
     QGraphicsTextItem, QGraphicsScene, QGraphicsView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QPushButton, \
-    QSlider, QSpinBox, QToolBar, QToolButton, QWidget
+    QSlider, QSpinBox, QTableWidget, QToolBar, QToolButton, QWidget
 from PyQt6 import uic
 from typing import Any, Dict, List, Optional
 from openhsl.hs_device import HSDevice, HSDeviceType, HSCalibrationSlitData, HSCalibrationWavelengthData
@@ -70,6 +70,8 @@ class HSDeviceGUI(QMainWindow):
         self.ui_slit_image_path_line_edit: QLineEdit = self.findChild(QLineEdit, 'slitImagePath_lineEdit')
         self.ui_load_slit_image_button: QPushButton = self.findChild(QPushButton, 'loadSlitImage_pushButton')
         self.ui_calc_slit_angle_button: QPushButton = self.findChild(QPushButton, 'calcSlitAngle_pushButton')
+        # Wavelengths tab
+        self.ui_wavelength_table_widget: QTableWidget = self.findChild(QTableWidget, 'wavelength_tableWidget')
         # Settings tab
         self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
         self.ui_device_settings_path_line_edit: QLineEdit = self.findChild(QLineEdit, "deviceSettingsPath_lineEdit")
@@ -134,6 +136,7 @@ class HSDeviceGUI(QMainWindow):
 
     def prepare_ui(self):
         self.fill_device_type_combobox()
+        self.fill_wavelength_table_widget()
         # TODO maybe add default zeros
         self.hsd.calib_slit_data = HSCalibrationSlitData()
         # TODO remove
@@ -142,6 +145,7 @@ class HSDeviceGUI(QMainWindow):
         wl_2 = HSCalibrationWavelengthData()
         wl_2.wavelength = 705
         self.hsd.calib_wavelength_data = [wl_1, wl_2]
+        self.ui_wavelength_table_widget.insertRow(0)
 
         gv_hints = QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform | \
                    QPainter.RenderHint.TextAntialiasing
@@ -215,6 +219,15 @@ class HSDeviceGUI(QMainWindow):
             action.triggered.connect(self.recent_device_settings_action_triggered_signal_mapper.map)
         self.recent_device_settings_action_triggered_signal_mapper.mappedString.connect(
             self.on_ui_recent_device_settings_action_triggered)
+
+    def fill_wavelength_table_widget(self):
+        header_labels = ["Wavelength", "Slit slope", "Slit angle", "Slit intercept",
+                         "Wavelength ROI x", "Wavelength ROI y", "Wavelength ROI width", "Wavelength ROI height",
+                         "Wavelength slit offset"]
+        self.ui_wavelength_table_widget.setColumnCount(len(header_labels))
+        self.ui_wavelength_table_widget.setHorizontalHeaderLabels(header_labels)
+        self.ui_wavelength_table_widget.horizontalHeader().setStretchLastSection(True)
+        self.ui_wavelength_table_widget.resizeColumnsToContents()
 
     def initialize_settings_dict(self):
         settings_dict = {
@@ -310,6 +323,8 @@ class HSDeviceGUI(QMainWindow):
     def on_main_window_is_shown(self):
         self.load_settings()
 
+    # Main window slots
+
     @pyqtSlot(str)
     def on_ui_recent_device_settings_action_triggered(self, path: str):
         if utils.dir_exists(path):
@@ -320,6 +335,8 @@ class HSDeviceGUI(QMainWindow):
         else:
             # TODO remove action from list
             pass
+
+    # Tab 0: slit angle tab slots
 
     @pyqtSlot(bool)
     def on_ui_slit_image_threshold_value_checkbox_clicked(self, checked: bool):
@@ -393,6 +410,10 @@ class HSDeviceGUI(QMainWindow):
     @pyqtSlot()
     def on_ui_calc_slit_angle_button_clicked(self):
         self.compute_slit_angle.emit(self.slit_graphics_marquee_area_rect_item.rect())
+
+    # Tab 2: wavelengths tab slots
+
+    # Tab 4: settings tab slots
 
     @pyqtSlot()
     def on_ui_device_settings_path_save_button_clicked(self):
