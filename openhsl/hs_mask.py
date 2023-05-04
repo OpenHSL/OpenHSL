@@ -83,10 +83,19 @@ class HSMask:
     # ------------------------------------------------------------------------------------------------------------------
 
     def get_2d(self) -> np.ndarray:
+        """
+        get_2d()
+            returns 2d-mask with values in [0,1,2...]
+
+        """
         return HSMask.convert_3d_to_2d_mask(self.data)
     # ------------------------------------------------------------------------------------------------------------------
 
     def get_3d(self) -> np.ndarray:
+        """
+        get_3d()
+            returns 3d-mask where each layer (Z-axe) is binary image
+        """
         return self.data
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -172,6 +181,14 @@ class HSMask:
     # ------------------------------------------------------------------------------------------------------------------
 
     def __is_correct_binary_layer(self, layer: np.ndarray) -> bool:
+        """
+        __is_correct_binary_layer(layer)
+            checks is input layer has only binary values (0 and 1) or not
+
+            Parameters
+            ----------
+            layer: np.ndarray
+        """
         return np.all(layer.shape == self.data.shape[:-1]) and np.all(np.unique(layer) == np.array([0, 1]))
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -185,7 +202,7 @@ class HSMask:
 
             Parameters
             ----------
-            mask
+            mask: np.ndarray
 
             Returns
             -------
@@ -196,7 +213,7 @@ class HSMask:
 
         # check each layer that it's binary
         for layer in np.transpose(mask, (2, 0, 1)):
-            if np.unique(layer) != np.array([0, 1]):
+            if np.all(np.unique(layer) != np.array([0, 1])):
                 return False
 
         return True
@@ -204,6 +221,14 @@ class HSMask:
 
     @staticmethod
     def __is_correct_class_dict(d: dict, class_count: int) -> bool:
+        """
+        __is_correct_class_dict(d, class_count)
+            checks class descriptions in input dictionary
+            Parameters
+            ----------
+            d: dict
+            class_count: int
+        """
 
         if not d:
             return False
@@ -216,6 +241,14 @@ class HSMask:
 
     @staticmethod
     def convert_2d_to_3d_mask(mask: np.ndarray) -> np.ndarray:
+        """
+        convert_2d_to_3d_mask(mask)
+            returns 3d mask consists binary layers from 2d mask
+
+            Parameters
+            ----------
+            mask: np.ndarray
+        """
         mask_3d = []
         for cl in np.unique(mask):
 

@@ -107,8 +107,8 @@ class HSBuilder:
             -------
                 float
         """
-
-        _, frame_t = cv2.threshold(frame, 250, 255, cv2.THRESH_BINARY)
+        bl = cv2.GaussianBlur(frame, (11, 11), cv2.BORDER_DEFAULT)
+        frame_t = bl > 0.999 * np.max(bl)
         y, x = np.where(frame_t > 0)
         lr = LinearRegression().fit(x.reshape(-1, 1), y)
         ang = math.degrees(math.atan(lr.coef_))
