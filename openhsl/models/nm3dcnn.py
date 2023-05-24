@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from torch.nn import init
 
 
-class M3DCNN_Net(nn.Module):
+class NM3DCNN_Net(nn.Module):
     """
     MULTI-SCALE 3D DEEP CONVOLUTIONAL NEURAL NETWORK FOR HYPERSPECTRAL
     IMAGE CLASSIFICATION
@@ -33,7 +33,7 @@ class M3DCNN_Net(nn.Module):
     # ------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, input_channels, n_classes, patch_size=7):
-        super(M3DCNN_Net, self).__init__()
+        super(NM3DCNN_Net, self).__init__()
         self.input_channels = input_channels
         self.patch_size = patch_size
 
@@ -150,7 +150,7 @@ class M3DCNN_Net(nn.Module):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class M3DCNN(Model):
+class NM3DCNN(Model):
     def __init__(self,
                  n_classes=3,
                  n_bands=250,
@@ -172,7 +172,7 @@ class M3DCNN(Model):
         weights = weights.to(device)
         self.hyperparams["weights"] = weights
 
-        self.model = M3DCNN_Net(n_bands, n_classes, patch_size=self.hyperparams["patch_size"])
+        self.model = NM3DCNN_Net(n_bands, n_classes, patch_size=self.hyperparams["patch_size"])
         # For Adagrad, we need to load the model on GPU before creating the optimizer
         self.model = self.model.to(device)
         self.optimizer = optim.Adagrad(self.model.parameters(), lr=self.hyperparams['learning_rate'], weight_decay=0.01)
