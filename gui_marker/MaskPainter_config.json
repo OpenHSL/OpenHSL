@@ -1,0 +1,12 @@
+{
+    "default_project_settings": {
+        "mask_width": 640,
+        "mask_height": 360,
+        "max_background_width": 1600,
+        "max_background_height": 900,
+        "layer_keys": [],
+        "layers": {},
+        "active_mask": -1,
+        "mask_opaque": true
+    }
+}
