@@ -32,7 +32,7 @@ class HSDeviceQt(QObject, HSDevice):
         self.slit_intercept_max = 0
 
     def get_slit_angle_min(self):
-        return self.slit_angle_min\
+        return self.slit_angle_min
 
     def get_slit_angle_max(self):
         return self.slit_angle_max

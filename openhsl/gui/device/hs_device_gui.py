@@ -120,6 +120,10 @@ class HSDeviceGUI(QMainWindow):
         self.slit_graphics_text_item = QGraphicsTextItem()
         self.slit_angle_slider_mult = 10000000
 
+        # TODO add mutex locker
+        # TODO List[bool], for each tab different val?
+        self.init_after_load_device_settings = False
+
         self.recent_device_settings_path_list = []
         self.ui_recent_device_settings_action_list: List[QAction] = []
         # Recent device settings action triggered signal mapper for actions
@@ -271,9 +275,18 @@ class HSDeviceGUI(QMainWindow):
             if utils.key_exists_in_dict(self.device_settings_dict, "slit_image_path"):
                 self.slit_image_path = self.device_settings_dict["slit_image_path"]
                 self.ui_slit_image_path_line_edit.setText(self.slit_image_path)
+            else:
+                self.slit_image_path = ""
+                self.ui_slit_image_path_line_edit.setText(self.slit_image_path)
             if utils.key_exists_in_dict(self.device_settings_dict, "device_metadata"):
                 device_data_dict = self.device_settings_dict["device_metadata"]
                 self.hsd.load_dict(device_data_dict)
+            self.apply_device_settings()
+
+    def apply_device_settings(self):
+        # TODO add mutex locker
+        self.init_after_load_device_settings = True
+        self.on_ui_load_slit_image_button_clicked()
 
     @staticmethod
     def flush_graphics_scene_data(graphics_scene: QGraphicsScene):
@@ -294,6 +307,10 @@ class HSDeviceGUI(QMainWindow):
         self.slit_angle_graphics_scene.addItem(self.slit_graphics_pixmap_item)
         self.ui_slit_image_threshold_value_checkbox.setEnabled(True)
         self.ui_calc_slit_angle_button.setEnabled(False)
+
+        # TODO add mutex locker
+        if self.init_after_load_device_settings:
+            self.draw_slit_data()
 
     @pyqtSlot(QImage)
     def receive_slit_preview_image(self, image_qt: QImage):
