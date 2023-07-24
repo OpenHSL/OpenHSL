@@ -152,18 +152,17 @@ class NM3DCNN_Net(nn.Module):
 
 class NM3DCNN(Model):
     def __init__(self,
-                 n_classes=3,
-                 n_bands=250,
-                 patch_size=7,
-                 path_to_weights=None,
-                 device='cpu'
+                 n_classes,
+                 device,
+                 n_bands,
+                 path_to_weights=None
                  ):
         self.hyperparams: dict[str: Any] = dict()
-        self.hyperparams['patch_size'] = patch_size
+        self.hyperparams['patch_size'] = 7
         self.hyperparams['batch_size'] = 40
         self.hyperparams['learning_rate'] = 0.01
         self.hyperparams['n_bands'] = n_bands
-        self.hyperparams['net_name'] = 'm3dcnn'
+        self.hyperparams['net_name'] = 'nm3dcnn'
         self.hyperparams['n_classes'] = n_classes
         self.hyperparams['ignored_labels'] = [0]
         self.hyperparams['device'] = device

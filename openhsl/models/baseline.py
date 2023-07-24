@@ -55,8 +55,8 @@ class BASELINE(Model):
                  n_classes,
                  device,
                  n_bands,
-                 path_to_weights=None):
-        
+                 path_to_weights=None
+                 ):
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 1
         self.hyperparams['n_classes'] = n_classes
