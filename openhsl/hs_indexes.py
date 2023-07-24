@@ -266,25 +266,21 @@ def adaptive_norm_diff_index(cube: np.ndarray,
     else:
         raise ValueError("Different numbers of channels in two sets")
 
-    for ind_1, ind_2 in product(range(channels_count), range(channels_count)):
+    for ind_1 in range(channels_count):
+        for ind_2 in range(ind_1+1, channels_count):
+            ndi = norm_diff_index(channel_1=example_1[:, :, ind_1],
+                                channel_2=example_1[:, :, ind_2])
 
-        # skip main diagonal
-        if ind_1 == ind_2:
-            continue
+            score = np.sum(ndi) / example_1_size
 
-        ndi = norm_diff_index(channel_1=example_1[:, :, ind_1],
-                              channel_2=example_1[:, :, ind_2])
+            ndi = norm_diff_index(channel_1=example_2[:, :, ind_1],
+                                channel_2=example_2[:, :, ind_2])
 
-        score = np.sum(ndi) / example_1_size
+            score += (example_2_size - np.sum(ndi)) / example_2_size
 
-        ndi = norm_diff_index(channel_1=example_2[:, :, ind_1],
-                              channel_2=example_2[:, :, ind_2])
-
-        score += (example_2_size - np.sum(ndi)) / example_2_size
-
-        if score < min_score:
-            min_score = score
-            best_idx = ind_1, ind_2
+            if score < min_score:
+                min_score = score
+                best_idx = ind_1, ind_2
 
     print(best_idx)
 
