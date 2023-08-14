@@ -68,6 +68,29 @@ class HSImage:
         return self.data.shape[-1]
     # ------------------------------------------------------------------------------------------------------------------
 
+    def get_hyperpixel_by_coordinates(self,
+                                      x: int,
+                                      y: int) -> np.ndarray:
+        """
+        get_hyperpixel_by_coordinates(x, y)
+
+            Returns hyperpixel from HSI by coordinates
+
+            Parameters
+            ----------
+            x - X-coordinate
+            y - Y-coordinate
+
+            Returns
+            -------
+            np.ndarray
+        """
+        height, width, _ = self.data.shape
+        if y >= height or x >= width:
+            raise IndexError('Coordinates are out of range')
+        return self.data[y, x, :]
+    # ------------------------------------------------------------------------------------------------------------------
+
     def rot90(self):
         """
         rot90()
@@ -186,7 +209,7 @@ class HSImage:
             h5_key: str
                 Key for field in .h5 file as dict object
         """
-        self.data = h5py.File(path_to_file, 'r')[h5_key]
+        self.data = np.array(h5py.File(path_to_file, 'r')[h5_key])
 
         path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
         self.load_metadata(path_to_meta)

@@ -14,6 +14,7 @@ path_to_rail_data = "test_data/builder/imgs"
 path_to_rotary_data = "test_data/builder/video/rec_2022-06-06-12-24-02.avi"
 not_valid_path = "incorrect_path"
 
+
 def saving_correct_check(hsi):
     # check if the saving is correct for .npy
     hsi.save_to_npy(path_to_file="for_test/test.npy")
@@ -45,17 +46,20 @@ def saving_correct_check(hsi):
     shutil.rmtree("for_test/png")
     shutil.rmtree("for_test/jpg")
 
+
 @pytest.fixture
 def return_rail_sample():
     hsi = HSImage()
     hsi.load_from_h5(path_to_file='for_test/sample_rail.h5', h5_key='image')
     return hsi
 
+
 @pytest.fixture
 def return_rotary_sample():
     hsi = HSImage()
     hsi.load_from_h5(path_to_file='for_test/sample_rotary.h5', h5_key='image')
     return hsi
+
 
 @pytest.fixture
 def return_copter_sample():
@@ -166,6 +170,7 @@ def test_rail_with_metadata():
         hsb.build(principal_slices=10)
         hsi = hsb.get_hsi()
 """
+
 
 def test_all_flags_for_rail():
     hsb = HSBuilder(path_to_data=path_to_rail_data,

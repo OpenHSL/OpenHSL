@@ -277,7 +277,17 @@ class HSBuilder:
                                      gaussian_window,
                                      axes=([1], [0]))
         return ans
-# ------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def load_light_coeff(path_to_file):
+        light_coeff = cv2.imread(path_to_file, 0)
+        #light_coeff = HSBuilder.__norm_frame_camera_geometry(light_coeff,
+        #                                                     norm_rotation=norm_rotation,
+        #                                                     barrel_dist_norm=barrel_dist_norm)
+        light_coeff = HSBuilder.get_roi(frame=light_coeff)
+        return 1.0 / (light_coeff / np.max(light_coeff))
+    # ------------------------------------------------------------------------------------------------------------------
 
     def build(self,
               principal_slices,
@@ -289,18 +299,13 @@ class HSBuilder:
         """
             Creates HSI from device-data
         """
+
+        if light_norm:
+            light_coeff = HSBuilder.load_light_coeff(path_to_file='./test_data/builder/micro_light_source.png')
+        else:
+            light_coeff = None
+
         preproc_frames = []
-
-        # TODO remake it! It's hardcoded
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        light_coeff = cv2.imread('./test_data/builder/micro_light_source.png', 0)
-        light_coeff = HSBuilder.__norm_frame_camera_geometry(light_coeff,
-                                                             norm_rotation=norm_rotation,
-                                                             barrel_dist_norm=barrel_dist_norm)
-        light_coeff = HSBuilder.get_roi(frame=light_coeff)
-        light_coeff = 1.0 / (light_coeff / np.max(light_coeff))
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         for frame in tqdm(self.frame_iterator,
                           total=len(self.frame_iterator),
                           desc='Preprocessing frames',
