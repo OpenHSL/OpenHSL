@@ -27,7 +27,7 @@ class Model(ABC):
     def fit(self,
             X,
             y,
-            epochs):
+            fit_params):
         raise NotImplemented("Method fit must be implemented!")
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -43,11 +43,7 @@ class Model(ABC):
                y,
                hyperparams,
                model,
-               optimizer,
-               loss,
-               epochs,
-               train_sample_percentage,
-               mode):
+               fit_params):
         """
 
         Parameters
@@ -56,12 +52,7 @@ class Model(ABC):
         y
         hyperparams
         model
-        optimizer
-        loss
-        epochs
-        train_sample_percentage
-        mode: str
-            random, disjoint
+        fit_params
 
         Returns
         -------
@@ -70,10 +61,15 @@ class Model(ABC):
         # TODO ignored_labels and label_values for what?
         img, gt = get_dataset(hsi=X, mask=y)
 
-        hyperparams['epoch'] = epochs
+        hyperparams['batch_size'] = fit_params['batch_size']
 
-        train_gt, _ = sample_gt(gt, train_sample_percentage, mode=mode)
-        train_gt, val_gt = sample_gt(train_gt, 0.9, mode=mode)
+        train_gt, _ = sample_gt(gt=gt,
+                                train_size=fit_params['train_sample_percentage'],
+                                mode=fit_params['dataloader_mode'])
+
+        train_gt, val_gt = sample_gt(gt=train_gt,
+                                     train_size=0.9,
+                                     mode=fit_params['dataloader_mode'])
 
         print(f'Full size: {np.sum(gt > 0)}')
         print(f'Train size: {np.sum(train_gt > 0)}')
@@ -89,10 +85,10 @@ class Model(ABC):
                               mask=train_gt)
 
         model, losses, val_accs = Model.train(net=model,
-                                              optimizer=optimizer,
-                                              criterion=loss,
+                                              optimizer=fit_params['optimizer'],
+                                              criterion=fit_params['loss'],
                                               data_loader=train_loader,
-                                              epoch=epochs,
+                                              epoch=fit_params['epochs'],
                                               val_loader=val_loader,
                                               device=hyperparams['device'])
         return model, losses, val_accs
@@ -104,6 +100,7 @@ class Model(ABC):
                    hyperparams,
                    model):
         hyperparams["test_stride"] = 1
+        hyperparams.setdefault('batch_size', 1)
         img, gt = get_dataset(X, mask=None)
 
         model.eval()
@@ -317,8 +314,6 @@ class Model(ABC):
         color = Image.fromarray(convert_to_color_(mask))
         gray.save(gray_filename)
         color.save(color_filename)
-
-        pass
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod

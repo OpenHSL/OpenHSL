@@ -1,5 +1,8 @@
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 import numpy as np
+
+import copy
+from openhsl.utils import applyPCA
 
 from openhsl.models.model import Model
 from openhsl.hsi import HSImage
@@ -113,16 +116,16 @@ class M3D_HAMIDA(Model):
                  n_classes,
                  device,
                  n_bands,
+                 apply_pca=False,
                  path_to_weights=None
                  ):
+        self.apply_pca = apply_pca
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 5
         self.hyperparams['n_classes'] = n_classes
         self.hyperparams['ignored_labels'] = [0]
         self.hyperparams['device'] = device
         self.hyperparams['n_bands'] = n_bands
-        self.hyperparams["learning_rate"] = 0.01
-        self.hyperparams['batch_size'] = 100
         self.hyperparams['center_pixel'] = True
         self.hyperparams['net_name'] = 'm3dcnn_hamida'
         weights = torch.ones(n_classes)
@@ -131,8 +134,6 @@ class M3D_HAMIDA(Model):
         self.hyperparams["weights"] = weights
 
         self.model = HamidaEtAl(n_bands, n_classes, patch_size=self.hyperparams["patch_size"])
-        self.optimizer = optim.SGD(self.model.parameters(), lr=self.hyperparams["learning_rate"], weight_decay=0.0005)
-        self.loss = nn.CrossEntropyLoss(weight=self.hyperparams["weights"])
 
         if path_to_weights:
             self.model.load_state_dict(torch.load(path_to_weights))
@@ -142,31 +143,52 @@ class M3D_HAMIDA(Model):
         self.hyperparams.setdefault("radiation_augmentation", False)
         self.hyperparams.setdefault("mixture_augmentation", False)
         self.hyperparams["center_pixel"] = True
-# ------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
 
     def fit(self,
             X: HSImage,
             y: HSMask,
-            epochs: int = 10,
-            train_sample_percentage: float = 0.5,
-            dataloader_mode: str = "random"):
+            fit_params: Dict):
+
+        X = copy.copy(X)
+        if self.apply_pca:
+            n_bands = self.hyperparams['n_bands']
+            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X.data, _ = applyPCA(X.data, self.hyperparams['n_bands'])
+        else:
+            print('PCA will not apply')
+        fit_params.setdefault('epochs', 10)
+        fit_params.setdefault('train_sample_percentage', 0.5)
+        fit_params.setdefault('dataloader_mode', 'random')
+        fit_params.setdefault('loss', nn.CrossEntropyLoss(weight=self.hyperparams["weights"]))
+        fit_params.setdefault('batch_size', 100)
+        fit_params.setdefault('optimizer_params', {'learning_rate': 0.01, 'weight_decay': 0.0005})
+        fit_params.setdefault('optimizer',
+                              optim.SGD(self.model.parameters(),
+                                        lr=fit_params['optimizer_params']["learning_rate"],
+                                        weight_decay=fit_params['optimizer_params']['weight_decay']))
 
         self.model, self.losses, self.val_accs = super().fit_nn(X=X,
                                                                 y=y,
                                                                 hyperparams=self.hyperparams,
-                                                                epochs=epochs,
                                                                 model=self.model,
-                                                                optimizer=self.optimizer,
-                                                                loss=self.loss,
-                                                                train_sample_percentage=train_sample_percentage,
-                                                                mode=dataloader_mode)
+                                                                fit_params=fit_params)
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
                 X: HSImage,
                 y: Optional[HSMask] = None) -> np.ndarray:
+        X = copy.copy(X)
+        if self.apply_pca:
+            n_bands = self.hyperparams['n_bands']
+            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X.data, _ = applyPCA(X.data, self.hyperparams['n_bands'])
+        else:
+            print('PCA will not apply')
+        self.hyperparams.setdefault('batch_size', 100)
         prediction = super().predict_nn(X=X,
                                         y=y,
                                         model=self.model,
                                         hyperparams=self.hyperparams)
         return prediction
+    # ------------------------------------------------------------------------------------------------------------------

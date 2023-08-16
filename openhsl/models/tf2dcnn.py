@@ -10,9 +10,9 @@ from keras.utils import np_utils
 
 from scipy.io import loadmat
 import scipy.ndimage
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 
-from sklearn.decomposition import PCA
+from openhsl.utils import applyPCA, padWithZeros
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 import random
@@ -29,6 +29,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 class DataPreprocess:
     pass
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def splitTrainTestSet(X: np.ndarray,
@@ -40,6 +41,7 @@ def splitTrainTestSet(X: np.ndarray,
                                                         random_state=345,
                                                         stratify=y)
     return X_train, X_test, y_train, y_test
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def standartizeData(X: np.ndarray):
@@ -48,24 +50,7 @@ def standartizeData(X: np.ndarray):
     newX = scaler.transform(newX)
     newX = np.reshape(newX, (X.shape[0], X.shape[1], X.shape[2]))
     return newX, scaler
-
-
-def applyPCA(X: np.ndarray,
-             numComponents: int = 75):
-    newX = np.reshape(X, (-1, X.shape[2]))
-    pca = PCA(n_components=numComponents, whiten=True)
-    newX = pca.fit_transform(newX)
-    newX = np.reshape(newX, (X.shape[0], X.shape[1], numComponents))
-    return newX, pca
-
-
-def padWithZeros(X: np.ndarray,
-                 margin: int = 2):
-    newX = np.zeros((X.shape[0] + 2 * margin, X.shape[1] + 2 * margin, X.shape[2]))
-    x_offset = margin
-    y_offset = margin
-    newX[x_offset:X.shape[0] + x_offset, y_offset:X.shape[1] + y_offset, :] = X
-    return newX
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def createPatches(X: np.ndarray,
@@ -89,6 +74,7 @@ def createPatches(X: np.ndarray,
         patchesLabels = patchesLabels[patchesLabels > 0]
         patchesLabels -= 1
     return patchesData, patchesLabels
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def AugmentData(X_train: np.ndarray):
@@ -104,11 +90,11 @@ def AugmentData(X_train: np.ndarray):
             flipped_patch = scipy.ndimage.interpolation.rotate(patch, no, axes=(1, 0),
                                                                reshape=False, output=None, order=3, mode='constant',
                                                                cval=0.0, prefilter=False)
-
-    patch2 = flipped_patch
-    X_train[i, :, :, :] = patch2
+        patch2 = flipped_patch
+        X_train[i, :, :, :] = patch2
 
     return X_train
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def preprocess_data(X: np.ndarray,
@@ -132,6 +118,7 @@ def preprocess_data(X: np.ndarray,
     y_val = np_utils.to_categorical(y_val)
 
     return X_train, X_val, y_train, y_val
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def get_data_generator(X: np.ndarray,
@@ -145,6 +132,7 @@ def get_data_generator(X: np.ndarray,
             # img = np.reshape(img, (1, img.shape[0], img.shape[1], img.shape[2]))
             # mask = np.reshape(mask, (1, mask.shape[0]))
             yield img, mask
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def Patch(data: np.array,
@@ -153,11 +141,13 @@ def Patch(data: np.array,
           patch_size: int):
     # transpose_array = data.transpose((2,0,1))
     # print transpose_array.shape
+
     height_slice = slice(height_index, height_index + patch_size)
     width_slice = slice(width_index, width_index + patch_size)
     patch = data[height_slice, width_slice, :]
 
     return patch
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def get_test_generator(X: np.array,
@@ -167,24 +157,28 @@ def get_test_generator(X: np.array,
     width = X.shape[1]
     PATCH_SIZE = windowSize
     X, pca = applyPCA(X, numPCAcomponents)
-    for i in range(0, height - PATCH_SIZE + 1):
-        for j in range(0, width - PATCH_SIZE + 1):
+    print(np.shape(X))
+    X = padWithZeros(X)
+    print(np.shape(X))
+    for i in range(0, height - PATCH_SIZE):
+        for j in range(0, width - PATCH_SIZE):
             image_patch = Patch(X, i, j, PATCH_SIZE)
             image_patch = image_patch.reshape(image_patch.shape[2],
                                               image_patch.shape[0],
                                               image_patch.shape[1]).astype('float32')
             yield image_patch
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class TF2DCNN:
 
     def __init__(self,
-                 class_count: int):
+                 n_classes: int,
+                 path_to_weights: str = None):
+
         self.windowSize = 5
         self.numPCAcomponents = 30
-        self.testRatio = 0.25
-        self.class_count = class_count
-        self.batch_size = 1
+        self.class_count = n_classes
 
         input_shape = (self.numPCAcomponents, self.windowSize, self.windowSize)
 
@@ -202,17 +196,23 @@ class TF2DCNN:
         self.model.add(Dense(self.class_count, activation='softmax'))
         sgd = SGD(lr=0.0001, decay=1e-6, momentum=0.9, nesterov=True)
         self.model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+        if path_to_weights:
+            self.model.load_weights(path_to_weights)
+    # ------------------------------------------------------------------------------------------------------------------
 
     def fit(self,
             X: HSImage,
             y: HSMask,
-            epochs: int,
-            train_sample_percentage: float):
-        print(np.shape(y.get_2d()))
+            fit_params: Dict):
+
+        fit_params.setdefault('epochs', 10)
+        fit_params.setdefault('train_sample_percentage', 0.5)
+        fit_params.setdefault('batch_size', 32)
+
 
         X_train, X_val, y_train, y_val = preprocess_data(X=X.data,
                                                          y=y.get_2d(),
-                                                         train_sample_percentage=train_sample_percentage,
+                                                         train_sample_percentage=fit_params['train_sample_percentage'],
                                                          windowSize=5)
 
         print(f'X_train shape: {np.shape(X_train)}, y_train shape: {np.shape(y_train)}')
@@ -220,20 +220,20 @@ class TF2DCNN:
 
         train_generator = get_data_generator(X=X_train,
                                              y=y_train,
-                                             epochs=epochs)
+                                             epochs=fit_params['epochs'])
 
         val_generator = get_data_generator(X=X_val,
                                            y=y_val,
-                                           epochs=epochs)
+                                           epochs=fit_params['epochs'])
 
         types = (tf.float32, tf.int32)
-        shapes = ((30, 5, 5), (9,))
+        shapes = ((self.numPCAcomponents, self.windowSize, self.windowSize), (self.class_count,))
 
-        ds_train = tf.data.Dataset.from_generator(lambda: train_generator, types, shapes).batch(self.batch_size)
-        ds_val = tf.data.Dataset.from_generator(lambda: val_generator, types, shapes).batch(self.batch_size)
+        ds_train = tf.data.Dataset.from_generator(lambda: train_generator, types, shapes).batch(fit_params['batch_size'])
+        ds_val = tf.data.Dataset.from_generator(lambda: val_generator, types, shapes).batch(fit_params['batch_size'])
 
-        steps = len(y_train) / self.batch_size
-        val_steps = len(y_val) / self.batch_size
+        steps = len(y_train) / fit_params['batch_size']
+        val_steps = len(y_val) / fit_params['batch_size']
 
         checkpoint_filepath = './tmp/checkpoint'
 
@@ -249,20 +249,21 @@ class TF2DCNN:
         self.model.fit(ds_train,
                        validation_data=ds_val,
                        validation_steps=val_steps,
-                       validation_batch_size=self.batch_size,
-                       batch_size=self.batch_size,
-                       epochs=epochs,
+                       validation_batch_size=fit_params['batch_size'],
+                       batch_size=fit_params['batch_size'],
+                       epochs=fit_params['epochs'],
                        steps_per_epoch=steps,
-                       verbose=1, )
+                       verbose=1)
         #			   callbacks=[model_checkpoint_callback])
 
         self.model.save(f'{checkpoint_filepath}/weights.h5')
+    # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
                 X: HSImage,
                 y: Optional[HSMask] = None) -> np.ndarray:
         types = (tf.float32)
-        shapes = ((30, 5, 5))
+        shapes = ((self.numPCAcomponents, self.windowSize, self.windowSize))
         X = X.data
 
         test_generator = get_test_generator(X, windowSize=self.windowSize, numPCAcomponents=self.numPCAcomponents)
@@ -272,7 +273,5 @@ class TF2DCNN:
 
         prediction = self.model.predict(ds_test, steps=total)
         pr = np.argmax(prediction, axis=1)
-        return np.reshape(pr, (X.shape[0] - self.windowSize + 1, X.shape[1] - self.windowSize + 1))
-
-    def load_model(self, path_to_model: str):
-        self.model = load_model(path_to_model)
+        return np.reshape(pr, (X.shape[0] - self.windowSize, X.shape[1] - self.windowSize))
+    # ------------------------------------------------------------------------------------------------------------------

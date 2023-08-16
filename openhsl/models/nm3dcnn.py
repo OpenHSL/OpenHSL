@@ -1,10 +1,13 @@
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 
+import copy
+from openhsl.utils import applyPCA
+
 from openhsl.models.model import Model
 
 import numpy as np
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 
 import torch
 import torch.nn as nn
@@ -57,7 +60,6 @@ class NM3DCNN_Net(nn.Module):
         self.bn_conv3_4 = nn.BatchNorm3d(16)
         self.conv4 = nn.Conv3d(16, 16, (3, 2, 2))
         self.bn_conv4 = nn.BatchNorm3d(16)
-        self.pooling = nn.MaxPool2d((3, 2, 2), stride=(3, 2, 2))
 
         self.features_size = self._get_final_flattened_size()
 
@@ -155,12 +157,12 @@ class NM3DCNN(Model):
                  n_classes,
                  device,
                  n_bands,
+                 apply_pca=False,
                  path_to_weights=None
                  ):
+        self.apply_pca = apply_pca
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 7
-        self.hyperparams['batch_size'] = 40
-        self.hyperparams['learning_rate'] = 0.01
         self.hyperparams['n_bands'] = n_bands
         self.hyperparams['net_name'] = 'nm3dcnn'
         self.hyperparams['n_classes'] = n_classes
@@ -174,15 +176,7 @@ class NM3DCNN(Model):
         self.model = NM3DCNN_Net(n_bands, n_classes, patch_size=self.hyperparams["patch_size"])
         # For Adagrad, we need to load the model on GPU before creating the optimizer
         self.model = self.model.to(device)
-        self.optimizer = optim.Adagrad(self.model.parameters(), lr=self.hyperparams['learning_rate'], weight_decay=0.01)
-        self.loss = nn.CrossEntropyLoss(weight=self.hyperparams["weights"])
 
-        epoch = self.hyperparams.setdefault("epoch", 100)
-
-        self.hyperparams["scheduler"] = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer,
-                                                                             factor=0.1,
-                                                                             patience=epoch // 4,
-                                                                             verbose=True)
         self.hyperparams.setdefault("supervision", "full")
         self.hyperparams.setdefault("flip_augmentation", False)
         self.hyperparams.setdefault("radiation_augmentation", False)
@@ -196,25 +190,43 @@ class NM3DCNN(Model):
     def fit(self,
             X: HSImage,
             y: HSMask,
-            epochs: int = 5,
-            train_sample_percentage: float = 0.5,
-            dataloader_mode: str = "random"):
+            fit_params: Dict):
+        X = copy.copy(X)
+        if self.apply_pca:
+            n_bands = self.hyperparams['n_bands']
+            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X.data, _ = applyPCA(X.data, self.hyperparams['n_bands'])
+        else:
+            print('PCA will not apply')
+        fit_params.setdefault('epochs', 10)
+        fit_params.setdefault('train_sample_percentage', 0.5)
+        fit_params.setdefault('dataloader_mode', 'random')
+        fit_params.setdefault('loss', nn.CrossEntropyLoss(weight=self.hyperparams["weights"]))
+        fit_params.setdefault('batch_size', 40)
+        fit_params.setdefault('optimizer_params', {'learning_rate': 0.01, 'weight_decay': 0.01})
+        fit_params.setdefault('optimizer',
+                              optim.SGD(self.model.parameters(),
+                                        lr=fit_params['optimizer_params']["learning_rate"],
+                                        weight_decay=fit_params['optimizer_params']['weight_decay']))
 
         self.model, self.losses, self.val_accs = super().fit_nn(X=X,
                                                                 y=y,
                                                                 hyperparams=self.hyperparams,
-                                                                epochs=epochs,
                                                                 model=self.model,
-                                                                optimizer=self.optimizer,
-                                                                loss=self.loss,
-                                                                train_sample_percentage=train_sample_percentage,
-                                                                mode=dataloader_mode)
+                                                                fit_params=fit_params)
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
                 X: HSImage,
                 y: Optional[HSMask] = None) -> np.ndarray:
-
+        X = copy.copy(X)
+        self.hyperparams.setdefault('batch_size', 40)
+        if self.apply_pca:
+            n_bands = self.hyperparams['n_bands']
+            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X.data, _ = applyPCA(X.data, self.hyperparams['n_bands'])
+        else:
+            print('PCA will not apply')
         prediction = super().predict_nn(X=X,
                                         y=y,
                                         model=self.model,
