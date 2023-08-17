@@ -9,10 +9,10 @@ import datetime
 from tqdm import tqdm
 from PIL import Image
 
-from openhsl.Firsov_Legacy.dataset import get_dataset
-from openhsl.Firsov_Legacy.utils import camel_to_snake, grouper, count_sliding_window, \
+from openhsl.data.dataset import get_dataset
+from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
                                         sliding_window, sample_gt, convert_to_color_
-from openhsl.Firsov_Legacy.DataLoader import create_loader
+from openhsl.data.DataLoader import create_loader
 
 
 class Model(ABC):
@@ -154,8 +154,8 @@ class Model(ABC):
 
         save_epoch = epoch // 20 if epoch > 20 else 1
 
-        losses = np.zeros(1000000)
-        mean_losses = np.zeros(100000000)
+        losses = np.zeros(1000000)  # TODO to list?
+        mean_losses = np.zeros(100000000)  # TODO to list?
         iter_ = 1
         val_accuracies = []
         train_loss = []
@@ -179,36 +179,24 @@ class Model(ABC):
                 losses[iter_] = loss.item()
                 mean_losses[iter_] = np.mean(losses[max(0, iter_ - 100): iter_ + 1])
 
-                if display_iter and iter_ % display_iter == 0:
-                    string = "Train (epoch {}/{}) [{}/{} ({:.0f}%)]\tLoss: {:.6f}"
-                    string = string.format(
-                        e,
-                        epoch,
-                        batch_idx * len(data),
-                        len(data) * len(data_loader),
-                        100.0 * batch_idx / len(data_loader),
-                        mean_losses[iter_],
-                    )
-                    # TODO remake it
-                    # tqdm.write(string)
-
                 iter_ += 1
-                del (data, target, loss, output)
+                #del (data, target, loss, output)  # TODO REMOVE
 
             # Update the scheduler
             avg_loss /= len(data_loader)
             train_loss.append(avg_loss)
-            if val_loader is not None:
+
+            if val_loader:
                 val_acc = Model.val(net, val_loader, device=device)
-                tqdm.write(f"val accuracy: {val_acc}")
+                tqdm.write(f"val accuracy: {val_acc}\tloss: {avg_loss}")
                 val_accuracies.append(val_acc)
-                metric = -val_acc
+                metric = -val_acc  # TODO WTF
             else:
                 metric = avg_loss
 
             if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler.step(metric)
-            elif scheduler is not None:
+            elif scheduler:
                 scheduler.step()
 
             # Save the weights

@@ -82,7 +82,7 @@ def test_m1dcnn(return_inference_test_data):
 def test_m3dcnn_sharma(return_inference_test_data):
     n_classes = len(return_inference_test_data[1])
 
-    model = M3DCNN_Sharma(n_classes=n_classes, device='cuda', n_bands=250)
+    model = M3DCNN_Sharma(n_classes=n_classes, device='cuda', n_bands=30, apply_pca=True)
 
     assert get_inference_time(pretrained_model=model, dataset=return_inference_test_data)
 
@@ -122,6 +122,6 @@ def test_nm3dcnn(return_inference_test_data):
 def test_tf2dcnn(return_inference_test_data):
     n_classes = len(return_inference_test_data[1])
 
-    model = TF2DCNN(n_classes=n_classes)
+    model = TF2DCNN(n_classes=n_classes, n_bands=30, apply_pca=True)
 
     assert get_inference_time(pretrained_model=model, dataset=return_inference_test_data)

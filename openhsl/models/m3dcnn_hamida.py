@@ -2,7 +2,7 @@ from typing import Any, Optional, Dict
 import numpy as np
 
 import copy
-from openhsl.utils import applyPCA
+from openhsl.data.utils import apply_pca
 
 from openhsl.models.model import Model
 from openhsl.hsi import HSImage
@@ -154,7 +154,7 @@ class M3D_HAMIDA(Model):
         if self.apply_pca:
             n_bands = self.hyperparams['n_bands']
             print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
-            X.data, _ = applyPCA(X.data, self.hyperparams['n_bands'])
+            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
         fit_params.setdefault('epochs', 10)
@@ -182,7 +182,7 @@ class M3D_HAMIDA(Model):
         if self.apply_pca:
             n_bands = self.hyperparams['n_bands']
             print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
-            X.data, _ = applyPCA(X.data, self.hyperparams['n_bands'])
+            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
         self.hyperparams.setdefault('batch_size', 100)

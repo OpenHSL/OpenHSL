@@ -1,5 +1,5 @@
 import copy
-from openhsl.utils import applyPCA
+from openhsl.data.utils import apply_pca
 
 from typing import Any, Optional, Dict
 import numpy as np
@@ -62,14 +62,15 @@ class BASELINE(Model):
                  path_to_weights=None
                  ):
         self.apply_pca = apply_pca
+
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 1
         self.hyperparams['n_classes'] = n_classes
         self.hyperparams['ignored_labels'] = [0]
         self.hyperparams['device'] = device
         self.hyperparams['n_bands'] = n_bands
-        self.hyperparams['center_pixel'] = True
         self.hyperparams['net_name'] = 'nn'
+
         weights = torch.ones(n_classes)
         weights[torch.LongTensor(self.hyperparams["ignored_labels"])] = 0.0
         weights = weights.to(device)
@@ -80,37 +81,38 @@ class BASELINE(Model):
         if path_to_weights:
             self.model.load_state_dict(torch.load(path_to_weights))
 
-        self.hyperparams.setdefault("supervision", "full")
+        self.hyperparams.setdefault("supervision", "full")  # TODO WTF
+
         self.hyperparams.setdefault("flip_augmentation", False)
-        self.hyperparams.setdefault("radiation_augmentation", False)
+        self.hyperparams.setdefault("radiation_augmentation", False)  # TODO AS PARAMS
         self.hyperparams.setdefault("mixture_augmentation", False)
-        self.hyperparams["center_pixel"] = True
+
+        self.hyperparams["center_pixel"] = True  # TODO WTF
 # ------------------------------------------------------------------------------------------------------------------
 
     def fit(self,
             X: HSImage,
             y: HSMask,
             fit_params: Dict):
-        X = copy.copy(X)
+
         if self.apply_pca:
+            X = copy.copy(X)
             n_bands = self.hyperparams['n_bands']
             print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
-            X.data, _ = applyPCA(X.data, self.hyperparams['n_bands'])
+            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
 
         fit_params.setdefault('epochs', 10)
         fit_params.setdefault('train_sample_percentage', 0.5)
         fit_params.setdefault('dataloader_mode', 'random')
-        fit_params.setdefault('loss', nn.CrossEntropyLoss(weight=self.hyperparams["weights"]))
+        fit_params.setdefault('loss', nn.CrossEntropyLoss(weight=self.hyperparams["weights"]))  # TODO custom loss?
         fit_params.setdefault('batch_size', 100)
         fit_params.setdefault('optimizer_params', {'learning_rate': 0.0001, 'weight_decay': 0.0005})
         fit_params.setdefault('optimizer',
                               optim.SGD(self.model.parameters(),
                                         lr=fit_params['optimizer_params']["learning_rate"],
                                         weight_decay=fit_params['optimizer_params']['weight_decay']))
-
-
 
         self.model, self.losses, self.val_accs = super().fit_nn(X=X,
                                                                 y=y,
@@ -122,11 +124,12 @@ class BASELINE(Model):
     def predict(self,
                 X: HSImage,
                 y: Optional[HSMask] = None) -> np.ndarray:
-        X = copy.copy(X)
+
         if self.apply_pca:
+            X = copy.copy(X)
             n_bands = self.hyperparams['n_bands']
             print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
-            X.data, _ = applyPCA(X.data, self.hyperparams['n_bands'])
+            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
         self.hyperparams.setdefault('batch_size', 100)

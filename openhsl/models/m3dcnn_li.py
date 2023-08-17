@@ -3,7 +3,7 @@ from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 
 import copy
-from openhsl.utils import applyPCA
+from openhsl.data.utils import apply_pca
 
 import numpy as np
 import math
@@ -119,7 +119,7 @@ class Li3DCNN(Model):
         if self.apply_pca:
             n_bands = self.hyperparams['n_bands']
             print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
-            X.data, _ = applyPCA(X.data, self.hyperparams['n_bands'])
+            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
 
@@ -148,7 +148,7 @@ class Li3DCNN(Model):
         if self.apply_pca:
             n_bands = self.hyperparams['n_bands']
             print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
-            X.data, _ = applyPCA(X.data, self.hyperparams['n_bands'])
+            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
 

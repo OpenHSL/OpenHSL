@@ -2,7 +2,7 @@ from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 
 import copy
-from openhsl.utils import applyPCA
+from openhsl.data.utils import apply_pca
 
 from openhsl.models.model import Model
 
@@ -160,6 +160,7 @@ class NM3DCNN(Model):
                  apply_pca=False,
                  path_to_weights=None
                  ):
+
         self.apply_pca = apply_pca
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 7
@@ -168,6 +169,7 @@ class NM3DCNN(Model):
         self.hyperparams['n_classes'] = n_classes
         self.hyperparams['ignored_labels'] = [0]
         self.hyperparams['device'] = device
+
         weights = torch.ones(n_classes)
         weights[torch.LongTensor(self.hyperparams["ignored_labels"])] = 0.0
         weights = weights.to(device)
@@ -195,7 +197,7 @@ class NM3DCNN(Model):
         if self.apply_pca:
             n_bands = self.hyperparams['n_bands']
             print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
-            X.data, _ = applyPCA(X.data, self.hyperparams['n_bands'])
+            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
         fit_params.setdefault('epochs', 10)
@@ -224,7 +226,7 @@ class NM3DCNN(Model):
         if self.apply_pca:
             n_bands = self.hyperparams['n_bands']
             print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
-            X.data, _ = applyPCA(X.data, self.hyperparams['n_bands'])
+            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
         prediction = super().predict_nn(X=X,

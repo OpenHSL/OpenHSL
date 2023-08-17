@@ -5,6 +5,27 @@ import numpy as np
 import sklearn.model_selection
 import seaborn as sns
 from typing import Optional
+from sklearn.decomposition import PCA
+
+
+def apply_pca(X: np.ndarray,
+             numComponents: int = 75):
+    newX = np.reshape(X, (-1, X.shape[2]))
+    pca = PCA(n_components=numComponents, whiten=True, random_state=131)
+    newX = pca.fit_transform(newX)
+    newX = np.reshape(newX, (X.shape[0], X.shape[1], numComponents))
+    return newX, pca
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def pad_with_zeros(X: np.ndarray,
+                   margin: int = 2):
+    newX = np.zeros((X.shape[0] + 2 * margin, X.shape[1] + 2 * margin, X.shape[2]))
+    x_offset = margin
+    y_offset = margin
+    newX[x_offset:X.shape[0] + x_offset, y_offset:X.shape[1] + y_offset, :] = X
+    return newX
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def get_device(ordinal: int):
@@ -111,35 +132,40 @@ def sample_gt(gt, train_size, mode='random'):
 
     """
     indices = np.nonzero(gt)
-    X = list(zip(*indices)) # x,y features
-    y = gt[indices].ravel() # classes
+    X = list(zip(*indices))  # x,y features
+    y = gt[indices].ravel()  # classes
     train_gt = np.zeros_like(gt)
     test_gt = np.zeros_like(gt)
+
     if train_size > 1:
-       train_size = int(train_size)
+        train_size = int(train_size)
 
     if mode == 'random':
-       train_indices, test_indices = sklearn.model_selection.train_test_split(X, train_size=train_size, random_state=42)
-       train_indices = [list(t) for t in zip(*train_indices)]
-       test_indices = [list(t) for t in zip(*test_indices)]
-       train_gt[tuple(train_indices)] = gt[tuple(train_indices)]
-       test_gt[tuple(test_indices)] = gt[tuple(test_indices)]
+        train_indices, test_indices = sklearn.model_selection.train_test_split(X,
+                                                                               train_size=train_size,
+                                                                               random_state=42)
+        train_indices = [list(t) for t in zip(*train_indices)]
+        test_indices = [list(t) for t in zip(*test_indices)]
+        train_gt[tuple(train_indices)] = gt[tuple(train_indices)]
+        test_gt[tuple(test_indices)] = gt[tuple(test_indices)]
 
+    # get fixed count of class sample for each class
     elif mode == 'fixed':
-       print("Sampling {} with train size = {}".format(mode, train_size))
-       train_indices, test_indices = [], []
-       for c in np.unique(gt):
-           if c == 0:
-              continue
-           indices = np.nonzero(gt == c)
-           X = list(zip(*indices)) # x,y features
-           train, test = sklearn.model_selection.train_test_split(X, train_size=train_size)
-           train_indices += train
-           test_indices += test
-       train_indices = [list(t) for t in zip(*train_indices)]
-       test_indices = [list(t) for t in zip(*test_indices)]
-       train_gt[train_indices] = gt[train_indices]
-       test_gt[test_indices] = gt[test_indices]
+        print(f"Sampling {mode} with train size = {train_size}")
+        train_indices, test_indices = [], []
+        for c in np.unique(gt):
+            if c == 0:
+                continue
+            indices = np.nonzero(gt == c)
+            X = list(zip(*indices))  # x,y features
+            train, test = sklearn.model_selection.train_test_split(X,
+                                                                   train_size=train_size)
+            train_indices += train
+            test_indices += test
+        train_indices = [list(t) for t in zip(*train_indices)]
+        test_indices = [list(t) for t in zip(*test_indices)]
+        train_gt[tuple(train_indices)] = gt[tuple(train_indices)]
+        test_gt[tuple(test_indices)] = gt[tuple(test_indices)]
 
     elif mode == 'disjoint':
         train_gt = np.copy(gt)
@@ -155,12 +181,12 @@ def sample_gt(gt, train_size, mode='random'):
                         break
                 except ZeroDivisionError:
                     continue
-            mask[:x, :] = 0
+            mask[: x, :] = 0
             train_gt[mask] = 0
 
         test_gt[train_gt > 0] = 0
     else:
-        raise ValueError("{} sampling is not implemented yet.".format(mode))
+        raise ValueError(f"{mode} sampling is not implemented yet.")
     return train_gt, test_gt
 
 

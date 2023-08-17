@@ -47,6 +47,7 @@ class DataLoader(torch.utils.data.Dataset):
             mask[gt == l] = 0
         x_pos, y_pos = np.nonzero(mask)
         p = self.patch_size // 2
+        # get all coordinates with padding of nonzeros labels
         self.indices = np.array(
             [
                 (x, y)
@@ -91,10 +92,10 @@ class DataLoader(torch.utils.data.Dataset):
 
     def __getitem__(self, i):
         x, y = self.indices[i]
-        x1, y1 = x - self.patch_size // 2, y - self.patch_size // 2
-        x2, y2 = x1 + self.patch_size, y1 + self.patch_size
+        x1, y1 = x - self.patch_size // 2, y - self.patch_size // 2  # left up bound
+        x2, y2 = x1 + self.patch_size, y1 + self.patch_size  # right down bound
 
-        data = self.data[x1:x2, y1:y2]
+        data = self.data[x1:x2, y1:y2]  # get patch
         label = self.label[x1:x2, y1:y2]
 
         if self.flip_augmentation and self.patch_size > 1:
