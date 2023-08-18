@@ -12,7 +12,7 @@ from PIL import Image
 from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
                                         sliding_window, sample_gt, convert_to_color_
-from openhsl.data.DataLoader import create_loader
+from openhsl.data.torch_dataloader import create_loader
 
 
 class Model(ABC):

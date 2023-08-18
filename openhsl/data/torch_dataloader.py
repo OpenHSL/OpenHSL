@@ -2,8 +2,9 @@ import torch
 import torch.utils
 import torch.utils.data
 import numpy as np
-import torch.utils.data as data
+import torch.utils.data as udata
 from typing import Dict, Any
+from openhsl.data.utils import is_coordinate_in_padded_area
 
 
 def create_loader(img: np.array,
@@ -11,7 +12,7 @@ def create_loader(img: np.array,
                   hyperparams: Dict,
                   shuffle: Any = False):
     dataset = DataLoader(img, gt, **hyperparams)
-    return data.DataLoader(dataset, batch_size=hyperparams["batch_size"], shuffle=shuffle)
+    return udata.DataLoader(dataset, batch_size=hyperparams["batch_size"], shuffle=shuffle)
 
 
 class DataLoader(torch.utils.data.Dataset):
@@ -43,8 +44,8 @@ class DataLoader(torch.utils.data.Dataset):
         self.center_pixel = hyperparams["center_pixel"]
 
         mask = np.ones_like(gt)
-        for l in self.ignored_labels:
-            mask[gt == l] = 0
+        for label in self.ignored_labels:
+            mask[gt == label] = 0
         x_pos, y_pos = np.nonzero(mask)
         p = self.patch_size // 2
         # get all coordinates with padding of nonzeros labels
@@ -52,7 +53,7 @@ class DataLoader(torch.utils.data.Dataset):
             [
                 (x, y)
                 for x, y in zip(x_pos, y_pos)
-                if x > p and x < data.shape[0] - p and y > p and y < data.shape[1] - p
+                if is_coordinate_in_padded_area(coordinates=(x, y), image_size=data.shape, padding_size=p)
             ]
         )
         self.labels = [self.label[x, y] for x, y in self.indices]

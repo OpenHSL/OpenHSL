@@ -4,16 +4,24 @@ import itertools
 import numpy as np
 import sklearn.model_selection
 import seaborn as sns
-from typing import Optional
+from typing import Tuple
 from sklearn.decomposition import PCA
 
 
+def is_coordinate_in_padded_area(coordinates: Tuple, image_size: Tuple, padding_size: int) -> bool:
+    x, y = coordinates
+    is_in_x = padding_size < x < image_size[0] - padding_size
+    is_in_y = padding_size < y < image_size[1] - padding_size
+    return is_in_x and is_in_y
+# ----------------------------------------------------------------------------------------------------------------------
+
+
 def apply_pca(X: np.ndarray,
-             numComponents: int = 75):
+              num_components: int = 75):
     newX = np.reshape(X, (-1, X.shape[2]))
-    pca = PCA(n_components=numComponents, whiten=True, random_state=131)
+    pca = PCA(n_components=num_components, whiten=True, random_state=131)
     newX = pca.fit_transform(newX)
-    newX = np.reshape(newX, (X.shape[0], X.shape[1], numComponents))
+    newX = np.reshape(newX, (X.shape[0], X.shape[1], num_components))
     return newX, pca
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -121,12 +129,15 @@ def grouper(n, iterable):
         yield chunk
 
 
-def sample_gt(gt, train_size, mode='random'):
+def sample_gt(gt: np.ndarray,
+              train_size: float,
+              mode: str = 'random'):
     """Extract a fixed percentage of samples from an array of labels.
 
     Args:
         gt: a 2D array of int labels
-        percentage: [0, 1] float
+        train_size: [0, 1] float
+        mode: str
     Returns:
         train_gt, test_gt: 2D arrays of int labels
 
@@ -181,7 +192,7 @@ def sample_gt(gt, train_size, mode='random'):
                         break
                 except ZeroDivisionError:
                     continue
-            mask[: x, :] = 0
+            mask[:x, :] = 0
             train_gt[mask] = 0
 
         test_gt[train_gt > 0] = 0
@@ -193,6 +204,14 @@ def sample_gt(gt, train_size, mode='random'):
 def camel_to_snake(name):
     s = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s).lower()
+
+
+def get_palette(num_classes):
+    palette = {0: (0, 0, 0)}
+    for k, color in enumerate(sns.color_palette("hls", num_classes - 1)):
+        palette[k + 1] = tuple(np.asarray(255 * np.array(color), dtype="uint8"))
+
+    return palette
 
 
 def convert_to_color_(arr_2d, palette=None):
@@ -215,11 +234,3 @@ def convert_to_color_(arr_2d, palette=None):
         arr_3d[m] = i
 
     return arr_3d
-
-
-def get_palette(num_classes):
-    palette = {0: (0, 0, 0)}
-    for k, color in enumerate(sns.color_palette("hls", num_classes - 1)):
-        palette[k + 1] = tuple(np.asarray(255 * np.array(color), dtype="uint8"))
-
-    return palette

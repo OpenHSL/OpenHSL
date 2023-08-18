@@ -1,166 +1,20 @@
-import numpy as np
-import scipy
 import os
-import tensorflow as tf
-from keras.models import Sequential, load_model
-from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
-from keras.optimizers import SGD
-from keras import backend as K
-from keras.utils import np_utils
 import copy
-from scipy.io import loadmat
-import scipy.ndimage
-from typing import Optional, Tuple, Dict
+import numpy as np
 
-from openhsl.data.utils import apply_pca, pad_with_zeros
-from sklearn.model_selection import train_test_split
-from sklearn import preprocessing
-import random
+from typing import Optional, Dict
+
+import tensorflow as tf
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Flatten, Conv2D
+from keras.optimizers import SGD
 
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
-
-from random import shuffle
-from skimage.transform import rotate
-import h5py
-from matplotlib import pyplot as plt
+from openhsl.data.utils import apply_pca
+from openhsl.data.tf_dataloader import preprocess_data, get_data_generator, get_test_generator
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
-
-class DataPreprocess:
-    pass
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def split_train_test_set(X: np.ndarray,
-                         y: np.ndarray,
-                         test_ratio: float):
-    X_train, X_test, y_train, y_test = train_test_split(X,
-                                                        y,
-                                                        test_size=test_ratio,
-                                                        random_state=345,
-                                                        stratify=y)
-    return X_train, X_test, y_train, y_test
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def standartize_data(X: np.ndarray):
-    new_X = np.reshape(X, (-1, X.shape[2]))
-    scaler = preprocessing.StandardScaler().fit(new_X)
-    new_X = scaler.transform(new_X)
-    new_X = np.reshape(new_X, (X.shape[0], X.shape[1], X.shape[2]))
-    return new_X, scaler
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def create_patches(X: np.ndarray,
-                   y: np.ndarray,
-                   patch_size: int = 5,
-                   remove_zero_labels: bool = True):
-
-    margin = int((patch_size - 1) / 2)
-    zero_padded_X = pad_with_zeros(X, margin=margin)
-    # split patches
-    patches_data = np.zeros((X.shape[0] * X.shape[1], patch_size, patch_size, X.shape[2]))
-    patches_labels = np.zeros((X.shape[0] * X.shape[1]))
-
-    patch_index = 0
-    for r in range(margin, zero_padded_X.shape[0] - margin):
-        for c in range(margin, zero_padded_X.shape[1] - margin):
-            patch = zero_padded_X[r - margin:r + margin + 1, c - margin:c + margin + 1]
-            patches_data[patch_index, :, :, :] = patch
-            patches_labels[patch_index] = y[r - margin, c - margin]
-            patch_index = patch_index + 1
-
-    if remove_zero_labels:
-        patches_data = patches_data[patches_labels > 0, :, :, :]
-        patches_labels = patches_labels[patches_labels > 0]
-        patches_labels -= 1
-
-    return patches_data, patches_labels
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def augment_data(X_train: np.ndarray):
-    for i in range(int(X_train.shape[0] / 2)):
-        patch = X_train[i, :, :, :]
-        num = random.randint(0, 2)
-        if num == 0:
-            flipped_patch = np.flipud(patch)
-        if num == 1:
-            flipped_patch = np.fliplr(patch)
-        if num == 2:
-            no = random.randrange(-180, 180, 30)
-            flipped_patch = scipy.ndimage.interpolation.rotate(patch, no, axes=(1, 0),
-                                                               reshape=False, output=None, order=3, mode='constant',
-                                                               cval=0.0, prefilter=False)
-        patch2 = flipped_patch
-        X_train[i, :, :, :] = patch2
-
-    return X_train
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def preprocess_data(X: np.ndarray,
-                    y: np.ndarray,
-                    train_sample_percentage: float,
-                    patch_size=5):
-
-    X_patches, y_patches = create_patches(X, y, patch_size=patch_size)
-
-    test_ratio = 1.0 - train_sample_percentage
-
-    X_train, X_test, y_train, y_test = split_train_test_set(X_patches, y_patches, test_ratio)
-
-    X_train, X_val, y_train, y_val = split_train_test_set(X_train, y_train, 0.1)
-
-    X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[3], X_train.shape[1], X_train.shape[2]))
-    y_train = np_utils.to_categorical(y_train)
-
-    X_val = np.reshape(X_val, (X_val.shape[0], X_val.shape[3], X_val.shape[1], X_val.shape[2]))
-    y_val = np_utils.to_categorical(y_val)
-
-    return X_train, X_val, y_train, y_val
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def get_data_generator(X: np.ndarray,
-                       y: np.ndarray,
-                       epochs: int):
-    for _ in range(epochs):
-        train_generator = zip(X, y)
-        for (img, mask) in train_generator:
-            yield img, mask
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def get_patch_by_indicis(data: np.array,
-                         height_index: int,
-                         width_index: int,
-                         patch_size: int):
-
-    height_slice = slice(height_index, height_index + patch_size)
-    width_slice = slice(width_index, width_index + patch_size)
-    patch = data[height_slice, width_slice, :]
-
-    return patch
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def get_test_generator(X: np.array,
-                       patch_size: int):
-    X = pad_with_zeros(X, patch_size // 2)
-    height = X.shape[0]
-    width = X.shape[1]
-    for i in range(0, height - patch_size + 1):
-        for j in range(0, width - patch_size + 1):
-            image_patch = get_patch_by_indicis(X, i, j, patch_size)
-            image_patch = image_patch.reshape(image_patch.shape[2],
-                                              image_patch.shape[0],
-                                              image_patch.shape[1]).astype('float32')
-            yield image_patch
-# ----------------------------------------------------------------------------------------------------------------------
 
 
 class TF2DCNN:
@@ -171,6 +25,9 @@ class TF2DCNN:
                  apply_pca=False,
                  path_to_weights: str = None,
                  device: str = 'cpu'):
+
+        self.losses = []
+        self.val_accs = []
 
         self.patch_size = 5
         self.n_bands = n_bands
@@ -190,8 +47,15 @@ class TF2DCNN:
         self.model.add(Dense(6 * self.n_bands, activation='relu'))
         self.model.add(Dropout(0.5))
         self.model.add(Dense(self.class_count, activation='softmax'))
-        sgd = SGD(learning_rate=0.0001, decay=1e-6, momentum=0.9, nesterov=True)
-        self.model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+
+        sgd = SGD(learning_rate=0.0001,
+                  decay=1e-6,
+                  momentum=0.9,
+                  nesterov=True)
+
+        self.model.compile(loss='categorical_crossentropy',
+                           optimizer=sgd,
+                           metrics=['accuracy'])
         if path_to_weights:
             self.model.load_weights(path_to_weights)
     # ------------------------------------------------------------------------------------------------------------------
@@ -242,24 +106,18 @@ class TF2DCNN:
         if not os.path.exists(checkpoint_filepath):
             os.makedirs(checkpoint_filepath)
 
-        # model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_filepath,
-        #															   save_weights_only=True,
-        #															   monitor='val_accuracy',
-        #															   save_best_only=True
-        #															   )
+        history = self.model.fit(ds_train,
+                                 validation_data=ds_val,
+                                 validation_steps=val_steps,
+                                 validation_batch_size=fit_params['batch_size'],
+                                 batch_size=fit_params['batch_size'],
+                                 epochs=fit_params['epochs'],
+                                 steps_per_epoch=steps,
+                                 verbose=1)
 
-        self.model.fit(ds_train,
-                       validation_data=ds_val,
-                       validation_steps=val_steps,
-                       validation_batch_size=fit_params['batch_size'],
-                       batch_size=fit_params['batch_size'],
-                       epochs=fit_params['epochs'],
-                       steps_per_epoch=steps,
-                       verbose=1)
-        #			   callbacks=[model_checkpoint_callback])
-
-        self.losses = []
-        self.val_accs = []
+        self.losses = history.history.get('loss', [])
+        self.val_accs = history.history.get('val_accuracy', [])
+        print(history.history.keys())
 
         self.model.save(f'{checkpoint_filepath}/weights.h5')
     # ------------------------------------------------------------------------------------------------------------------
@@ -282,6 +140,7 @@ class TF2DCNN:
         test_generator = get_test_generator(X, patch_size=self.patch_size)
         ds_test = tf.data.Dataset.from_generator(lambda: test_generator, types, shapes).batch(128)
 
+        # TODO bad issue
         total = sum([1 for i in ds_test])
 
         test_generator = get_test_generator(X, patch_size=self.patch_size)
