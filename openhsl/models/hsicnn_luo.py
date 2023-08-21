@@ -48,6 +48,7 @@ class HSICNN_Net(nn.Module):
         # connected layer FC1 which has n4 nodes.
         # In the four datasets, the kernel height nk1 is 24 and stride s1, s2 is 9 and 1
         self.conv1 = nn.Conv3d(1, 90, (24, 3, 3), padding=0, stride=(9, 1, 1))
+        self.bn_conv1 = nn.BatchNorm3d(90)
         self.conv2 = nn.Conv2d(1, 64, (3, 3), stride=(1, 1))
 
         self.features_size = self._get_final_flattened_size()
@@ -72,7 +73,7 @@ class HSICNN_Net(nn.Module):
 # ------------------------------------------------------------------------------------------------------------------
 
     def forward(self, x):
-        x = F.relu(self.conv1(x))
+        x = F.relu(self.bn_conv1(self.conv1(x)))
         b = x.size(0)
         x = x.view(b, 1, -1, self.n_planes)
         x = F.relu(self.conv2(x))
@@ -90,6 +91,7 @@ class HSICNN(Model):
                  apply_pca=False,
                  path_to_weights=None
                  ):
+        super(HSICNN, self).__init__()
         self.apply_pca = apply_pca
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 3
@@ -138,12 +140,15 @@ class HSICNN(Model):
                                         lr=fit_params['optimizer_params']["learning_rate"],
                                         weight_decay=fit_params['optimizer_params']['weight_decay']))
 
-
-        self.model, self.losses, self.val_accs = super().fit_nn(X=X,
-                                                                y=y,
-                                                                hyperparams=self.hyperparams,
-                                                                model=self.model,
-                                                                fit_params=fit_params)
+        self.model, history = super().fit_nn(X=X,
+                                             y=y,
+                                             hyperparams=self.hyperparams,
+                                             model=self.model,
+                                             fit_params=fit_params)
+        self.train_loss = history["train_loss"]
+        self.val_loss = history["val_loss"]
+        self.train_accs = history["train_accuracy"]
+        self.val_accs = history["val_accuracy"]
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,

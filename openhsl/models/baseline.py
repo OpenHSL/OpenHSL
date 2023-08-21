@@ -33,6 +33,7 @@ class Baseline(nn.Module):
             self.dropout = nn.Dropout(p=0.5)
 
         self.fc1 = nn.Linear(input_channels, 2048)
+        self.bn = nn.BatchNorm1d(2048)
         self.fc2 = nn.Linear(2048, 4096)
         self.fc3 = nn.Linear(4096, 2048)
         self.fc4 = nn.Linear(2048, n_classes)
@@ -43,6 +44,7 @@ class Baseline(nn.Module):
         x = F.relu(self.fc1(x))
         if self.use_dropout:
             x = self.dropout(x)
+        #x = self.bn(x)
         x = F.relu(self.fc2(x))
         if self.use_dropout:
             x = self.dropout(x)
@@ -61,8 +63,8 @@ class BASELINE(Model):
                  apply_pca=False,
                  path_to_weights=None
                  ):
+        super(BASELINE, self).__init__()
         self.apply_pca = apply_pca
-
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 1
         self.hyperparams['n_classes'] = n_classes
@@ -114,11 +116,15 @@ class BASELINE(Model):
                                         lr=fit_params['optimizer_params']["learning_rate"],
                                         weight_decay=fit_params['optimizer_params']['weight_decay']))
 
-        self.model, self.losses, self.val_accs = super().fit_nn(X=X,
-                                                                y=y,
-                                                                hyperparams=self.hyperparams,
-                                                                model=self.model,
-                                                                fit_params=fit_params)
+        self.model, history = super().fit_nn(X=X,
+                                             y=y,
+                                             hyperparams=self.hyperparams,
+                                             model=self.model,
+                                             fit_params=fit_params)
+        self.train_loss = history["train_loss"]
+        self.val_loss = history["val_loss"]
+        self.train_accs = history["train_accuracy"]
+        self.val_accs = history["val_accuracy"]
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,

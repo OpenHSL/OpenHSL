@@ -5,7 +5,7 @@ from openhsl.hs_mask import HSMask
 from typing import Tuple
 
 
-def get_dataset(hsi: HSImage, mask: Optional[HSMask]) -> Tuple[np.ndarray, np.ndarray]:
+def get_dataset(hsi: HSImage, mask: Optional[HSMask], norm=None) -> Tuple[np.ndarray, np.ndarray]:
     """
     return data from .mat files in tuple
 
@@ -32,6 +32,5 @@ def get_dataset(hsi: HSImage, mask: Optional[HSMask]) -> Tuple[np.ndarray, np.nd
         label_values = [0]
 
     img = img.astype("float32")
-    img = (img - np.min(img)) / (np.max(img) - np.min(img))
 
     return img, gt

@@ -46,6 +46,7 @@ class Li3DCNN_Net(nn.Module):
         # the number of kernels in the second convolution layer is set to be
         # twice as many as that in the first convolution layer
         self.conv2 = nn.Conv3d(n_planes, 2 * n_planes, (3, 3, 3), padding=(1, 0, 0))
+        self.bn_conv2 = nn.BatchNorm3d(2 * n_planes)
         self.dropout = nn.Dropout(p=0.5)
         self.features_size = self._get_final_flattened_size()
 
@@ -67,7 +68,7 @@ class Li3DCNN_Net(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
+        x = F.relu(self.bn_conv2(self.conv2(x)))
         x = x.view(-1, self.features_size)
         x = self.dropout(x)
         x = self.fc(x)
@@ -83,6 +84,7 @@ class Li3DCNN(Model):
                  apply_pca=False,
                  path_to_weights=None
                  ):
+        super(Li3DCNN, self).__init__()
         self.apply_pca = apply_pca
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 5
@@ -134,11 +136,15 @@ class Li3DCNN(Model):
                                         lr=fit_params['optimizer_params']["learning_rate"],
                                         weight_decay=fit_params['optimizer_params']['weight_decay']))
 
-        self.model, self.losses, self.val_accs = super().fit_nn(X=X,
-                                                                y=y,
-                                                                hyperparams=self.hyperparams,
-                                                                model=self.model,
-                                                                fit_params=fit_params)
+        self.model, history = super().fit_nn(X=X,
+                                             y=y,
+                                             hyperparams=self.hyperparams,
+                                             model=self.model,
+                                             fit_params=fit_params)
+        self.train_loss = history["train_loss"]
+        self.val_loss = history["val_loss"]
+        self.train_accs = history["train_accuracy"]
+        self.val_accs = history["val_accuracy"]
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,

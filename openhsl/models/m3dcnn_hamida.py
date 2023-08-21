@@ -119,6 +119,7 @@ class M3D_HAMIDA(Model):
                  apply_pca=False,
                  path_to_weights=None
                  ):
+        super(M3D_HAMIDA, self).__init__()
         self.apply_pca = apply_pca
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 5
@@ -168,11 +169,15 @@ class M3D_HAMIDA(Model):
                                         lr=fit_params['optimizer_params']["learning_rate"],
                                         weight_decay=fit_params['optimizer_params']['weight_decay']))
 
-        self.model, self.losses, self.val_accs = super().fit_nn(X=X,
-                                                                y=y,
-                                                                hyperparams=self.hyperparams,
-                                                                model=self.model,
-                                                                fit_params=fit_params)
+        self.model, history = super().fit_nn(X=X,
+                                             y=y,
+                                             hyperparams=self.hyperparams,
+                                             model=self.model,
+                                             fit_params=fit_params)
+        self.train_loss = history["train_loss"]
+        self.val_loss = history["val_loss"]
+        self.train_accs = history["train_accuracy"]
+        self.val_accs = history["val_accuracy"]
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,

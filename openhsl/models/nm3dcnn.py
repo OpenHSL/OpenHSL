@@ -16,6 +16,28 @@ import torch.nn.functional as F
 from torch.nn import init
 
 
+class ParallelConvBlock(nn.Module):
+    def __init__(self, inp, out):
+        super().__init__()
+        self.conv1 = nn.Conv3d(inp, 16, (1, 1, 1), padding=(0, 0, 0))
+        self.bn_conv1 = nn.BatchNorm3d(16)
+        self.conv2 = nn.Conv3d(16, 16, (3, 1, 1), padding=(1, 0, 0))
+        self.bn_conv2 = nn.BatchNorm3d(16)
+        self.conv3 = nn.Conv3d(16, 16, (5, 1, 1), padding=(2, 0, 0))
+        self.bn_conv3 = nn.BatchNorm3d(16)
+        self.conv4 = nn.Conv3d(16, out, (11, 1, 1), padding=(5, 0, 0))
+        self.bn_conv4 = nn.BatchNorm3d(out)
+
+    def forward(self, x, **kwargs):
+
+        x1 = self.bn_conv1(self.conv1(x))
+        x2 = self.bn_conv1(self.conv2(x))
+        x3 = self.bn_conv1(self.conv3(x))
+        x4 = self.bn_conv1(self.conv4(x))
+
+        return x1 + x2 + x3 + x4
+
+
 class NM3DCNN_Net(nn.Module):
     """
     MULTI-SCALE 3D DEEP CONVOLUTIONAL NEURAL NETWORK FOR HYPERSPECTRAL
@@ -42,22 +64,11 @@ class NM3DCNN_Net(nn.Module):
 
         self.conv1 = nn.Conv3d(1, 16, (11, 3, 3), stride=(3, 1, 1))
         self.bn_conv1 = nn.BatchNorm3d(16)
-        self.conv2_1 = nn.Conv3d(16, 16, (1, 1, 1), padding=(0, 0, 0))
-        self.bn_conv2_1 = nn.BatchNorm3d(16)
-        self.conv2_2 = nn.Conv3d(16, 16, (3, 1, 1), padding=(1, 0, 0))
-        self.bn_conv2_2 = nn.BatchNorm3d(16)
-        self.conv2_3 = nn.Conv3d(16, 16, (5, 1, 1), padding=(2, 0, 0))
-        self.bn_conv2_3 = nn.BatchNorm3d(16)
-        self.conv2_4 = nn.Conv3d(16, 16, (11, 1, 1), padding=(5, 0, 0))
-        self.bn_conv2_4 = nn.BatchNorm3d(16)
-        self.conv3_1 = nn.Conv3d(16, 16, (1, 1, 1), padding=(0, 0, 0))
-        self.bn_conv3_1 = nn.BatchNorm3d(16)
-        self.conv3_2 = nn.Conv3d(16, 16, (3, 1, 1), padding=(1, 0, 0))
-        self.bn_conv3_2 = nn.BatchNorm3d(16)
-        self.conv3_3 = nn.Conv3d(16, 16, (5, 1, 1), padding=(2, 0, 0))
-        self.bn_conv3_3 = nn.BatchNorm3d(16)
-        self.conv3_4 = nn.Conv3d(16, 16, (11, 1, 1), padding=(5, 0, 0))
-        self.bn_conv3_4 = nn.BatchNorm3d(16)
+
+        self.pcb_1 = ParallelConvBlock(inp=16, out=16)
+
+        self.pcb_2 = ParallelConvBlock(inp=16, out=16)
+
         self.conv4 = nn.Conv3d(16, 16, (3, 2, 2))
         self.bn_conv4 = nn.BatchNorm3d(16)
 
@@ -76,33 +87,10 @@ class NM3DCNN_Net(nn.Module):
             x = self.conv1(x)
             x = self.bn_conv1(x)
 
-            x2_1 = self.conv2_1(x)
-            x2_1 = self.bn_conv2_1(x2_1)
+            x = self.pcb_1(x)
 
-            x2_2 = self.conv2_2(x)
-            x2_2 = self.bn_conv2_2(x2_2)
+            x = self.pcb_2(x)
 
-            x2_3 = self.conv2_3(x)
-            x2_3 = self.bn_conv2_3(x2_3)
-
-            x2_4 = self.conv2_4(x)
-            x2_4 = self.bn_conv2_4(x2_4)
-
-            x = x2_1 + x2_2 + x2_3 + x2_4
-
-            x3_1 = self.conv3_1(x)
-            x3_1 = self.bn_conv3_1(x3_1)
-
-            x3_2 = self.conv3_2(x)
-            x3_2 = self.bn_conv3_2(x3_2)
-
-            x3_3 = self.conv3_3(x)
-            x3_3 = self.bn_conv3_3(x3_3)
-
-            x3_4 = self.conv3_4(x)
-            x3_4 = self.bn_conv3_4(x3_4)
-
-            x = x3_1 + x3_2 + x3_3 + x3_4
             x = self.conv4(x)
             x = self.bn_conv4(x)
 
@@ -112,39 +100,17 @@ class NM3DCNN_Net(nn.Module):
 
     def forward(self, x):
 
-        x = F.relu(self.bn_conv1(self.conv1(x)))
-
-        x2_1 = self.conv2_1(x)
-        x2_1 = self.bn_conv2_1(x2_1)
-
-        x2_2 = self.conv2_2(x)
-        x2_2 = self.bn_conv2_2(x2_2)
-
-        x2_3 = self.conv2_3(x)
-        x2_3 = self.bn_conv2_3(x2_3)
-
-        x2_4 = self.conv2_4(x)
-        x2_4 = self.bn_conv2_4(x2_4)
-
-        x = x2_1 + x2_2 + x2_3 + x2_4
+        x = self.conv1(x)
+        x = self.bn_conv1(x)
+        x = F.relu(x)
+        x = self.pcb_1(x)
+        x = F.relu(x)
+        x = self.pcb_2(x)
         x = F.relu(x)
 
-        x3_1 = self.conv3_1(x)
-        x3_1 = self.bn_conv3_1(x3_1)
-
-        x3_2 = self.conv3_2(x)
-        x3_2 = self.bn_conv3_2(x3_2)
-
-        x3_3 = self.conv3_3(x)
-        x3_3 = self.bn_conv3_3(x3_3)
-
-        x3_4 = self.conv3_4(x)
-        x3_4 = self.bn_conv3_4(x3_4)
-
-        x = x3_1 + x3_2 + x3_3 + x3_4
-
+        x = self.conv4(x)
+        x = self.bn_conv4(x)
         x = F.relu(x)
-        x = F.relu(self.bn_conv4(self.conv4(x)))
 
         x = x.view(-1, self.features_size)
         x = self.fc(x)
@@ -160,7 +126,7 @@ class NM3DCNN(Model):
                  apply_pca=False,
                  path_to_weights=None
                  ):
-
+        super(NM3DCNN, self).__init__()
         self.apply_pca = apply_pca
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 7
@@ -193,6 +159,7 @@ class NM3DCNN(Model):
             X: HSImage,
             y: HSMask,
             fit_params: Dict):
+
         X = copy.copy(X)
         if self.apply_pca:
             n_bands = self.hyperparams['n_bands']
@@ -200,6 +167,7 @@ class NM3DCNN(Model):
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
+
         fit_params.setdefault('epochs', 10)
         fit_params.setdefault('train_sample_percentage', 0.5)
         fit_params.setdefault('dataloader_mode', 'random')
@@ -211,11 +179,15 @@ class NM3DCNN(Model):
                                         lr=fit_params['optimizer_params']["learning_rate"],
                                         weight_decay=fit_params['optimizer_params']['weight_decay']))
 
-        self.model, self.losses, self.val_accs = super().fit_nn(X=X,
-                                                                y=y,
-                                                                hyperparams=self.hyperparams,
-                                                                model=self.model,
-                                                                fit_params=fit_params)
+        self.model, history = super().fit_nn(X=X,
+                                             y=y,
+                                             hyperparams=self.hyperparams,
+                                             model=self.model,
+                                             fit_params=fit_params)
+        self.train_loss = history["train_loss"]
+        self.val_loss = history["val_loss"]
+        self.train_accs = history["train_accuracy"]
+        self.val_accs = history["val_accuracy"]
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,

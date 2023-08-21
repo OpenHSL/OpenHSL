@@ -56,6 +56,7 @@ class M1DCNN_Net(nn.Module):
 
         # [The first hidden convolution layer C1 filters the n1 x 1 input data with 20 kernels of size k1 x 1]
         self.conv = nn.Conv1d(1, 20, kernel_size)
+        self.bn_conv = nn.BatchNorm1d(20)
         self.pool = nn.MaxPool1d(pool_size)
         self.features_size = self._get_final_flattened_size()
         # [n4 is set to be 100]
@@ -69,6 +70,7 @@ class M1DCNN_Net(nn.Module):
         x = x.squeeze(dim=-1).squeeze(dim=-1)
         x = x.unsqueeze(1)
         x = self.conv(x)
+        x = self.bn_conv(x)
         x = torch.tanh(self.pool(x))
         x = x.view(-1, self.features_size)
         x = torch.tanh(self.fc1(x))
@@ -85,6 +87,7 @@ class M1DCNN(Model):
                  apply_pca=False,
                  path_to_weights=None
                  ):
+        super(M1DCNN, self).__init__()
         self.apply_pca = apply_pca
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 1
@@ -115,7 +118,9 @@ class M1DCNN(Model):
             X: HSImage,
             y: HSMask,
             fit_params: Dict):
-        X = copy.copy(X)
+
+        X = copy.deepcopy(X)
+        X.data = (X.data - X.data.min()) / (X.data.max() - X.data.min())
         if self.apply_pca:
             n_bands = self.hyperparams['n_bands']
             print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
@@ -127,17 +132,20 @@ class M1DCNN(Model):
         fit_params.setdefault('dataloader_mode', 'random')
         fit_params.setdefault('loss', nn.CrossEntropyLoss(weight=self.hyperparams["weights"]))
         fit_params.setdefault('batch_size', 100)
-        fit_params.setdefault('optimizer_params', {'learning_rate': 0.01})
+        fit_params.setdefault('optimizer_params', {'learning_rate': 0.05})
         fit_params.setdefault('optimizer',
                               optim.SGD(self.model.parameters(),
                                         lr=fit_params['optimizer_params']["learning_rate"]))
 
-
-        self.model, self.losses, self.val_accs = super().fit_nn(X=X,
-                                                                y=y,
-                                                                hyperparams=self.hyperparams,
-                                                                model=self.model,
-                                                                fit_params=fit_params)
+        self.model, history = super().fit_nn(X=X,
+                                             y=y,
+                                             hyperparams=self.hyperparams,
+                                             model=self.model,
+                                             fit_params=fit_params)
+        self.train_loss = history["train_loss"]
+        self.val_loss = history["val_loss"]
+        self.train_accs = history["train_accuracy"]
+        self.val_accs = history["val_accuracy"]
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,

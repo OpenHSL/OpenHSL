@@ -11,7 +11,7 @@ from PIL import Image
 
 from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
-                                        sliding_window, sample_gt, convert_to_color_
+                                        sliding_window, sample_gt, convert_to_color_, preprocess_input_data
 from openhsl.data.torch_dataloader import create_loader
 
 
@@ -22,6 +22,14 @@ class Model(ABC):
         Abstract class for decorating machine learning algorithms
 
     """
+
+    @abstractmethod
+    def __init__(self):
+        self.train_loss = []
+        self.val_loss = []
+        self.train_accs = []
+        self.val_accs = []
+        self.model = None
 
     @abstractmethod
     def fit(self,
@@ -61,6 +69,8 @@ class Model(ABC):
         # TODO ignored_labels and label_values for what?
         img, gt = get_dataset(hsi=X, mask=y)
 
+        img = preprocess_input_data(img)
+
         hyperparams['batch_size'] = fit_params['batch_size']
 
         train_gt, _ = sample_gt(gt=gt,
@@ -84,14 +94,14 @@ class Model(ABC):
                               dataset_name=train_loader.dataset.name,
                               mask=train_gt)
 
-        model, losses, val_accs = Model.train(net=model,
+        model, history = Model.train(net=model,
                                               optimizer=fit_params['optimizer'],
                                               criterion=fit_params['loss'],
                                               data_loader=train_loader,
                                               epoch=fit_params['epochs'],
                                               val_loader=val_loader,
                                               device=hyperparams['device'])
-        return model, losses, val_accs
+        return model, history
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
@@ -157,13 +167,16 @@ class Model(ABC):
         losses = np.zeros(1000000)  # TODO to list?
         mean_losses = np.zeros(100000000)  # TODO to list?
         iter_ = 1
+        train_accuracies = []
         val_accuracies = []
         train_loss = []
+        val_loss = []
         for e in tqdm(range(1, epoch + 1)):
             # Set the network to training mode
             net.train()
             avg_loss = 0.0
-
+            accuracy = 0.0
+            total = 0
             # Run the training loop for one epoch
             for batch_idx, (data, target) in (enumerate(data_loader)):
                 # Load the data into the GPU if required
@@ -178,17 +191,29 @@ class Model(ABC):
                 avg_loss += loss.item()
                 losses[iter_] = loss.item()
                 mean_losses[iter_] = np.mean(losses[max(0, iter_ - 100): iter_ + 1])
-
+                _, output = torch.max(output, dim=1)
+                for out, pred in zip(output.view(-1), target.view(-1)):
+                    if out.item() in [0]:
+                        continue
+                    else:
+                        accuracy += out.item() == pred.item()
+                        total += 1
                 iter_ += 1
-                #del (data, target, loss, output)  # TODO REMOVE
+                del (data, target, loss, output)  # TODO REMOVE
 
             # Update the scheduler
             avg_loss /= len(data_loader)
             train_loss.append(avg_loss)
+            train_acc = accuracy / total
+            train_accuracies.append(train_acc)
 
             if val_loader:
-                val_acc = Model.val(net, val_loader, device=device)
-                tqdm.write(f"val accuracy: {val_acc}\tloss: {avg_loss}")
+                val_acc, loss = Model.val(net, criterion, val_loader, device=device)
+                tqdm.write(f"train accuracy: {train_acc}\t"
+                           f"val accuracy: {val_acc}\t"
+                           f"train loss: {avg_loss}\t"
+                           f"val loss: {loss}")
+                val_loss.append(loss)
                 val_accuracies.append(val_acc)
                 metric = -val_acc  # TODO WTF
             else:
@@ -208,29 +233,39 @@ class Model(ABC):
                     epoch=e,
                     metric=abs(metric),
                 )
-        return net, train_loss, val_accuracies
+        history = dict()
+        history["train_loss"] = train_loss
+        history["val_loss"] = val_loss
+        history["train_accuracy"] = train_accuracies
+        history["val_accuracy"] = val_accuracies
+        return net, history
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
     def val(net: nn.Module,
+            criterion,
             data_loader: data.DataLoader,
             device: torch.device):
         # TODO : fix me using metrics()
-        accuracy, total = 0.0, 0.0
+        val_accuracy, total = 0.0, 0.0
+        avg_loss = 0
         ignored_labels = data_loader.dataset.ignored_labels
         for batch_idx, (data, target) in enumerate(data_loader):
             with torch.no_grad():
                 # Load the data into the GPU if required
                 data, target = data.to(device), target.to(device)
                 output = net(data)
+                loss = criterion(output, target)
+                avg_loss += loss.item()
                 _, output = torch.max(output, dim=1)
                 for out, pred in zip(output.view(-1), target.view(-1)):
                     if out.item() in ignored_labels:
                         continue
                     else:
-                        accuracy += out.item() == pred.item()
+                        val_accuracy += out.item() == pred.item()
                         total += 1
-        return accuracy / total
+
+        return val_accuracy / total, avg_loss / len(data_loader)
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod

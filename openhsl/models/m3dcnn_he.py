@@ -35,7 +35,6 @@ class M3DCNN_Net(nn.Module):
 
     def __init__(self, input_channels, n_classes, patch_size=7):
         super(M3DCNN_Net, self).__init__()
-
         self.input_channels = input_channels
         self.patch_size = patch_size
 
@@ -97,7 +96,7 @@ class M3DCNN_Net(nn.Module):
         x = F.relu(x)
         x = F.relu(self.conv4(x))
         x = x.view(-1, self.features_size)
-        x = self.dropout(x)
+        #x = self.dropout(x)
         x = self.fc(x)
         return x
 # ----------------------------------------------------------------------------------------------------------------------
@@ -111,6 +110,7 @@ class M3DCNN(Model):
                  apply_pca=False,
                  path_to_weights=None
                  ):
+        super(M3DCNN, self).__init__()
         self.apply_pca = apply_pca
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 7
@@ -119,6 +119,7 @@ class M3DCNN(Model):
         self.hyperparams['n_classes'] = n_classes
         self.hyperparams['ignored_labels'] = [0]
         self.hyperparams['device'] = device
+
         weights = torch.ones(n_classes)
         weights[torch.LongTensor(self.hyperparams["ignored_labels"])] = 0.0
         weights = weights.to(device)
@@ -162,11 +163,15 @@ class M3DCNN(Model):
                                         lr=fit_params['optimizer_params']["learning_rate"],
                                         weight_decay=fit_params['optimizer_params']['weight_decay']))
 
-        self.model, self.losses, self.val_accs = super().fit_nn(X=X,
-                                                                y=y,
-                                                                hyperparams=self.hyperparams,
-                                                                model=self.model,
-                                                                fit_params=fit_params)
+        self.model, history = super().fit_nn(X=X,
+                                             y=y,
+                                             hyperparams=self.hyperparams,
+                                             model=self.model,
+                                             fit_params=fit_params)
+        self.train_loss = history["train_loss"]
+        self.val_loss = history["val_loss"]
+        self.train_accs = history["train_accuracy"]
+        self.val_accs = history["val_accuracy"]
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,

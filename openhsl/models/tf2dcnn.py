@@ -6,7 +6,7 @@ from typing import Optional, Dict
 
 import tensorflow as tf
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, Conv2D
+from keras.layers import Dense, Dropout, Flatten, Conv2D, BatchNormalization
 from keras.optimizers import SGD
 
 from openhsl.hsi import HSImage
@@ -27,7 +27,9 @@ class TF2DCNN:
                  path_to_weights: str = None,
                  device: str = 'cpu'):
 
-        self.losses = []
+        self.train_loss = []
+        self.val_loss = []
+        self.train_accs = []
         self.val_accs = []
 
         self.patch_size = 5
@@ -41,6 +43,7 @@ class TF2DCNN:
         self.model = Sequential()
 
         self.model.add(Conv2D(C1, (3, 3), activation='relu', input_shape=input_shape))
+        self.model.add(BatchNormalization())
         self.model.add(Conv2D(3 * C1, (3, 3), activation='relu'))
         self.model.add(Dropout(0.25))
 
@@ -116,7 +119,9 @@ class TF2DCNN:
                                  steps_per_epoch=steps,
                                  verbose=1)
 
-        self.losses = history.history.get('loss', [])
+        self.train_loss = history.history.get('loss', [])
+        self.val_loss = history.history.get('val_loss', [])
+        self.train_accs = history.history.get('accuracy', [])
         self.val_accs = history.history.get('val_accuracy', [])
         print(history.history.keys())
 

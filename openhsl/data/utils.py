@@ -8,7 +8,19 @@ from typing import Tuple
 from sklearn.decomposition import PCA
 
 
-def is_coordinate_in_padded_area(coordinates: Tuple, image_size: Tuple, padding_size: int) -> bool:
+def is_coordinate_in_padded_area(coordinates: Tuple,
+                                 image_size: Tuple,
+                                 padding_size: int) -> bool:
+    """
+
+    Args:
+        coordinates:
+        image_size:
+        padding_size:
+
+    Returns:
+
+    """
     x, y = coordinates
     is_in_x = padding_size < x < image_size[0] - padding_size
     is_in_y = padding_size < y < image_size[1] - padding_size
@@ -18,6 +30,15 @@ def is_coordinate_in_padded_area(coordinates: Tuple, image_size: Tuple, padding_
 
 def apply_pca(X: np.ndarray,
               num_components: int = 75):
+    """
+
+    Args:
+        X:
+        num_components:
+
+    Returns:
+
+    """
     newX = np.reshape(X, (-1, X.shape[2]))
     pca = PCA(n_components=num_components, whiten=True, random_state=131)
     newX = pca.fit_transform(newX)
@@ -28,6 +49,15 @@ def apply_pca(X: np.ndarray,
 
 def pad_with_zeros(X: np.ndarray,
                    margin: int = 2):
+    """
+
+    Args:
+        X:
+        margin:
+
+    Returns:
+
+    """
     newX = np.zeros((X.shape[0] + 2 * margin, X.shape[1] + 2 * margin, X.shape[2]))
     x_offset = margin
     y_offset = margin
@@ -35,6 +65,16 @@ def pad_with_zeros(X: np.ndarray,
     return newX
 # ----------------------------------------------------------------------------------------------------------------------
 
+
+def preprocess_input_data(data, **kwargs):
+
+    #min_max_normalize(data)
+
+    #standartize()
+
+    return data
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 def get_device(ordinal: int):
     # Use GPU ?
