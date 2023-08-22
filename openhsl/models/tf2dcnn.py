@@ -70,8 +70,7 @@ class TF2DCNN:
             fit_params: Dict):
 
         if self.apply_pca:
-            X = copy.copy(X)
-            print(f'Will apply PCA from {X.data.shape[-1]} to {self.n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.n_bands)
         else:
             print('PCA will not apply')
@@ -133,8 +132,7 @@ class TF2DCNN:
                 y: Optional[HSMask] = None) -> np.ndarray:
 
         if self.apply_pca:
-            X = copy.copy(X)
-            print(f'Will apply PCA from {X.data.shape[-1]} to {self.n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.n_bands)
         else:
             print('PCA will not apply')

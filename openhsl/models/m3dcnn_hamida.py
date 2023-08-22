@@ -151,13 +151,12 @@ class M3D_HAMIDA(Model):
             y: HSMask,
             fit_params: Dict):
 
-        X = copy.copy(X)
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
+
         fit_params.setdefault('epochs', 10)
         fit_params.setdefault('train_sample_percentage', 0.5)
         fit_params.setdefault('dataloader_mode', 'random')
@@ -183,13 +182,13 @@ class M3D_HAMIDA(Model):
     def predict(self,
                 X: HSImage,
                 y: Optional[HSMask] = None) -> np.ndarray:
-        X = copy.copy(X)
+
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
+
         self.hyperparams.setdefault('batch_size', 100)
         prediction = super().predict_nn(X=X,
                                         y=y,

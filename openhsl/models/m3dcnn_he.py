@@ -53,6 +53,7 @@ class M3DCNN_Net(nn.Module):
         self.dropout = nn.Dropout(p=0.6)
 
         self.features_size = self._get_final_flattened_size()
+        print(self.features_size)
 
         self.fc = nn.Linear(self.features_size, n_classes)
 
@@ -144,10 +145,8 @@ class M3DCNN(Model):
             y: HSMask,
             fit_params: Dict):
 
-        X = copy.copy(X)
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
@@ -178,10 +177,8 @@ class M3DCNN(Model):
                 X: HSImage,
                 y: Optional[HSMask] = None) -> np.ndarray:
 
-        X = copy.copy(X)
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')

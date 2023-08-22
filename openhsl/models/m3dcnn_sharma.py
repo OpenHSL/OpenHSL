@@ -140,10 +140,8 @@ class M3DCNN_Sharma(Model):
             y: HSMask,
             fit_params: Dict):
 
-        X = copy.copy(X)
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
@@ -174,15 +172,13 @@ class M3DCNN_Sharma(Model):
                 X: HSImage,
                 y: Optional[HSMask] = None) -> np.ndarray:
 
-        X = copy.copy(X)
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
 
-        self.hyperparams.setdefault('batch_size', 60)
+        self.hyperparams.setdefault('batch_size', 128)
         prediction = super().predict_nn(X=X,
                                         y=y,
                                         model=self.model,

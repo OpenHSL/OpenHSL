@@ -46,7 +46,6 @@ class Li3DCNN_Net(nn.Module):
         # the number of kernels in the second convolution layer is set to be
         # twice as many as that in the first convolution layer
         self.conv2 = nn.Conv3d(n_planes, 2 * n_planes, (3, 3, 3), padding=(1, 0, 0))
-        self.bn_conv2 = nn.BatchNorm3d(2 * n_planes)
         self.dropout = nn.Dropout(p=0.5)
         self.features_size = self._get_final_flattened_size()
 
@@ -68,7 +67,7 @@ class Li3DCNN_Net(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
-        x = F.relu(self.bn_conv2(self.conv2(x)))
+        x = F.relu(self.conv2(x))
         x = x.view(-1, self.features_size)
         x = self.dropout(x)
         x = self.fc(x)
@@ -117,10 +116,8 @@ class Li3DCNN(Model):
             y: HSMask,
             fit_params: Dict):
 
-        X = copy.copy(X)
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
@@ -150,10 +147,9 @@ class Li3DCNN(Model):
     def predict(self,
                 X: HSImage,
                 y: Optional[HSMask] = None) -> np.ndarray:
-        X = copy.copy(X)
+
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')

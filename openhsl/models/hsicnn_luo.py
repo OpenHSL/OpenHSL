@@ -48,7 +48,6 @@ class HSICNN_Net(nn.Module):
         # connected layer FC1 which has n4 nodes.
         # In the four datasets, the kernel height nk1 is 24 and stride s1, s2 is 9 and 1
         self.conv1 = nn.Conv3d(1, 90, (24, 3, 3), padding=0, stride=(9, 1, 1))
-        self.bn_conv1 = nn.BatchNorm3d(90)
         self.conv2 = nn.Conv2d(1, 64, (3, 3), stride=(1, 1))
 
         self.features_size = self._get_final_flattened_size()
@@ -73,7 +72,7 @@ class HSICNN_Net(nn.Module):
 # ------------------------------------------------------------------------------------------------------------------
 
     def forward(self, x):
-        x = F.relu(self.bn_conv1(self.conv1(x)))
+        x = F.relu(self.conv1(x))
         b = x.size(0)
         x = x.view(b, 1, -1, self.n_planes)
         x = F.relu(self.conv2(x))
@@ -122,13 +121,13 @@ class HSICNN(Model):
             X: HSImage,
             y: HSMask,
             fit_params: Dict):
-        X = copy.copy(X)
+
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
+
         fit_params.setdefault('epochs', 10)
         fit_params.setdefault('train_sample_percentage', 0.5)
         fit_params.setdefault('dataloader_mode', 'random')
@@ -154,13 +153,13 @@ class HSICNN(Model):
     def predict(self,
                 X: HSImage,
                 y: Optional[HSMask] = None) -> np.ndarray:
-        X = copy.copy(X)
+
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
+
         self.hyperparams.setdefault('batch_size', 100)
         prediction = super().predict_nn(X=X,
                                         y=y,

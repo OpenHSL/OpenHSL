@@ -55,6 +55,11 @@ def get_inference_time(pretrained_model,
     return final_time - start_time < 40
 
 
+def get_accuracy(pretrained_model,
+                 dataset: Tuple):
+    pass
+
+
 def test_baseline(return_inference_test_data):
     n_classes = len(return_inference_test_data[1])
 
@@ -114,7 +119,7 @@ def test_m3dcnn_li(return_inference_test_data):
 def test_nm3dcnn(return_inference_test_data):
     n_classes = len(return_inference_test_data[1])
 
-    model = NM3DCNN(n_classes=n_classes, device='cuda', n_bands=250)
+    model = NM3DCNN(n_classes=n_classes, device='cuda', n_bands=30, apply_pca=True)
 
     assert get_inference_time(pretrained_model=model, dataset=return_inference_test_data)
 
@@ -122,6 +127,6 @@ def test_nm3dcnn(return_inference_test_data):
 def test_tf2dcnn(return_inference_test_data):
     n_classes = len(return_inference_test_data[1])
 
-    model = TF2DCNN(n_classes=n_classes, n_bands=30, apply_pca=True)
+    model = TF2DCNN(n_classes=n_classes - 1, n_bands=30, apply_pca=True)
 
     assert get_inference_time(pretrained_model=model, dataset=return_inference_test_data)

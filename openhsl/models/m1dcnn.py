@@ -56,7 +56,6 @@ class M1DCNN_Net(nn.Module):
 
         # [The first hidden convolution layer C1 filters the n1 x 1 input data with 20 kernels of size k1 x 1]
         self.conv = nn.Conv1d(1, 20, kernel_size)
-        self.bn_conv = nn.BatchNorm1d(20)
         self.pool = nn.MaxPool1d(pool_size)
         self.features_size = self._get_final_flattened_size()
         # [n4 is set to be 100]
@@ -70,7 +69,6 @@ class M1DCNN_Net(nn.Module):
         x = x.squeeze(dim=-1).squeeze(dim=-1)
         x = x.unsqueeze(1)
         x = self.conv(x)
-        x = self.bn_conv(x)
         x = torch.tanh(self.pool(x))
         x = x.view(-1, self.features_size)
         x = torch.tanh(self.fc1(x))
@@ -119,14 +117,12 @@ class M1DCNN(Model):
             y: HSMask,
             fit_params: Dict):
 
-        X = copy.deepcopy(X)
-        X.data = (X.data - X.data.min()) / (X.data.max() - X.data.min())
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
+
         fit_params.setdefault('epochs', 10)
         fit_params.setdefault('train_sample_percentage', 0.5)
         fit_params.setdefault('dataloader_mode', 'random')
@@ -151,13 +147,13 @@ class M1DCNN(Model):
     def predict(self,
                 X: HSImage,
                 y: Optional[HSMask] = None) -> np.ndarray:
-        X = copy.copy(X)
+
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
+
         self.hyperparams.setdefault('batch_size', 100)
         prediction = super().predict_nn(X=X,
                                         y=y,

@@ -68,6 +68,14 @@ class HSImage:
         return self.data.shape[-1]
     # ------------------------------------------------------------------------------------------------------------------
 
+    def to_spectral_list(self):
+        return np.reshape(self.data, (self.data.shape[0] * self.data.shape[1], self.data.shape[2]))
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load_from_spectral_list(self, spectral_list, height, width):
+        self.data = np.reshape(spectral_list, (height, width, len(spectral_list[0])))
+    # ------------------------------------------------------------------------------------------------------------------
+
     def get_hyperpixel_by_coordinates(self,
                                       x: int,
                                       y: int) -> np.ndarray:

@@ -1,13 +1,18 @@
 import torch
 import torch.nn as nn
 import torch.functional as F
-from einops import rearrange, repeat
-from openhsl.models.model import Model
-import numpy as np
-from sklearn.metrics import confusion_matrix
-from openhsl.data.utils import sample_gt
 import torch.utils.data as Data
+
+import numpy as np
+from einops import rearrange, repeat
+from sklearn.metrics import confusion_matrix
 from tqdm import trange, tqdm
+
+from openhsl.data.utils import sample_gt
+from openhsl.models.model import Model
+from openhsl.data.dataset import get_dataset
+from openhsl.hsi import HSImage
+from openhsl.hs_mask import HSMask
 
 
 def choose_train_and_test_point(train_data: np.ndarray,
@@ -80,37 +85,40 @@ def mirror_hsi(height,
 
     """
     padding = patch // 2
-    mirror_hsi = np.zeros((height + 2 * padding, width + 2 * padding, band), dtype=float)
+    mirrored_hsi = np.zeros((height + 2 * padding, width + 2 * padding, band), dtype=float)
 
-    mirror_hsi[padding: (padding + height), padding: (padding + width), :] = input_normalize
-
-    for i in range(padding):
-        mirror_hsi[padding: (height + padding), i, :] = input_normalize[:, padding - i - 1, :]
+    mirrored_hsi[padding: (padding + height), padding: (padding + width), :] = input_normalize
 
     for i in range(padding):
-        mirror_hsi[padding: (height + padding), width + padding + i, :] = input_normalize[:, width - 1 - i, :]
+        mirrored_hsi[padding: (height + padding), i, :] = input_normalize[:, padding - i - 1, :]
 
     for i in range(padding):
-        mirror_hsi[i, :, :] = mirror_hsi[padding * 2 - i - 1, :, :]
+        mirrored_hsi[padding: (height + padding), width + padding + i, :] = input_normalize[:, width - 1 - i, :]
 
     for i in range(padding):
-        mirror_hsi[height + padding + i, :, :] = mirror_hsi[height + padding - 1 - i, :, :]
+        mirrored_hsi[i, :, :] = mirrored_hsi[padding * 2 - i - 1, :, :]
+
+    for i in range(padding):
+        mirrored_hsi[height + padding + i, :, :] = mirrored_hsi[height + padding - 1 - i, :, :]
 
     print("**************************************************")
     print("patch is : {}".format(patch))
-    print("mirror_image shape : [{0},{1},{2}]".format(mirror_hsi.shape[0], mirror_hsi.shape[1], mirror_hsi.shape[2]))
+    print("mirror_image shape : [{0},{1},{2}]".format(mirrored_hsi.shape[0],
+                                                      mirrored_hsi.shape[1],
+                                                      mirrored_hsi.shape[2]))
     print("**************************************************")
 
-    return mirror_hsi
+    return mirrored_hsi
+# ----------------------------------------------------------------------------------------------------------------------
 
 
-# -------------------------------------------------------------------------------
 # 获取patch的图像数据
 def gain_neighborhood_pixel(mirror_image, point, i, patch=5):
     x = point[i, 0]
     y = point[i, 1]
     temp_image = mirror_image[x: (x + patch), y: (y + patch), :]
     return temp_image
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def gain_neighborhood_band(x_train, band, band_patch, patch=5):
@@ -137,9 +145,9 @@ def gain_neighborhood_band(x_train, band, band_patch, patch=5):
             x_train_band[:, (nn + 1 + i):(nn + 2 + i), (band - i - 1):] = x_train_reshape[:, 0:1, :(i + 1)]
             x_train_band[:, (nn + 1 + i):(nn + 2 + i), :(band - i - 1)] = x_train_reshape[:, 0:1, (i + 1):]
     return x_train_band
+# ----------------------------------------------------------------------------------------------------------------------
 
 
-# -------------------------------------------------------------------------------
 # 汇总训练数据和测试数据
 def train_and_test_data(mirror_image, band, train_point, test_point, true_point, patch=5, band_patch=3):
     x_train = np.zeros((train_point.shape[0], patch, patch, band), dtype=float)
@@ -164,9 +172,9 @@ def train_and_test_data(mirror_image, band, train_point, test_point, true_point,
     print("x_true_band  shape = {}, type = {}".format(x_true_band.shape, x_true_band.dtype))
     print("**************************************************")
     return x_train_band, x_test_band, x_true_band
+# ----------------------------------------------------------------------------------------------------------------------
 
 
-# -------------------------------------------------------------------------------
 # 标签y_train, y_test
 def train_and_test_label(number_train, number_test, number_true, num_classes):
     y_train = []
@@ -293,7 +301,15 @@ class Attention(nn.Module):
 
 
 class Transformer(nn.Module):
-    def __init__(self, dim, depth, heads, dim_head, mlp_head, dropout, num_channel, mode):
+    def __init__(self,
+                 dim,
+                 depth,
+                 heads,
+                 dim_head,
+                 mlp_head,
+                 dropout,
+                 num_channel,
+                 mode):
         super().__init__()
 
         self.layers = nn.ModuleList([])
@@ -424,7 +440,7 @@ def train_epoch(model, train_loader, criterion, optimizer):
         top1 = AvgrageMeter()
         tar = np.array([])
         pre = np.array([])
-        for batch_idx, (batch_data, batch_target) in enumerate(tqdm(train_loader)):
+        for batch_idx, (batch_data, batch_target) in enumerate(train_loader):
             batch_data = batch_data.cuda()
             batch_target = batch_target.cuda()
 
@@ -468,14 +484,10 @@ def valid_epoch(model, valid_loader, criterion, optimizer):
         return tar, pre
 
 
-def test_epoch(model, test_loader, criterion, optimizer):
-        objs = AvgrageMeter()
-        top1 = AvgrageMeter()
-        tar = np.array([])
+def test_epoch(model, test_loader):
         pre = np.array([])
-        for batch_idx, (batch_data, batch_target) in enumerate(test_loader):
+        for batch_idx, (batch_data, batch_target) in enumerate(tqdm(test_loader)):
             batch_data = batch_data.cuda()
-            batch_target = batch_target.cuda()
 
             batch_pred = model(batch_data)
 
@@ -487,9 +499,9 @@ def test_epoch(model, test_loader, criterion, optimizer):
 
 class SpectralFormer(Model):
 
-    def __init__(self, n_classes, n_bands, args):
-        self.model = ViT(image_size=args["patches"],
-                         near_band=args["band_patches"],
+    def __init__(self, n_classes, n_bands, path_to_weights=None, **kwargs):
+        self.model = ViT(image_size=kwargs["patches"],
+                         near_band=kwargs["band_patches"],
                          num_patches=n_bands,
                          num_classes=n_classes,
                          dim=27,
@@ -498,15 +510,21 @@ class SpectralFormer(Model):
                          mlp_dim=8,
                          dropout=0.1,
                          emb_dropout=0.1,
-                         mode=args["mode"])
+                         mode=kwargs["mode"])
+
+        if path_to_weights:
+            self.model.load_state_dict(torch.load(path_to_weights))
+
         self.model = self.model.cuda()
 
     def fit(self,
-            X,
-            y,
+            X: HSImage,
+            y: HSMask,
             fit_params):
 
-        fit_params.setdefault('optimizer_params', {'learning_rate': 0.01, 'weight_decay': 0.01})
+        X, y = get_dataset(X, y)
+
+        fit_params.setdefault('optimizer_params', {'learning_rate': 0.01, 'weight_decay': 0})
         fit_params.setdefault('optimizer',
                               torch.optim.Adam(self.model.parameters(),
                                                lr=fit_params['optimizer_params']["learning_rate"],
@@ -516,20 +534,20 @@ class SpectralFormer(Model):
         data = X
         # train, test and concat data of labels
         label = y
-        TR, TE = sample_gt(label, 0.4, mode='random')
+        TR, TE = sample_gt(label, 0.4, mode='fixed')
 
         patches = 1
         band_patches = 1
-        batch_size = 1
+        batch_size = 256
 
         num_classes = len(np.unique(label))
         height, width, band = data.shape
         input_normalize = np.zeros(data.shape)
 
-        for i in range(data.shape[2]):
-            input_max = np.max(data[:, :, i])
-            input_min = np.min(data[:, :, i])
-            input_normalize[:, :, i] = (data[:, :, i] - input_min) / (input_max - input_min)
+        #for i in range(data.shape[2]):
+        #    input_max = np.max(data[:, :, i])
+        #    input_min = np.min(data[:, :, i])
+        #    input_normalize[:, :, i] = (data[:, :, i] - input_min) / (input_max - input_min)
 
         # obtain train and test data
         total_pos_train, total_pos_test, total_pos_true, \
@@ -557,6 +575,7 @@ class SpectralFormer(Model):
                                                        number_test,
                                                        number_true,
                                                        num_classes)
+        print(np.unique(x_train_band))
         # -------------------------------------------------------------------------------
         # load data
         x_train = torch.from_numpy(x_train_band.transpose((0, 2, 1))).type(torch.FloatTensor)  # [695, 200, 7, 7]
@@ -571,7 +590,7 @@ class SpectralFormer(Model):
 
         label_train_loader = Data.DataLoader(Label_train, batch_size=batch_size, shuffle=True)
         label_test_loader = Data.DataLoader(Label_test, batch_size=batch_size, shuffle=True)
-        label_true_loader = Data.DataLoader(Label_true, batch_size=100, shuffle=False)
+        label_true_loader = Data.DataLoader(Label_true, batch_size=200, shuffle=False)
 
         for epoch in trange(fit_params['epochs']):
 
@@ -580,8 +599,6 @@ class SpectralFormer(Model):
                                                              train_loader=label_train_loader,
                                                              criterion=fit_params['loss'],
                                                              optimizer=fit_params['optimizer'])
-            OA1, AA_mean1, Kappa1, AA1 = output_metric(tar_t, pre_t)
-            print(f"{OA1=} {AA_mean1=}, {Kappa1=}, {AA1=}")
             print(f"Epoch: {epoch + 1} train_loss: {train_obj} train_acc: {train_acc}")
 
             self.model.eval()
@@ -589,27 +606,67 @@ class SpectralFormer(Model):
                                        valid_loader=label_test_loader,
                                        criterion=fit_params['loss'],
                                        optimizer=fit_params['optimizer'])
-            OA2, AA_mean2, Kappa2, AA2 = output_metric(tar_v, pre_v)
-            print(f"{OA2=} {AA_mean2=}, {Kappa2=}, {AA2=}")
+        torch.save(self.model.state_dict(), 'spectral_former' + ".pth")
 
     def predict(self,
-                X,
-                y):
-        """args = []
+                X: HSImage,
+                y: HSMask = None):
+
+        data = X.data
+        # train, test and concat data of labels
+        label = y.data
+        TR, TE = sample_gt(label, 0.4, mode='fixed')
+
+        patches = 1
+        band_patches = 1
+        batch_size = 256
+
+        num_classes = len(np.unique(label))
+        height, width, band = data.shape
+        input_normalize = np.zeros(data.shape)
+
+        height, width, band  = X.data.shape
+
+        total_pos_train, total_pos_test, total_pos_true, \
+        number_train, number_test, number_true = choose_train_and_test_point(TR,
+                                                                             TE,
+                                                                             label,
+                                                                             num_classes)
+
+        # add padding and mirroring bounds of HSI in these pads
+        mirror_image = mirror_hsi(height,
+                                  width,
+                                  band,
+                                  input_normalize,
+                                  patch=patches)
+
+        x_train_band, x_test_band, x_true_band = train_and_test_data(mirror_image,
+                                                                     band,
+                                                                     total_pos_train,
+                                                                     total_pos_test,
+                                                                     total_pos_true,
+                                                                     patch=patches,
+                                                                     band_patch=band_patches)
+
+        y_train, y_test, y_true = train_and_test_label(number_train,
+                                                       number_test,
+                                                       number_true,
+                                                       num_classes)
+
+        x_true = torch.from_numpy(x_true_band.transpose((0, 2, 1))).type(torch.FloatTensor)
+        y_true = torch.from_numpy(y_true).type(torch.LongTensor)
+        Label_true = Data.TensorDataset(x_true, y_true)
+        label_true_loader = Data.DataLoader(Label_true, batch_size=300, shuffle=False)
+
         self.model.eval()
-        # criterion
-        criterion = nn.CrossEntropyLoss().cuda()
-        # optimizer
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.epoches // 10, gamma=args.gamma)
-
-        tar_v, pre_v = valid_epoch(self.model, label_test_loader, criterion, optimizer)
-        OA2, AA_mean2, Kappa2, AA2 = output_metric(tar_v, pre_v)
-
         # output classification maps
-        pre_u = test_epoch(self.model, label_true_loader, criterion, optimizer)
+        pre_u = test_epoch(self.model, label_true_loader)
+        #print(np.shape(pre_u), np.unique(pre_u))
+
         prediction_matrix = np.zeros((height, width), dtype=float)
         for i in range(total_pos_true.shape[0]):
             prediction_matrix[total_pos_true[i, 0], total_pos_true[i, 1]] = pre_u[i] + 1
-        """
+
+        return prediction_matrix
+
 

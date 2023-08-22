@@ -6,12 +6,12 @@ import torch.nn as nn
 import torch.utils.data as data
 import numpy as np
 import datetime
-from tqdm import tqdm
+from tqdm import trange, tqdm
 from PIL import Image
 
 from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
-                                        sliding_window, sample_gt, convert_to_color_, preprocess_input_data
+                                        sliding_window, sample_gt, convert_to_color_
 from openhsl.data.torch_dataloader import create_loader
 
 
@@ -68,8 +68,6 @@ class Model(ABC):
         """
         # TODO ignored_labels and label_values for what?
         img, gt = get_dataset(hsi=X, mask=y)
-
-        img = preprocess_input_data(img)
 
         hyperparams['batch_size'] = fit_params['batch_size']
 
@@ -171,7 +169,8 @@ class Model(ABC):
         val_accuracies = []
         train_loss = []
         val_loss = []
-        for e in tqdm(range(1, epoch + 1)):
+        t = trange(1, epoch + 1, desc='Train loop', leave=True)
+        for e in t:
             # Set the network to training mode
             net.train()
             avg_loss = 0.0
@@ -209,10 +208,15 @@ class Model(ABC):
 
             if val_loader:
                 val_acc, loss = Model.val(net, criterion, val_loader, device=device)
-                tqdm.write(f"train accuracy: {train_acc}\t"
-                           f"val accuracy: {val_acc}\t"
-                           f"train loss: {avg_loss}\t"
-                           f"val loss: {loss}")
+                t.set_postfix_str(f"train accuracy: {train_acc}\t"
+                                  f"val accuracy: {val_acc}\t"
+                                  f"train loss: {avg_loss}\t"
+                                  f"val loss: {loss}")
+                t.refresh()  # to show immediately the update
+                #tqdm.write(f"train accuracy: {train_acc}\t"
+                #           f"val accuracy: {val_acc}\t"
+                #           f"train loss: {avg_loss}\t"
+                #           f"val loss: {loss}")
                 val_loss.append(loss)
                 val_accuracies.append(val_acc)
                 metric = -val_acc  # TODO WTF

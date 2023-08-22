@@ -30,10 +30,10 @@ class ParallelConvBlock(nn.Module):
 
     def forward(self, x, **kwargs):
 
-        x1 = self.bn_conv1(self.conv1(x))
-        x2 = self.bn_conv1(self.conv2(x))
-        x3 = self.bn_conv1(self.conv3(x))
-        x4 = self.bn_conv1(self.conv4(x))
+        x1 = self.conv1(x)
+        x2 = self.conv2(x)
+        x3 = self.conv3(x)
+        x4 = self.conv4(x)
 
         return x1 + x2 + x3 + x4
 
@@ -66,13 +66,16 @@ class NM3DCNN_Net(nn.Module):
         self.bn_conv1 = nn.BatchNorm3d(16)
 
         self.pcb_1 = ParallelConvBlock(inp=16, out=16)
+        self.bn_pcb_1 = nn.BatchNorm3d(16)
 
         self.pcb_2 = ParallelConvBlock(inp=16, out=16)
+        self.bn_pcb_2 = nn.BatchNorm3d(16)
 
         self.conv4 = nn.Conv3d(16, 16, (3, 2, 2))
         self.bn_conv4 = nn.BatchNorm3d(16)
 
         self.features_size = self._get_final_flattened_size()
+        print(self.features_size)
 
         self.fc = nn.Linear(self.features_size, n_classes)
 
@@ -88,8 +91,10 @@ class NM3DCNN_Net(nn.Module):
             x = self.bn_conv1(x)
 
             x = self.pcb_1(x)
+            x = self.bn_pcb_1(x)
 
             x = self.pcb_2(x)
+            x = self.bn_pcb_2(x)
 
             x = self.conv4(x)
             x = self.bn_conv4(x)
@@ -160,10 +165,8 @@ class NM3DCNN(Model):
             y: HSMask,
             fit_params: Dict):
 
-        X = copy.copy(X)
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
@@ -193,14 +196,14 @@ class NM3DCNN(Model):
     def predict(self,
                 X: HSImage,
                 y: Optional[HSMask] = None) -> np.ndarray:
-        X = copy.copy(X)
-        self.hyperparams.setdefault('batch_size', 40)
+
         if self.apply_pca:
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
+
+        self.hyperparams.setdefault('batch_size', 40)
         prediction = super().predict_nn(X=X,
                                         y=y,
                                         model=self.model,

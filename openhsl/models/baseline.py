@@ -33,7 +33,6 @@ class Baseline(nn.Module):
             self.dropout = nn.Dropout(p=0.5)
 
         self.fc1 = nn.Linear(input_channels, 2048)
-        self.bn = nn.BatchNorm1d(2048)
         self.fc2 = nn.Linear(2048, 4096)
         self.fc3 = nn.Linear(4096, 2048)
         self.fc4 = nn.Linear(2048, n_classes)
@@ -44,7 +43,6 @@ class Baseline(nn.Module):
         x = F.relu(self.fc1(x))
         if self.use_dropout:
             x = self.dropout(x)
-        #x = self.bn(x)
         x = F.relu(self.fc2(x))
         if self.use_dropout:
             x = self.dropout(x)
@@ -99,8 +97,6 @@ class BASELINE(Model):
 
         if self.apply_pca:
             X = copy.copy(X)
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
@@ -132,12 +128,11 @@ class BASELINE(Model):
                 y: Optional[HSMask] = None) -> np.ndarray:
 
         if self.apply_pca:
-            X = copy.copy(X)
-            n_bands = self.hyperparams['n_bands']
-            print(f'Will apply PCA from {X.data.shape[-1]} to {n_bands}')
+            X = copy.deepcopy(X)
             X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
+
         self.hyperparams.setdefault('batch_size', 100)
         prediction = super().predict_nn(X=X,
                                         y=y,

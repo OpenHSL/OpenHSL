@@ -39,6 +39,7 @@ def apply_pca(X: np.ndarray,
     Returns:
 
     """
+    print(f'Will apply PCA from {X.data.shape[-1]} to {num_components}')
     newX = np.reshape(X, (-1, X.shape[2]))
     pca = PCA(n_components=num_components, whiten=True, random_state=131)
     newX = pca.fit_transform(newX)
@@ -66,15 +67,26 @@ def pad_with_zeros(X: np.ndarray,
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def preprocess_input_data(data, **kwargs):
+def standardize_input_data(data: np.ndarray) -> np.ndarray:
+    """
+    standardize_input_data(data)
 
-    #min_max_normalize(data)
+        Transforms input data to mu=0 and std=1
 
-    #standartize()
+        Parameters
+        ----------
+        data: np.ndarray
 
-    return data
-
+        Returns
+        -------
+        np.ndarray
+    """
+    data_new = np.zeros(np.shape(data))
+    for i in range(data.shape[-1]):
+        data_new[:, :, i] = (data[:, :, i] - np.mean(data[:, :, i])) / np.std(data[:, :, i])
+    return data_new
 # ----------------------------------------------------------------------------------------------------------------------
+
 
 def get_device(ordinal: int):
     # Use GPU ?
