@@ -75,7 +75,7 @@ class Li3DCNN_Net(nn.Module):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class Li3DCNN(Model):
+class M3DCNN(Model):
     def __init__(self,
                  n_classes,
                  device,
@@ -83,7 +83,7 @@ class Li3DCNN(Model):
                  apply_pca=False,
                  path_to_weights=None
                  ):
-        super(Li3DCNN, self).__init__()
+        super(M3DCNN, self).__init__()
         self.apply_pca = apply_pca
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 5

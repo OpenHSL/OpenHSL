@@ -35,7 +35,9 @@ class M1DCNN_Net(nn.Module):
     def _get_final_flattened_size(self):
         with torch.no_grad():
             x = torch.zeros(1, 1, self.input_channels)
-            x = self.pool(self.conv(x))
+            x = self.conv_1(x)
+            x = self.conv_2(x)
+            x = self.pool(x)
         return x.numel()
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -55,7 +57,9 @@ class M1DCNN_Net(nn.Module):
         self.input_channels = input_channels
 
         # [The first hidden convolution layer C1 filters the n1 x 1 input data with 20 kernels of size k1 x 1]
-        self.conv = nn.Conv1d(1, 20, kernel_size)
+        self.conv_1 = nn.Conv1d(1, 20, kernel_size)
+        self.conv_2 = nn.Conv1d(20, 20, kernel_size)
+        self.bn_conv = nn.BatchNorm1d(20)
         self.pool = nn.MaxPool1d(pool_size)
         self.features_size = self._get_final_flattened_size()
         # [n4 is set to be 100]
@@ -68,7 +72,9 @@ class M1DCNN_Net(nn.Module):
         # [In our design architecture, we choose the hyperbolic tangent function tanh(u)]
         x = x.squeeze(dim=-1).squeeze(dim=-1)
         x = x.unsqueeze(1)
-        x = self.conv(x)
+        x = self.conv_1(x)
+        x = self.bn_conv(x)
+        x = self.conv_2(x)
         x = torch.tanh(self.pool(x))
         x = x.view(-1, self.features_size)
         x = torch.tanh(self.fc1(x))

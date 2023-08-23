@@ -99,7 +99,7 @@ class SharmaEtAl(nn.Module):
     # ------------------------------------------------------------------------------------------------------------------
 
 
-class M3DCNN_Sharma(Model):
+class M3DCNN(Model):
     def __init__(self,
                  n_classes,
                  device,
@@ -107,7 +107,7 @@ class M3DCNN_Sharma(Model):
                  apply_pca=False,
                  path_to_weights=None
                  ):
-        super(M3DCNN_Sharma, self).__init__()
+        super(M3DCNN, self).__init__()
         self.apply_pca = apply_pca
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 64

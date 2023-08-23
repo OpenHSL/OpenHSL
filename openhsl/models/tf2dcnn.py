@@ -34,7 +34,7 @@ class TF2DCNN:
 
         self.patch_size = 5
         self.n_bands = n_bands
-        self.class_count = n_classes
+        self.class_count = n_classes - 1
         self.apply_pca = apply_pca
         input_shape = (self.n_bands, self.patch_size, self.patch_size)
 
@@ -122,7 +122,6 @@ class TF2DCNN:
         self.val_loss = history.history.get('val_loss', [])
         self.train_accs = history.history.get('accuracy', [])
         self.val_accs = history.history.get('val_accuracy', [])
-        print(history.history.keys())
 
         self.model.save(f'{checkpoint_filepath}/weights.h5')
     # ------------------------------------------------------------------------------------------------------------------

@@ -339,7 +339,6 @@ class HSMask:
             loading a mask from mat file
             '''
             tmp_data = loadmat(path_to_file)[mat_key]
-            print(tmp_data.dtype)
             if HSMask.__is_correct_2d_mask(tmp_data):
                 self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
             elif HSMask.__is_correct_3d_mask(tmp_data):

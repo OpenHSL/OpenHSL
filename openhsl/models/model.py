@@ -3,7 +3,7 @@ import os
 import torch
 import torch.optim as optim
 import torch.nn as nn
-import torch.utils.data as data
+import torch.utils.data as udata
 import numpy as np
 import datetime
 from tqdm import trange, tqdm
@@ -93,20 +93,20 @@ class Model(ABC):
                               mask=train_gt)
 
         model, history = Model.train(net=model,
-                                              optimizer=fit_params['optimizer'],
-                                              criterion=fit_params['loss'],
-                                              data_loader=train_loader,
-                                              epoch=fit_params['epochs'],
-                                              val_loader=val_loader,
-                                              device=hyperparams['device'])
+                                     optimizer=fit_params['optimizer'],
+                                     criterion=fit_params['loss'],
+                                     data_loader=train_loader,
+                                     epoch=fit_params['epochs'],
+                                     val_loader=val_loader,
+                                     device=hyperparams['device'])
         return model, history
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def predict_nn(X,
-                   y,
-                   hyperparams,
-                   model):
+    def predict_nn(model,
+                   X,
+                   y=None,
+                   hyperparams=None):
         hyperparams["test_stride"] = 1
         hyperparams.setdefault('batch_size', 1)
         img, gt = get_dataset(X, mask=None)
@@ -127,7 +127,7 @@ class Model(ABC):
     def train(net: nn.Module,
               optimizer: torch.optim,
               criterion,
-              data_loader: data.DataLoader,
+              data_loader: udata.DataLoader,
               epoch,
               scheduler=None,
               display_iter=100,
@@ -162,9 +162,7 @@ class Model(ABC):
 
         save_epoch = epoch // 20 if epoch > 20 else 1
 
-        losses = np.zeros(1000000)  # TODO to list?
-        mean_losses = np.zeros(100000000)  # TODO to list?
-        iter_ = 1
+        losses = []
         train_accuracies = []
         val_accuracies = []
         train_loss = []
@@ -188,8 +186,7 @@ class Model(ABC):
                 loss.backward()
                 optimizer.step()
                 avg_loss += loss.item()
-                losses[iter_] = loss.item()
-                mean_losses[iter_] = np.mean(losses[max(0, iter_ - 100): iter_ + 1])
+                losses.append(loss.item())
                 _, output = torch.max(output, dim=1)
                 for out, pred in zip(output.view(-1), target.view(-1)):
                     if out.item() in [0]:
@@ -197,8 +194,6 @@ class Model(ABC):
                     else:
                         accuracy += out.item() == pred.item()
                         total += 1
-                iter_ += 1
-                del (data, target, loss, output)  # TODO REMOVE
 
             # Update the scheduler
             avg_loss /= len(data_loader)
@@ -208,15 +203,13 @@ class Model(ABC):
 
             if val_loader:
                 val_acc, loss = Model.val(net, criterion, val_loader, device=device)
+
                 t.set_postfix_str(f"train accuracy: {train_acc}\t"
                                   f"val accuracy: {val_acc}\t"
                                   f"train loss: {avg_loss}\t"
                                   f"val loss: {loss}")
-                t.refresh()  # to show immediately the update
-                #tqdm.write(f"train accuracy: {train_acc}\t"
-                #           f"val accuracy: {val_acc}\t"
-                #           f"train loss: {avg_loss}\t"
-                #           f"val loss: {loss}")
+                t.refresh()
+
                 val_loss.append(loss)
                 val_accuracies.append(val_acc)
                 metric = -val_acc  # TODO WTF
@@ -248,7 +241,7 @@ class Model(ABC):
     @staticmethod
     def val(net: nn.Module,
             criterion,
-            data_loader: data.DataLoader,
+            data_loader: udata.DataLoader,
             device: torch.device):
         # TODO : fix me using metrics()
         val_accuracy, total = 0.0, 0.0
@@ -359,8 +352,6 @@ class Model(ABC):
             filename = time_str + "_epoch{epoch}_{metric:.2f}".format(
                 **kwargs
             )
-            # TODO remake it
-            # tqdm.write("Saving neural network weights in {}".format(filename))
             torch.save(model.state_dict(), model_dir + filename + ".pth")
         else:
             print('Saving error')

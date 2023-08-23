@@ -7,7 +7,7 @@ from typing import Tuple
 import copy
 
 
-def get_dataset(hsi: HSImage, mask: Optional[HSMask]) -> Tuple[np.ndarray, np.ndarray]:
+def get_dataset(hsi: HSImage, mask: Optional[HSMask] = None) -> Tuple[np.ndarray, np.ndarray]:
     """
     return data from .mat files in tuple
 
