@@ -21,10 +21,10 @@ from openhsl.hs_mask import HSMask
 from openhsl.models.baseline import BASELINE
 from openhsl.models.hsicnn_luo import HSICNN
 from openhsl.models.m1dcnn import M1DCNN
-from openhsl.models.m3dcnn_sharma import M3DCNN_Sharma
-from openhsl.models.m3dcnn_li import Li3DCNN
-from openhsl.models.m3dcnn_hamida import M3D_HAMIDA
-from openhsl.models.m3dcnn_he import M3DCNN
+from openhsl.models.m3dcnn_sharma import M3DCNN as SHARMA
+from openhsl.models.m3dcnn_li import M3DCNN as LI
+from openhsl.models.m3dcnn_hamida import M3DCNN as HAMIDA
+from openhsl.models.m3dcnn_he import M3DCNN as HE
 from openhsl.models.nm3dcnn import NM3DCNN
 from openhsl.models.tf2dcnn import TF2DCNN
 
@@ -33,8 +33,8 @@ from openhsl.models.tf2dcnn import TF2DCNN
 def return_inference_test_data():
     hsi = HSImage()
     mask = HSMask()
-    hsi.load_from_mat('../test_data/nn_tests/three_coffee_piles_small2.mat', mat_key='image')
-    mask.load_mask('../test_data/nn_tests/three_coffee_piles_small2_gt.mat', mat_key='img')
+    hsi.load(path_to_data='../test_data/nn_tests/three_coffee_piles_small2.mat', key='image')
+    mask.load(path_to_data='../test_data/nn_tests/three_coffee_piles_small2_gt.mat', key='img')
     return hsi, mask
 
 
@@ -87,7 +87,7 @@ def test_m1dcnn(return_inference_test_data):
 def test_m3dcnn_sharma(return_inference_test_data):
     n_classes = len(return_inference_test_data[1])
 
-    model = M3DCNN_Sharma(n_classes=n_classes, device='cuda', n_bands=30, apply_pca=True)
+    model = SHARMA(n_classes=n_classes, device='cuda', n_bands=30, apply_pca=True)
 
     assert get_inference_time(pretrained_model=model, dataset=return_inference_test_data)
 
@@ -95,7 +95,7 @@ def test_m3dcnn_sharma(return_inference_test_data):
 def test_m3dcnn_hamida(return_inference_test_data):
     n_classes = len(return_inference_test_data[1])
 
-    model = M3D_HAMIDA(n_classes=n_classes, device='cuda', n_bands=250)
+    model = HAMIDA(n_classes=n_classes, device='cuda', n_bands=250)
 
     assert get_inference_time(pretrained_model=model, dataset=return_inference_test_data)
 
@@ -103,7 +103,7 @@ def test_m3dcnn_hamida(return_inference_test_data):
 def test_m3dcnn_he(return_inference_test_data):
     n_classes = len(return_inference_test_data[1])
 
-    model = M3DCNN(n_classes=n_classes, device='cuda', n_bands=250)
+    model = HE(n_classes=n_classes, device='cuda', n_bands=250)
 
     assert get_inference_time(pretrained_model=model, dataset=return_inference_test_data)
 
@@ -111,7 +111,7 @@ def test_m3dcnn_he(return_inference_test_data):
 def test_m3dcnn_li(return_inference_test_data):
     n_classes = len(return_inference_test_data[1])
 
-    model = Li3DCNN(n_classes=n_classes, device='cuda', n_bands=250)
+    model = LI(n_classes=n_classes, device='cuda', n_bands=250)
 
     assert get_inference_time(pretrained_model=model, dataset=return_inference_test_data)
 
@@ -119,7 +119,7 @@ def test_m3dcnn_li(return_inference_test_data):
 def test_nm3dcnn(return_inference_test_data):
     n_classes = len(return_inference_test_data[1])
 
-    model = NM3DCNN(n_classes=n_classes, device='cuda', n_bands=30, apply_pca=True)
+    model = NM3DCNN(n_classes=n_classes, device='cuda', n_bands=250)
 
     assert get_inference_time(pretrained_model=model, dataset=return_inference_test_data)
 
@@ -127,6 +127,6 @@ def test_nm3dcnn(return_inference_test_data):
 def test_tf2dcnn(return_inference_test_data):
     n_classes = len(return_inference_test_data[1])
 
-    model = TF2DCNN(n_classes=n_classes - 1, n_bands=30, apply_pca=True)
+    model = TF2DCNN(n_classes=n_classes, n_bands=30, apply_pca=True)
 
     assert get_inference_time(pretrained_model=model, dataset=return_inference_test_data)

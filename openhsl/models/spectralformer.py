@@ -575,7 +575,6 @@ class SpectralFormer(Model):
                                                        number_test,
                                                        number_true,
                                                        num_classes)
-        print(np.unique(x_train_band))
         # -------------------------------------------------------------------------------
         # load data
         x_train = torch.from_numpy(x_train_band.transpose((0, 2, 1))).type(torch.FloatTensor)  # [695, 200, 7, 7]
@@ -661,7 +660,6 @@ class SpectralFormer(Model):
         self.model.eval()
         # output classification maps
         pre_u = test_epoch(self.model, label_true_loader)
-        #print(np.shape(pre_u), np.unique(pre_u))
 
         prediction_matrix = np.zeros((height, width), dtype=float)
         for i in range(total_pos_true.shape[0]):

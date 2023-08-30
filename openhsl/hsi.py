@@ -141,6 +141,35 @@ class HSImage:
             outfile.write(json.dumps(data))
     # ------------------------------------------------------------------------------------------------------------------
 
+    def load(self,
+             path_to_data: str,
+             key: Optional[str] = None):
+        """
+        load(path_to_data, key)
+
+            Loading HSI from files
+
+            Parameters
+            ----------
+            path_to_data: str
+                path to data source such as directory (set of images) or file (mat, h5, npy, tiff)
+            key: str
+                key for files like mat or h5
+        """
+        if os.path.isdir(path_to_data):
+            self.load_from_layer_images(path_to_dir=path_to_data)
+        elif path_to_data.endswith('.mat'):
+            self.load_from_mat(path_to_file=path_to_data, mat_key=key)
+        elif path_to_data.endswith('.h5'):
+            self.load_from_h5(path_to_file=path_to_data, h5_key=key)
+        elif path_to_data.endswith('.npy'):
+            self.load_from_npy(path_to_file=path_to_data)
+        elif path_to_data.endswith('.tiff') or path_to_data.endswith('.tif'):
+            pass
+        else:
+            raise Exception('Unsupported file extension')
+    # ------------------------------------------------------------------------------------------------------------------
+
     def load_from_mat(self,
                       path_to_file: str,
                       mat_key: str):

@@ -267,10 +267,9 @@ class HSMask:
         return mask_2d.astype('uint8')
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_mask(self,
-                  path_to_file: str,
-                  mat_key: str = None,
-                  h5_key: str = None):
+    def load(self,
+             path_to_data: str,
+             key: str = None):
 
         """
         load_mask(path_to_file, mat_key, h5_key)
@@ -288,12 +287,9 @@ class HSMask:
             ----------
             path_to_file: str
                 Path to file
-            mat_key: str
-                Key for field in .mat file as dict object
-                mat_file['image']
-            h5_key: str
-                Key for field in .h5 file as 5h object
-
+            key: str
+                Key for field in .mat and .h5 file as dict object
+                file['image']
         """
 
         def load_img(path_to_image: str) -> np.ndarray:
@@ -314,19 +310,19 @@ class HSMask:
             else:
                 raise ValueError("Not supported image type")
 
-        _, file_extension = os.path.splitext(path_to_file)
+        _, file_extension = os.path.splitext(path_to_data)
 
         if file_extension in ['.jpg', '.jpeg', '.bmp', '.png']:
             '''
             loading a mask from images
             '''
-            self.data = load_img(path_to_file)
+            self.data = load_img(path_to_data)
 
         elif file_extension == '.npy':
             '''
             loading a mask from numpy file
             '''
-            tmp_data = np.load(path_to_file)
+            tmp_data = np.load(path_to_data)
             if HSMask.__is_correct_2d_mask(tmp_data):
                 self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
             elif HSMask.__is_correct_3d_mask(tmp_data):
@@ -338,7 +334,7 @@ class HSMask:
             '''
             loading a mask from mat file
             '''
-            tmp_data = loadmat(path_to_file)[mat_key]
+            tmp_data = loadmat(path_to_data)[key]
             if HSMask.__is_correct_2d_mask(tmp_data):
                 self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
             elif HSMask.__is_correct_3d_mask(tmp_data):
@@ -350,7 +346,7 @@ class HSMask:
             '''
             loading a mask from h5 file
             '''
-            tmp_data = h5py.File(path_to_file, 'r')[h5_key]
+            tmp_data = h5py.File(path_to_data, 'r')[key]
             if HSMask.__is_correct_2d_mask(tmp_data):
                 self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
             elif HSMask.__is_correct_3d_mask(tmp_data):

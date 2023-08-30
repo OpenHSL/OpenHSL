@@ -176,7 +176,6 @@ class Model(ABC):
             total = 0
             # Run the training loop for one epoch
             for batch_idx, (data, target) in (enumerate(data_loader)):
-                # Load the data into the GPU if required
                 data, target = data.to(device), target.to(device)
 
                 optimizer.zero_grad()
