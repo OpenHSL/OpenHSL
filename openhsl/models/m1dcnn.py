@@ -138,6 +138,8 @@ class M1DCNN(Model):
         fit_params.setdefault('optimizer',
                               optim.SGD(self.model.parameters(),
                                         lr=fit_params['optimizer_params']["learning_rate"]))
+        fit_params.setdefault('scheduler_type', None)
+        fit_params.setdefault('scheduler_params', None)
 
         self.model, history = super().fit_nn(X=X,
                                              y=y,

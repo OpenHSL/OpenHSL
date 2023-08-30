@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import os
+import yaml
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -8,6 +9,7 @@ import numpy as np
 import datetime
 from tqdm import trange, tqdm
 from PIL import Image
+import wandb
 
 from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
@@ -47,6 +49,34 @@ class Model(ABC):
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
+    def init_wandb():
+        """
+        Initialize wandb from yaml file
+
+        Returns
+        -------
+        wandb: wandb
+        """
+        # open wandb credentials from the root directory
+        with open('../wandb_credentials.yaml', 'r') as file:
+            wandb_config = yaml.safe_load(file)
+
+        required_fields = ['api_key', 'project', 'entity', 'run']
+        for field in required_fields:
+            if field not in wandb_config['wandb']:
+                raise ValueError(f'Missing {field} in wandb configuration')
+
+        os.environ["WANDB_API_KEY"] = wandb_config['wandb']['api_key']
+        wandb.login(key=wandb_config['wandb']['api_key'])
+
+        wandb.init(project=wandb_config['wandb']['project'],
+                   entity=wandb_config['wandb']['entity'],
+                   name=wandb_config['wandb']['run'],
+                   mode="online")
+
+        return wandb
+    # ------------------------------------------------------------------------------------------------------------------
+    @staticmethod
     def fit_nn(X,
                y,
                hyperparams,
@@ -70,6 +100,20 @@ class Model(ABC):
         img, gt = get_dataset(hsi=X, mask=y)
 
         hyperparams['batch_size'] = fit_params['batch_size']
+
+        if fit_params['scheduler_type'] == 'StepLR':
+            scheduler = optim.lr_scheduler.StepLR(optimizer=fit_params['optimizer'],
+                                                  **fit_params['scheduler_params'])
+        elif fit_params['scheduler_type'] == 'CosineAnnealingLR':
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer=fit_params['optimizer'],
+                                                             **fit_params['scheduler_params'])
+        elif fit_params['scheduler_type'] == 'ReduceLROnPlateau':
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=fit_params['optimizer'],
+                                                             **fit_params['scheduler_params'])
+        elif fit_params['scheduler_type'] is None:
+            scheduler = None
+        else:
+            raise ValueError('Unsupported scheduler type')
 
         train_gt, _ = sample_gt(gt=gt,
                                 train_size=fit_params['train_sample_percentage'],
@@ -95,6 +139,7 @@ class Model(ABC):
         model, history = Model.train(net=model,
                                      optimizer=fit_params['optimizer'],
                                      criterion=fit_params['loss'],
+                                     scheduler=scheduler,
                                      data_loader=train_loader,
                                      epoch=fit_params['epochs'],
                                      val_loader=val_loader,
@@ -127,9 +172,9 @@ class Model(ABC):
     def train(net: nn.Module,
               optimizer: torch.optim,
               criterion,
+              scheduler: torch.optim.lr_scheduler,
               data_loader: udata.DataLoader,
               epoch,
-              scheduler=None,
               display_iter=100,
               device=None,
               val_loader=None):
@@ -141,24 +186,25 @@ class Model(ABC):
                 a PyTorch model
             optimizer:
                 a PyTorch optimizer
+            criterion:
+                a PyTorch-compatible loss function, e.g. nn.CrossEntropyLoss
+            scheduler:
+                PyTorch scheduler
             data_loader:
                 a PyTorch dataset loader
             epoch:
                 int specifying the number of training epochs
-            criterion:
-                a PyTorch-compatible loss function, e.g. nn.CrossEntropyLoss
-            device (optional):
-                torch device to use (defaults to CPU)
-            display_iter (optional):
+            display_iter:
                 number of iterations before refreshing the display (False/None to switch off).
-            scheduler (optional):
-                PyTorch scheduler
-            val_loader (optional):
+            device:
+                torch device to use (defaults to CPU)
+            val_loader:
                 validation dataset
-            supervision (optional):
-                'full' or 'semi'
         """
         net.to(device)
+
+        wandb = Model.init_wandb()
+        wandb.watch(net)
 
         save_epoch = epoch // 20 if epoch > 20 else 1
 
@@ -200,7 +246,7 @@ class Model(ABC):
             train_acc = accuracy / total
             train_accuracies.append(train_acc)
 
-            if val_loader:
+            if val_loader: # ToDo: not preferable to check if condition every iteration
                 val_acc, loss = Model.val(net, criterion, val_loader, device=device)
 
                 t.set_postfix_str(f"train accuracy: {train_acc}\t"
@@ -211,14 +257,20 @@ class Model(ABC):
 
                 val_loss.append(loss)
                 val_accuracies.append(val_acc)
-                metric = -val_acc  # TODO WTF
+                metric = -val_acc  # ToDo WTF
             else:
                 metric = avg_loss
 
-            if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
-                scheduler.step(metric)
-            elif scheduler:
+            # Update the scheduler (ToDo: not preferable to check if condition every iteration)
+            if scheduler is not None:
                 scheduler.step()
+
+            # check if wandb is initialized (ToDo: not preferable to check if condition every iteration)
+            if wandb.run is not None:
+                wandb.log({"train_loss": avg_loss,
+                           "val_accuracy": val_acc,
+                           "learning_rate": optimizer.param_groups[0]['lr']})
+
 
             # Save the weights
             if e % save_epoch == 0:
@@ -229,11 +281,15 @@ class Model(ABC):
                     epoch=e,
                     metric=abs(metric),
                 )
+
+        wandb.finish()
+
         history = dict()
         history["train_loss"] = train_loss
         history["val_loss"] = val_loss
         history["train_accuracy"] = train_accuracies
         history["val_accuracy"] = val_accuracies
+
         return net, history
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -271,9 +327,9 @@ class Model(ABC):
         """
         Test a model on a specific image
         """
-        """
-            Test a model on a specific image
-            """
+
+        # ToDo: Refactor def test(), merge with val if possible
+
         patch_size = hyperparams["patch_size"]
         center_pixel = hyperparams["center_pixel"]
         batch_size, device = hyperparams["batch_size"], hyperparams["device"]

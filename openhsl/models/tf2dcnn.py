@@ -78,6 +78,9 @@ class TF2DCNN:
         fit_params.setdefault('epochs', 10)
         fit_params.setdefault('train_sample_percentage', 0.5)
         fit_params.setdefault('batch_size', 32)
+        # ToDo: add setdefault for optimizer, optimizer params and loss as in other models fit
+        fit_params.setdefault('scheduler_type', None)
+        fit_params.setdefault('scheduler_params', None)
 
         X_train, X_val, y_train, y_val = preprocess_data(X=X.data,
                                                          y=y.get_2d(),

@@ -1,0 +1,7 @@
+# This is wandb configuration file.
+# Make sure to provide your API Key in order to track progress in your wandb website profile
+wandb:
+  api_key: 'your-wandb-api-key' # can be found here https://wandb.ai/authorize
+  project: 'your-project-name'
+  entity: 'your-entity-name' # username
+  run: 'your-run-name'

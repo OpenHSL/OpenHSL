@@ -530,6 +530,8 @@ class SpectralFormer(Model):
                                                lr=fit_params['optimizer_params']["learning_rate"],
                                                weight_decay=fit_params['optimizer_params']['weight_decay']))
         fit_params.setdefault('loss', nn.CrossEntropyLoss())
+        fit_params.setdefault('scheduler_type', None)
+        fit_params.setdefault('scheduler_params', None)
 
         data = X
         # train, test and concat data of labels
