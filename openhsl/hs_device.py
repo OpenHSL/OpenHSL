@@ -1,5 +1,4 @@
-
-from hs_image_utils import BaseIntEnum
+from openhsl.hs_image_utils import BaseIntEnum
 from pathlib import Path
 from typing import List, Optional, Union
 

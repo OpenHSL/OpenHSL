@@ -1,4 +1,6 @@
 import os
+import re
+
 import cv2
 import numpy as np
 import pandas as pd
@@ -7,20 +9,27 @@ from pathlib import Path
 from PIL import Image
 from typing import Tuple
 
+from openhsl.utils import dir_exists, load_data
+
+SUPPORTED_VIDEO_FORMATS = ("mp4", "avi")
+SUPPORTED_IMG_FORMATS = ("jpg", "png", "bmp")
+SUPPORTED_FORMATS = SUPPORTED_VIDEO_FORMATS + SUPPORTED_IMG_FORMATS
+
 
 class RawImagesData:
     """
-    RawImagesData(path_to_dir)
+    RawImagesData(path_to_files)
         Create iterator for images set.
         In each step return ndarray object
+
         Parameters
         ----------
-        path_to_dir : str
+        path_to_files : list
             Path to directory with images
         Attributes
         ----------
-        path_to_dir : str
-        imgs_list : iterable
+        path_to_files : str
+        current_step : int
         Examples
         --------
         rid = RawImagesData("./some_directory")
@@ -28,47 +37,45 @@ class RawImagesData:
             some_operation(frame)
     """
 
-    def __init__(self, path_to_dir: str):
-        self.path_to_dir = path_to_dir
-        self.imgs_list = iter(os.listdir(path_to_dir))
+    def __init__(self, path_to_files: list):
+        self.path_to_files = path_to_files
 
     def __iter__(self):
+        self.current_step = 0
         return self
 
     def __next__(self):
-        self.path_to_curr_img = next(self.imgs_list)
-        path_to_img = f'{self.path_to_dir}/{self.path_to_curr_img}'
-        #TODO maybe replace by cv2.imread?
-        return np.array(Image.open(path_to_img).convert("L"))
+        if self.current_step < len(self):
+            img = np.array(Image.open(self.path_to_files[self.current_step]).convert("L"))
+            self.current_step += 1
+            return img
+        else:
+            raise StopIteration
 
     def __len__(self):
-        return len(os.listdir(self.path_to_dir))
+        return len(self.path_to_files)
 
 
 class RawVideoData:
     """
-        RawVideoData(path_to_file: str)
+        RawVideoData(path_to_files: str)
 
             Create iterator for videoframes.
-            In each step return np.array object.
+            In each step return np.ndarray object.
 
             Parameters
             ----------
-            path_to_file : str
-                Path to video file
+            path_to_files : list
+                list of pathes to video files
 
             Attributes
             ----------
-            path : pathlib.Path
+            paths : pathlib.Path
                 Path to video file
-            format: str
-                Video format
             current_step : int
                 Current step of iteration
-            cap : cv2.VideoCapture
+            caps : cv2.VideoCapture
                 Video capture object
-            frame: np.array
-                Current frame
             length: int
                 Count of videoframes
 
@@ -82,30 +89,30 @@ class RawVideoData:
 
         """
 
-    def __init__(self, path_to_file: str):
-        self.path = Path(path_to_file)
-        self.format = self.path.suffix
-        self.current_step = 0
-        self.cap = cv2.VideoCapture(str(self.path))
+    def __init__(self, path_to_files: list):
+        self.paths = path_to_files
+        self.caps = [cv2.VideoCapture(file) for file in self.paths]
 
     def __iter__(self):
+        self.current_step = 0
         return self
 
     def __len__(self):
-        self.length = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.length = 0
+        for cap in self.caps:
+            self.length += int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         return self.length
 
     def __next__(self):
-        while self.cap.isOpened():
-            if self.current_step < len(self):
-                self.current_step += 1
-                ret, self.frame = self.cap.read()
+        if self.current_step < len(self):
+            self.current_step += 1
+            for cap in self.caps:
+                ret, frame = cap.read()
                 if ret:
-                    return cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY).T
-                else:
-                    raise StopIteration
-            else:
-                raise StopIteration
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    return frame
+        else:
+            raise StopIteration
 
 
 class RawData:
@@ -113,20 +120,36 @@ class RawData:
 
     """
     def __init__(self, path_to_data: str, type_data: str):
+        if path_to_data.split(".")[-1] not in SUPPORTED_FORMATS:
+            if not dir_exists(path_to_data):
+                raise ValueError("Path {} not found or {} format not supported".format(path_to_data, path_to_data.split(".")[-1]))
+            if type_data == "images":
+                self.files = load_data(path_to_data, SUPPORTED_IMG_FORMATS)
+                self.files.sort(key=lambda f: int(re.sub('\D', '', f)))
+            elif type_data == "video":
+                self.files = load_data(path_to_data, SUPPORTED_VIDEO_FORMATS)
+        
+        else:
+            self.files = [path_to_data]
+
         if type_data == "images":
-            self.raw_data = RawImagesData(path_to_dir=path_to_data)
+
+            self.raw_data = RawImagesData(path_to_files=self.files)
+
         elif type_data == "video":
-            self.raw_data = RawVideoData(path_to_file=path_to_data)
+            self.raw_data = RawVideoData(path_to_files=self.files)
+
+        else:
+            raise ValueError("type_data must be 'images' or 'video'")
 
     def __iter__(self):
-        return self
+        return self.raw_data.__iter__()
 
     def __next__(self):
-        self.frame = next(self.raw_data)
-        return self.frame
+        return next(self.raw_data)
 
     def __len__(self):
-        pass
+        return self.raw_data.__len__()
 
 
 class RawCsvData:
@@ -135,7 +158,7 @@ class RawCsvData:
 
             Create iterator for csv lines.
             In each step return dict object.
-
+            for filename in load_data(dir_input, ".avi"): #filename = dir_input + 
             Parameters
             ----------
             path_to_csv : str
@@ -225,6 +248,3 @@ class RawTiffData:
 
     def __len__(self):
         pass
-
-
-
