@@ -29,6 +29,7 @@ PI_2 = math.pi / 2.0
 def blur_band(band):
     return blur_image(band) if BLUR_AUTO else band
 
+
 def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str) -> np.ndarray:
     """
         build_hypercube_by_videos(cube, gps_filename)

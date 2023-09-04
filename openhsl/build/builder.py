@@ -1,11 +1,12 @@
 import numpy as np
 from openhsl.hsi import HSImage
-from openhsl.hs_raw_pb_data import RawData
-from openhsl.uav_builder import build_hypercube_by_videos
-from typing import Optional
+from openhsl.build.raw_pb_data import RawData
+from openhsl.build.uav_builder import build_hypercube_by_videos
+from typing import Optional, Dict
 from openhsl.utils import gaussian
 
 import cv2
+import json
 import math
 from tqdm import tqdm
 from sklearn.linear_model import LinearRegression
@@ -47,20 +48,33 @@ class HSBuilder:
 
     def __init__(self,
                  path_to_data: str,
+                 path_to_gps: str = None,
                  path_to_metadata: str = None,
                  data_type: str = None):
         if not isinstance(path_to_data, str):
             raise TypeError(f"path_to_data must be str, not {type(path_to_data)}")
         if not isinstance(data_type, str):
             raise TypeError(f"data_type must be str, not {type(data_type)}")
-        if path_to_metadata and not isinstance(path_to_metadata, str):
-            raise TypeError(f"path_to_metadata must be str, not {type(path_to_metadata)}")
+        if path_to_gps and not isinstance(path_to_gps, str):
+            raise TypeError(f"path_to_metadata must be str, not {type(path_to_gps)}")
         if data_type not in ['images', 'video']:
             raise ValueError(f"data_type must be 'images' or 'video', not {data_type}")
         self.path_to_data = path_to_data
+        self.path_to_gps = path_to_gps
         self.path_to_metadata = path_to_metadata
+
+        if self.path_to_metadata:
+            self.__get_metainfo()
+
         self.hsi: Optional[HSImage] = None
         self.frame_iterator = RawData(path_to_data=path_to_data, type_data=data_type)
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def __get_metainfo(self):
+        with open(self.path_to_metadata) as f:
+            d = json.load(f)
+        self.roi_coords = d.get('roi', None)
+        self.light_coeff = np.array(d.get('light_norm', None))
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO move?
@@ -220,26 +234,27 @@ class HSBuilder:
 
     # TODO implementation will move into device
     @staticmethod
-    def get_roi(frame: np.ndarray) -> np.ndarray:
+    def get_roi(frame: np.ndarray, roi_coords: Dict) -> np.ndarray:
         """
         For this moment works to microscope rough settings
         Parameters
         ----------
         frame :
+        roi_coords:
 
         Returns
         -------
 
         """
-        gap_coord = 620
-        range_to_spectrum = 185
-        range_to_end_spectrum = 250
-        left_bound_spectrum = 490
-        right_bound_spectrum = 1390
-        x1 = gap_coord + range_to_spectrum
-        x2 = x1 + range_to_end_spectrum
+        gap_coord = roi_coords['gap_coord']
+        range_to_spectrum = roi_coords['range_to_spectrum']
+        range_to_end_spectrum = roi_coords['range_to_end_spectrum']
+        left_bound_spectrum = roi_coords['left_bound_spectrum']
+        right_bound_spectrum = roi_coords['right_bound_spectrum']
+        up_bound = gap_coord + range_to_spectrum
+        down_bound = up_bound + range_to_end_spectrum
 
-        return frame[805: 1055, left_bound_spectrum: right_bound_spectrum]
+        return frame[up_bound: down_bound, left_bound_spectrum: right_bound_spectrum]
     # ------------------------------------------------------------------------------------------------------------------
 
     # TODO rename
@@ -290,7 +305,7 @@ class HSBuilder:
     # ------------------------------------------------------------------------------------------------------------------
 
     def build(self,
-              principal_slices,
+              principal_slices=False,
               norm_rotation=False,
               barrel_dist_norm=False,
               light_norm=False,
@@ -300,10 +315,10 @@ class HSBuilder:
             Creates HSI from device-data
         """
 
-        if light_norm:
-            light_coeff = HSBuilder.load_light_coeff(path_to_file='./test_data/builder/micro_light_source.png')
-        else:
-            light_coeff = None
+        #if light_norm:
+        #    light_coeff = HSBuilder.load_light_coeff(path_to_file='./test_data/builder/micro_light_source.png')
+        #else:
+        #    light_coeff = None
 
         preproc_frames = []
         for frame in tqdm(self.frame_iterator,
@@ -314,16 +329,18 @@ class HSBuilder:
                                                       norm_rotation=norm_rotation,
                                                       barrel_dist_norm=barrel_dist_norm)
             if roi:
-                frame = HSBuilder.get_roi(frame=frame)
+                frame = HSBuilder.get_roi(frame=frame, roi_coords=self.roi_coords)
             if light_norm:
-                frame = self.__norm_frame_camera_illumination(frame=frame, light_coeff=light_coeff)
+                frame = self.__norm_frame_camera_illumination(frame=frame, light_coeff=self.light_coeff)
             if principal_slices:
                 frame = self.__principal_slices(frame.T, principal_slices)
+            else:
+                frame = frame.T
             preproc_frames.append(frame)
             
         data = np.array(preproc_frames)
-        if self.path_to_metadata:
-            data = build_hypercube_by_videos(data.astype("uint8"), self.path_to_metadata)
+        if self.path_to_gps:
+            data = build_hypercube_by_videos(data.astype("uint8"), self.path_to_gps)
         if flip_wavelengths:
             data = np.flip(data, axis=2)
         self.hsi = HSImage(hsi=data, wavelengths=None)

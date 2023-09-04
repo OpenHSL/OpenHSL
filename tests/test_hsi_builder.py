@@ -1,75 +1,76 @@
-import sys
 #sys.path.insert(1, '../OpenHSL')
 
 import os
 import shutil
 import pytest
 import numpy as np
-from openhsl.hs_builder import HSBuilder
+from openhsl.build.builder import HSBuilder
 from openhsl.hsi import HSImage
 
-path_to_copter_data = "test_data/builder/copter"
-path_to_copter_metadata = "test_data/builder/copter/gps_2021-03-30.csv"
-path_to_rail_data = "test_data/builder/imgs"
-path_to_rotary_data = "test_data/builder/video/rec_2022-06-06-12-24-02.avi"
+path_to_metadata = "../meta_data.json"
+path_to_copter_data = "../test_data/builder/copter"
+path_to_copter_metadata = "../test_data/builder/copter/gps_2021-03-30.csv"
+path_to_rail_data = "../test_data/builder/imgs"
+path_to_rotary_data = "../test_data/builder/video/rec_2022-06-06-12-24-02.avi"
 not_valid_path = "incorrect_path"
 
 
 def saving_correct_check(hsi):
     # check if the saving is correct for .npy
-    hsi.save_to_npy(path_to_file="for_test/test.npy")
+    hsi.save_to_npy(path_to_file="../for_test/test.npy")
     load_hsi = HSImage()
-    load_hsi.load_from_npy(path_to_file="for_test/test.npy")
+    load_hsi.load_from_npy(path_to_file="../for_test/test.npy")
     assert np.allclose(load_hsi.data, hsi.data)
 
     # check if the saving is correct for .h5
-    hsi.save_to_h5("for_test/test.h5", h5_key='image')
+    hsi.save_to_h5("../for_test/test.h5", h5_key='image')
     load_hsi = HSImage()
-    load_hsi.load_from_h5("for_test/test.h5", "image")
+    load_hsi.load_from_h5("../for_test/test.h5", "image")
     assert np.allclose(load_hsi.data, hsi.data)
 
     # check if the saving is correct for .mat
-    hsi.save_to_mat("for_test/test.mat", mat_key='image')
+    hsi.save_to_mat("../for_test/test.mat", mat_key='image')
     load_hsi = HSImage()
-    load_hsi.load_from_mat("for_test/test.mat", "image")
+    load_hsi.load_from_mat("../for_test/test.mat", "image")
     assert np.allclose(load_hsi.data, hsi.data)
 
     # check if the saving is correct for .png
-    hsi.save_to_images("for_test/png", "png")
+    hsi.save_to_images("../for_test/png", "png")
 
     # check of the saving is correct for .jpg
-    hsi.save_to_images("for_test/jpg", "jpg")
+    hsi.save_to_images("../for_test/jpg", "jpg")
 
-    os.remove("for_test/test.npy")
-    os.remove("for_test/test.h5")
-    os.remove("for_test/test.mat")
-    shutil.rmtree("for_test/png")
-    shutil.rmtree("for_test/jpg")
+    os.remove("../for_test/test.npy")
+    os.remove("../for_test/test.h5")
+    os.remove("../for_test/test.mat")
+    shutil.rmtree("../for_test/png")
+    shutil.rmtree("../for_test/jpg")
 
 
 @pytest.fixture
 def return_rail_sample():
     hsi = HSImage()
-    hsi.load_from_h5(path_to_file='for_test/sample_rail.h5', h5_key='image')
+    hsi.load_from_h5(path_to_file='../for_test/sample_rail.h5', h5_key='image')
     return hsi
 
 
 @pytest.fixture
 def return_rotary_sample():
     hsi = HSImage()
-    hsi.load_from_h5(path_to_file='for_test/sample_rotary.h5', h5_key='image')
+    hsi.load_from_h5(path_to_file='../for_test/sample_rotary.h5', h5_key='image')
     return hsi
 
 
 @pytest.fixture
 def return_copter_sample():
     hsi = HSImage()
-    hsi.load_from_h5(path_to_file='for_test/sample_copter.h5', h5_key='image')
+    hsi.load_from_h5(path_to_file='../for_test/sample_copter.h5', h5_key='image')
     return hsi
 
 
 def test_normal_rail(return_rail_sample):
     hsb = HSBuilder(path_to_data=path_to_rail_data,
+                    path_to_metadata=path_to_metadata,
                     data_type="images")
     hsb.build(roi=True, norm_rotation=True, principal_slices=250)
     hsi = hsb.get_hsi()
@@ -100,7 +101,7 @@ def test_normal_rotary(return_rotary_sample):
 
 def test_normal_copter(return_copter_sample):
     hsb = HSBuilder(path_to_data=path_to_copter_data,
-                    path_to_metadata=path_to_copter_metadata,
+                    path_to_gps=path_to_copter_metadata,
                     data_type="video")
     hsb.build(principal_slices=40)
     hsi = hsb.get_hsi()
@@ -132,7 +133,7 @@ def test_incorrect_type_data():
 def test_incorrect_type_metadata():
     with pytest.raises(TypeError):
         hsb = HSBuilder(path_to_data=path_to_copter_data,
-                        path_to_metadata=[path_to_copter_metadata],
+                        path_to_gps=[path_to_copter_metadata],
                         data_type="video")
         print(hsb.path_to_metadata)
 
@@ -174,6 +175,7 @@ def test_rail_with_metadata():
 
 def test_all_flags_for_rail():
     hsb = HSBuilder(path_to_data=path_to_rail_data,
+                    path_to_metadata=path_to_metadata,
                     data_type="images")
     hsb.build(principal_slices=250,
               norm_rotation=True,
