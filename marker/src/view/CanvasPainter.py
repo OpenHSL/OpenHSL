@@ -22,6 +22,7 @@ class CanvasPainter:
         self._pan_position = None
 
     def _update_project(self):
+        print("_update_project")
         if self.model.isProjectLoaded:
             if self.model.project.backgroundImagePath:
                 self._bg_image = Image.open(self.model.project.backgroundImagePath).convert('RGBA')
@@ -30,14 +31,30 @@ class CanvasPainter:
             self.canvas.delete(ALL)
 
     def _update_layer(self):
+        print("_update_layer")
         self._bg_comp = self._comp_bg_image()
         if self.model.project.maskOpaque:
             self._fg_comp = self._comp_fg_image()
         self.render_canvas_image()
 
     def render_canvas_image(self):
+        
+        #print("render_canvas_image") # self._bg_comp
+        #
+        #print(self.model.backgroundImagePath)
+        #cv_bg = cv.imread(self.model.backgroundImagePath)
+        #cv_bg = cv.cvtColor(cv_bg, cv.COLOR_BGR2RGBA)
+                
+        #self._bg_comp = Image.fromarray(cv_bg) # zoom_cv_bg
+
+        #####################
+
+        
         active_layer_image = self._get_masked_image(self.model.project.activeMask)
         composite = Image.alpha_composite(self._bg_comp, active_layer_image)
+        
+        #print(active_layer_image)
+        
         if self.model.project.maskOpaque:
             composite = Image.alpha_composite(composite, self._fg_comp)
         else:
@@ -51,19 +68,27 @@ class CanvasPainter:
         self.canvas.delete(ALL)
 
         # convert the PIL image to TK PhotoImage
+        
         # set the canvas.image property, it wont work without this step
+        #self.canvas.image = ImageTk.PhotoImage(composite)
+        #self.canvas.create_image(self.model.canvas.cs_crop_x, self.model.canvas.cs_crop_y,
+        #                         image=self.canvas.image, anchor=NW)
+        
         self.canvas.image = ImageTk.PhotoImage(composite)
         self.canvas.create_image(self.model.canvas.cs_crop_x, self.model.canvas.cs_crop_y,
                                  image=self.canvas.image, anchor=NW)
-
+        
+        
         # for debugging
         # self.render_camera_outline()
 
     def render_brush_outline(self, x, y):
+        #print("render_brush_outline")
         r = self.model.brushSize * self.model.canvas.zoom
         self.canvas.create_oval(x - r, y - r, x + r, y + r)
 
     def render_camera_outline(self):
+        #print("render_camera_outline")
         # for debugging zoom, render camera center
         x = self.model.canvas.canvas_w // 2
         y = self.model.canvas.canvas_h // 2
@@ -71,9 +96,9 @@ class CanvasPainter:
         self.canvas.create_rectangle(x - r, y - r, x + r, y + r)
 
     def export_comp_image(self):
+        #print("export_comp_image")
         old_zoom = self.model.canvas.zoom
         self.model.canvas.set_zoom(1)
-
         temp_bg = self._comp_bg_image(show_all=True)
         temp_fg = self._comp_fg_image(show_all=True)
         temp_active_layer_image = self._get_masked_image(self.model.project.activeMask, show_all=True)
@@ -85,13 +110,16 @@ class CanvasPainter:
         self.model.canvas.set_zoom(old_zoom)
 
     def zoom(self, e):
+        #print("zoom")
         self._update_project()
         self.render_brush_outline(e.x, e.y)
 
     def resize(self):
+        #print("resize")
         self._update_layer()
 
     def pan(self, e):
+        #print("pan")
         if self._pan_position:
             old_x, old_y = self._pan_position
             dx = old_x - e.x
@@ -101,15 +129,19 @@ class CanvasPainter:
         self._pan_position = (e.x, e.y)
 
     def end_pan(self, _):
+        #print("end_pan")
         self._pan_position = None
 
     def paint(self, e):
+        #print("paint")
         self._edit_active_mask(e, (255, 255, 255))
 
     def erase(self, e):
+        #print("erase")
         self._edit_active_mask(e, (0, 0, 0))
 
     def end_brush_stroke(self, _):
+        #print("end_brush_stroke")
         self._brush_position = None
         if self.model.isCurrentSaved:
             self.model.set_mask_edited()
@@ -150,8 +182,18 @@ class CanvasPainter:
         return zoom_img
 
     def _get_zoom_cv_bg_image(self):
+        
         ws_zoom_size = self.model.canvas.ws_zoom_size()
-        cv_bg = self.model.project.cvBackgroundImage
+                
+
+        #cc = cv.imread(self.model.bg_image_file_path)
+        #cv_bg = cv.cvtColor(cc, cv.COLOR_BGR2RGBA)
+        
+        #print(self.model.bg_image_file_path)
+        
+        cv_bg = self.model.project.cvBackgroundImage # self.model.project.cvBackgroundImage
+        
+        
         zoom_cv_bg = self._get_zoom_cv(cv_bg)
         image = Image.fromarray(zoom_cv_bg)
         image.resize(ws_zoom_size)
@@ -187,15 +229,20 @@ class CanvasPainter:
             image.putalpha(0)
             return image
 
-    def _comp_bg_image(self, show_all=False):
+    def _comp_bg_image(self, show_all=False):        
+
+        
         if self.model.project.backgroundImagePath:
-            composite = self._get_zoom_cv_bg_image()
+            composite = self._get_zoom_cv_bg_image() # self._get_zoom_cv_bg_image()
+            print("CanvasPainter._comp_bg_image( )")
         else:
             composite = Image.new('RGBA', self.model.canvas.ws_zoom_size(), self.model.project.default_background_color)
+            
         for i in range(self.model.project.activeMask):
-            front = self._get_masked_image(i, show_all)
-            composite = Image.alpha_composite(composite, front)
+            front = self._get_masked_image(i, show_all)            
+            composite = Image.alpha_composite(composite, front) # composite, front
         return composite
+
 
     def _comp_fg_image(self, show_all=False):
         composite = self._get_masked_image(self.model.project.activeMask + 1, show_all)

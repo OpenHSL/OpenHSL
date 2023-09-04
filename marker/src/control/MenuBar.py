@@ -38,22 +38,26 @@ class MenuBar:
 
     def _init_file_menu(self, menu, painter):
         #menu.add_command(label="New", command=self._kb_create_project, accelerator="Ctrl+N") #Ctrl+Shift+N
-        menu.add_command(label="New + BG HSI", command=self._kb_create_background_project, accelerator="Ctrl+N")
-        menu.add_command(label="Open", command=self._kb_load_project, accelerator="Ctrl+O")
-        menu.add_command(label="Save", command=self._kb_save, accelerator="Ctrl+S")
-        menu.add_command(label="Save as", command=self._kb_save_as, accelerator="Ctrl+Shift+S")
+        #menu.add_command(label="New + HSI background", command=self._kb_create_background_project, accelerator="Ctrl+N")
+        menu.add_command(label="Создать Новую МАСКУ + Загрузить HSI подложку", command=self._kb_create_background_and_clear_mask, accelerator="Ctrl+N")
+        menu.add_command(label="Открыть МАСКУ + HSI подложку", command=self._kb_load_project, accelerator="Ctrl+O")
+        menu.add_separator()
+        menu.add_command(label="Загрузить МАСКУ", command=self._kb_load_mask, accelerator="Ctrl+O")
+        menu.add_command(label="Сохранить МАСКУ + HSI подложку", command=self._kb_save, accelerator="Ctrl+S")
+        menu.add_command(label="Сохранить файл как ...", command=self._kb_save_as, accelerator="Ctrl+Shift+S")
         
         menu.add_separator()
-        menu.add_command(label="Close Project", command=self.model.unload_project)
-        menu.add_command(label="Export Image", command=painter.export_comp_image)
+        menu.add_command(label="Закрыть Файл", command=self.model.unload_project)
+        menu.add_command(label="Экспортировать .png изображение", command=painter.export_comp_image)
         menu.add_separator()
         menu.add_command(label="Exit", command=self.master.quit)
 
         # add state toggles for buttons/keyboard controls depending on PROJECT update
-        self._add_toggle(self._disable_unloaded, menu, menu.index("Save"), '<Control-s>', self._kb_save)
-        self._add_toggle(self._disable_unloaded, menu, menu.index("Save as"), '<Control-S>', self._kb_save_as)
-        self._add_toggle(self._disable_unloaded, menu, menu.index("Close Project"))
-        self._add_toggle(self._disable_unloaded, menu, menu.index("Export Image"))
+        self._add_toggle(self._disable_unloaded, menu, menu.index("Загрузить МАСКУ"), '<Control-o>', self._kb_load_mask)
+        self._add_toggle(self._disable_unloaded, menu, menu.index("Сохранить МАСКУ + HSI подложку"), '<Control-s>', self._kb_save)
+        self._add_toggle(self._disable_unloaded, menu, menu.index("Сохранить файл как ..."), '<Control-S>', self._kb_save_as)
+        self._add_toggle(self._disable_unloaded, menu, menu.index("Закрыть Файл"))
+        self._add_toggle(self._disable_unloaded, menu, menu.index("Экспортировать .png изображение"))
 
         # for testing that inverse works
         # self._add_toggle(self._disable_loaded, menu, menu.index("Open"), '<Control-o>', self._kb_open)
@@ -61,7 +65,7 @@ class MenuBar:
         # bind the keyboard shortcuts that will always be on
         self.master.bind('<Control-o>', self._kb_load_project)
         self.master.bind('<Control-n>', self._kb_create_project)
-        self.master.bind('<Control-N>', self._kb_create_background_project)
+        #self.master.bind('<Control-N>', self._kb_create_background_project)
 
     def _init_edit_menu(self, menu):
         menu.add_command(label="Undo", command=self._kb_undo, accelerator="Ctrl+Z", state=DISABLED)
@@ -138,12 +142,18 @@ class MenuBar:
     # keyboard shortcut and button handlers
     def _kb_create_background_project(self, _=None):
         self.model.prompt_create_background_project()
+        
+    def _kb_create_background_and_clear_mask(self, _=None):
+        self.model.prompt_create_background_and_clear_mask()
 
     def _kb_create_project(self, _=None):
         self.model.prompt_create_project()
 
     def _kb_load_project(self, _=None):
         self.model.prompt_load_project()
+        
+    def _kb_load_mask(self, _=None):
+        self.model.prompt_load_mask()
 
     def _kb_save(self, _=None):
         self.model.save()

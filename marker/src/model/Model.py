@@ -7,6 +7,10 @@ from src.model.CanvasModel import CanvasModel
 from src.model.KeyboardModel import KeyboardModel
 from src.model.UndoHistory import UndoHistory
 
+import os
+import numpy as np
+import cv2 as cv
+
 
 class Subject:
     def __init__(self):
@@ -43,8 +47,20 @@ class Model:
         self.brushSizeMin = 2
         self.brushSizeMax = 40
         
+        self.hsiSize = 1
         self.hsiSizeMin = 1 # self.project.
         self.hsiSizeMax = self.project.hsi_MAXhsilayer
+        
+        self.project_file_path = ""
+        self.bg_image_file_path = ""
+        self.key_answer = ""
+        
+        
+        self.hsi = []
+        self.bg_filename = ""
+        self.backgroundImagePath = ""        
+        
+       
         
 
     def _reset(self):
@@ -62,8 +78,46 @@ class Model:
     def set_brush_size(self, event):
         self.brushSize = int(float(event))
         
+
     def set_hsi_size(self, event):
-        self.brushSize = int(float(event))
+        self.hsiSize = int(float(event))
+        #print(self.hsiSize)
+        #self.project.create_project(project_file_path= self.project_file_path, bg_image_file_path= self.bg_image_file_path, key_answer= self.key_answer, hsi_layer_num=self.hsiSize)
+        #self.load_project(self.project_file_path)
+
+        
+        #self.load_HSI_layer(project_file_path=self.project_file_path, bg_image_file_path=self.bg_image_file_path, hsi_layer_num=self.hsiSize,key_answer=self.key_answer)
+       
+        '''
+        bg_filename = self.project._generate_background_file_name(self.project.projectName)
+        self.bg_filename = bg_filename
+        self.backgroundImagePath = os.path.join(self.project.maskRootDir, bg_filename)
+        
+       
+        config = self.project._read_default_config(self.project._config_file_path)        
+        bg_img_size = self.project._copy_background_image(config, self.bg_image_file_path, self.key_answer, self.hsiSize)
+        '''
+
+        #self.load_HSI_layer(self.project_file_path, self.bg_image_file_path, self.key_answer, self.hsiSize)
+        
+        print(self.project_file_path, self.bg_image_file_path, self.key_answer, self.hsiSize)
+        
+        
+        self.project.create_project(self.project_file_path, self.bg_image_file_path, self.key_answer, self.hsiSize)
+        #self.load_project(self.project_file_path)
+
+        
+        #cv_bg = bg_img_size[2]
+        #self.hsi = cv_bg
+        
+        #cv_bg = np.array(cv_bg[self.hsiSize])
+        #cv.imwrite(self.backgroundImagePath, cv_bg)
+
+        #hsi_data = self.hsi_data
+        #print(np.array(hsi_data[1]))
+        #cv_bg = np.array(hsi_data[1]) # self.hsiSize
+        #cv.imwrite(self.backgroundImagePath, cv_bg)
+        
 
     # change layer data and notify observers
     def toggle_mask_opacity(self):
@@ -117,7 +171,7 @@ class Model:
             self._notify_needs_save()
 
     def zoom(self, zoom_factor):
-        self.canvas.set_zoom(zoom_factor)
+        self.canvas.set_zoom(zoom_factor) 
         self.subject.zoom.notify()
 
     def mouse_zoom(self, zoom_factor, e):
@@ -164,9 +218,9 @@ class Model:
         self.subject.save.notify()
 
     def prompt_save_as(self):
-        project_file_path = filedialog.asksaveasfilename(title="Save as a new project json file",
-                                                         defaultextension=".json",
-                                                         filetypes=[("json files", "*.json")])
+        project_file_path = filedialog.asksaveasfilename(title="Сохранить файл МАСКИ с HSI подложкой как..",
+                                                         defaultextension=".mat",
+                                                         filetypes=[(".mat HSI file", ".mat"),(".h5 HSI file", "*.h5"),(".npy HSI file", "*.npy")])
         if project_file_path:
             self.project.save_as(project_file_path)
             self._reset()
@@ -175,7 +229,7 @@ class Model:
 
     def unload_project(self):
         if not self.isCurrentSaved:
-            is_ok = messagebox.askyesno("Close Project", "You will lose any unsaved data. Are you sure?")
+            is_ok = messagebox.askyesno("Закрыть файл", "Вы потеряете несохранённые данные. Вы уверены?")
             if not is_ok:
                 return
 
@@ -188,13 +242,24 @@ class Model:
 
     def prompt_load_project(self):
         if not self.isCurrentSaved:
-            is_ok = messagebox.askyesno("Open Project", "You will lose any unsaved data. Are you sure?")
+            is_ok = messagebox.askyesno("Открыть МАСКУ с HSI подложкой", "Вы потеряете несохранённые данные. Вы уверены?")
             if not is_ok:
                 return
 
         proj_path = filedialog.askopenfilename()
         if proj_path:
             self.load_project(proj_path)
+            
+            
+    def prompt_load_mask(self):
+        if not self.isCurrentSaved:
+            is_ok = messagebox.askyesno("Загрузка МАСКИ", "Вы потеряете несохранённую МАСКУ. Вы уверены?")
+            if not is_ok:
+                return
+
+        proj_path = filedialog.askopenfilename()
+        if proj_path:
+            self.load_mask(proj_path) # self.load_project(proj_path)
 
     def load_project(self, project_file_path):
         self.project.load_project(project_file_path)
@@ -202,9 +267,35 @@ class Model:
 
         self.isProjectLoaded = True
         self.isCurrentSaved = True
+        self.subject.load.notify() # обновляем отображаемый бэкграунд
+        self.subject.project.notify() # загружаем отображение ползунков слоёв и размера кисти
+        self.subject.undo.notify()
+
+    def load_mask(self, project_file_path):
+        bg_filename = self.project._generate_background_file_name(self.project.projectName)
+        self.bg_filename = os.path.join(self.project.maskRootDir, bg_filename)  
+        
+        print("!!!!!!!!  " + self.bg_filename)           #self.project_file_path = ""     self.bg_image_file_path = ""   self.key_answer = ""        
+        self.project.load_mask(project_file_path, self.bg_filename)
+
+        self.canvas.resize_canvas(self.project.imgSize)
+
+        self.isProjectLoaded = True
+        self.isCurrentSaved = True
         self.subject.load.notify()
         self.subject.project.notify()
         # self.subject.undo.notify()
+        
+    def load_HSI_layer(self, project_file_path, bg_image_file_path, key_answer, hsi_layer_num):
+        self.project.load_HSI_layer(project_file_path, bg_image_file_path, key_answer, hsi_layer_num)
+        #self.canvas.resize_canvas(self.project.imgSize)
+
+        #self.isProjectLoaded = True
+        #self.isCurrentSaved = True
+        #self.subject.load.notify()
+        #self.subject.project.notify()
+ 
+        
 
     def prompt_create_project(self):
         if not self.isCurrentSaved:
@@ -218,6 +309,7 @@ class Model:
         if project_file_path:
             self.project.create_project(project_file_path)
             self.load_project(project_file_path)
+
 
     def prompt_create_background_project(self):
         if not self.isCurrentSaved:
@@ -239,7 +331,52 @@ class Model:
                 self.project.create_project(project_file_path, bg_image_file_path, key_answer)
                 self.load_project(project_file_path)
                 
+    def prompt_create_background_and_clear_mask(self):
+        if not self.isCurrentSaved:
+            is_ok = messagebox.askyesno("Создать новую МАСКУ с HSI подложкой", "Вы потеряете несохранённые данные. Вы уверены?")
+            if not is_ok:
+                return
 
+        project_file_path = filedialog.asksaveasfilename(title="Создать новую МАСКУ с HSI подложкой",
+                                                        defaultextension=".mat",
+                                                         filetypes=[(".mat files", ".mat"),(".h5 files", "*.h5"),(".npy files", "*.npy")])
+        if project_file_path:
+            bg_image_file_path = filedialog.askopenfilename(title="Открыть HSI подложку",
+                                                            defaultextension=".mat",
+                                                            filetypes=[(".mat HSI file", ".mat"),(".h5 HSI file", "*.h5"),(".npy HSI file", "*.npy")]) # filetypes=[("jpg files", "*.jpg")]    .mat
+            key_answer = simpledialog.askstring("Key name", "Введите Key_of_HSI\n                                                                        ")
+                    
+            if bg_image_file_path:
+                self.project.create_project(project_file_path, bg_image_file_path, key_answer)
+                self.load_project(project_file_path)
+                
+                self.project_file_path = project_file_path
+                self.bg_image_file_path = bg_image_file_path    
+                self.key_answer = key_answer
+                
+                
+    def prompt_create_HSI_background_only(self):
+        if not self.isCurrentSaved:
+            is_ok = messagebox.askyesno("Загрузить HSI подложку", "Вы потеряете несохранённые данные. Вы уверены?")
+            if not is_ok:
+                return
+
+        project_file_path = filedialog.asksaveasfilename(title="Загрузить новую HSI подложку",
+                                                        defaultextension=".mat",
+                                                         filetypes=[(".mat files", ".mat"),(".h5 files", "*.h5"),(".npy files", "*.npy")])
+        if project_file_path:
+            bg_image_file_path = filedialog.askopenfilename(title="Открыть HSI подложку",
+                                                            defaultextension=".mat",
+                                                            filetypes=[(".mat HSI file", ".mat"),(".h5 HSI file", "*.h5"),(".npy HSI file", "*.npy")]) # filetypes=[("jpg files", "*.jpg")]    .mat
+            key_answer = simpledialog.askstring("Key name", "Введите Key_of_HSI\n                                                                        ")
+                    
+            if bg_image_file_path:
+                self.project.create_project(project_file_path, bg_image_file_path, key_answer)
+                self.load_project(project_file_path)
+                
+                self.project_file_path = project_file_path
+                self.bg_image_file_path = bg_image_file_path    
+                self.key_answer = key_answer
                 
 
 

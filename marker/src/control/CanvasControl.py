@@ -144,9 +144,9 @@ class CanvasControl:
 
     def _prompt_show_active_layer(self):
         layer_name = self.model.project.activeLayer.name
-        message = "The active layer {} is hidden and/or locked. Do you wish to change it to allow painting?".format(
+        message = "Активный слой {} скрыт и/или заблокирован для редактирования.\nВы хотите разрешить редактирование слоя?".format(
             layer_name)
-        is_ok = messagebox.askyesno(title="Confirm", message=message, icon="warning")
+        is_ok = messagebox.askyesno(title="Подтверждение", message=message, icon="warning")
 
         if is_ok:
             if not self.model.project.activeLayer.isVisible:

@@ -2,12 +2,14 @@ from tkinter import *
 
 
 class BrushControl:
-    def __init__(self, master, model):
+    def __init__(self, master, model, painter):
         super().__init__()
         self.master = master
         self.model = model
         self.model.subject.layer.attach(self._update_layer)
         self.model.subject.project.attach(self._update_project)
+        
+        self.painter = painter ##
 
         self._reset()
 
@@ -65,19 +67,19 @@ class BrushControl:
     def _add_brush_slider(self):
         Label(self.master, text='Brush Radius').grid(row=self._next_row, column=0)
         slider = Scale(self.master, from_=self.model.brushSizeMin, to=self.model.brushSizeMax,
-                       command=self.model.set_brush_size, orient=HORIZONTAL, length=50)
+                       command=self.model.set_brush_size, orient=HORIZONTAL, length=50) # self.painter.render_canvas_image    command=self.model.set_brush_size
         slider.set(self.model.brushSize)
         slider.grid(row=self._next_row, column=1, columnspan=3, ipadx=30)
         self._next_row += 1
         
     def _add_hsi_slider(self):
         Label(self.master, text='HSI Layer').grid(row=self._next_row, column=0)
-        slider = Scale(self.master, from_=1, to=self.model.hsiSizeMax,
-                       command=self.model.project.hsi_MAXhsilayer, orient=HORIZONTAL, length=50) #         self.hsiSizeMin = 1   self.hsiSizeMax = self.project.hsi_MAXhsilayer
-        slider.set(self.model.hsiSizeMax)
+        slider = Scale(self.master, from_=1, to=100, # to=self.model.hsiSizeMax
+                       command=self.painter.model.set_hsi_size, orient=HORIZONTAL, length=50) #  self.model.set_hsi_size       self.painter.render_canvas_image()    command=self.model.project.hsi_MAXhsilayer, orient=HORIZONTAL, length=50         self.hsiSizeMin = 1   self.hsiSizeMax = self.project.hsi_MAXhsilayer
+        slider.set(self.model.hsiSize)
         slider.grid(row=self._next_row, column=1, columnspan=3, ipadx=30)
         self._next_row += 1
-
+    
     def _add_active_layer_controls(self):
         def grid_row(*args):
             for c in range(len(args)):

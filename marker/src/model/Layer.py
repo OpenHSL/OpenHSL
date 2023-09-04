@@ -6,3 +6,4 @@ class Layer:
         self.isLocked = json_layer["locked"]
 
         self.cvMask = cv_mask
+ 

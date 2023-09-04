@@ -8,6 +8,9 @@ import numpy as np
 from src.Utils import Utils
 from src.model.Layer import Layer
 
+# for exept windows
+import ctypes   
+
 global MASK_IND
 
 class ProjectModel:
@@ -37,7 +40,11 @@ class ProjectModel:
         self.imgSize = None
         self.numMasks = None
         
-        self.hsi_MAXhsilayer = 0
+        self.hsi_MAXhsilayer = 1
+        
+        self.hsi_data = None
+
+        
 
     def unload(self):
         self.__init__()
@@ -83,9 +90,41 @@ class ProjectModel:
     @staticmethod
     def _read_json_file(file_path):
         f = open(file_path)
-        obj = json.load(f, object_hook=lambda d: SimpleNamespace(**d))
+        
+        try:
+            obj = json.load(f, object_hook=lambda d: SimpleNamespace(**d))
+            
+            f.close()
+            return obj
+        
+        except Exception:
+            ctypes.windll.user32.MessageBoxW(None, u"Вы пытаетесь открыть HSI или МАСКУ. Выберете файл МАСКА + HSI.", u"Ошибка", 0)
+            
+
+    @staticmethod
+    def _read_mask_file(file_path):
+        f = open(file_path)
+        
+        
+        from hs_mask import HSMask 
+        from tkinter import filedialog, messagebox, simpledialog
+        
+        bg_image_file_path = file_path
+        #bg_image_file_path = "C:/Users/retuo/Downloads/coffe/PaviaU_gt.mat" # PaviaU   PaviaU_gt
+
+        key_answer = simpledialog.askstring("Key name", "Enter key of Gt")    
+         
+        #key_answer = "paviaU_gt"
+
+        hsi = HSMask()
+        hsi.load_mask(path_to_file=bg_image_file_path, mat_key= key_answer, h5_key= key_answer)
+        obj = hsi
+            
         f.close()
         return obj
+
+
+        
 
     def get_layer_by_z(self, z):
         return self.get_layer_by_uid(self.layerKeys[z])
@@ -116,12 +155,12 @@ class ProjectModel:
         self._save_project_json()
         self._save_masks()
 
-    def create_project(self, project_file_path, bg_image_file_path=None, key_answer="paviaU"):
+    def create_project(self, project_file_path, bg_image_file_path=None, key_answer="paviaU",hsi_layer_num=1):
         self.unload()
         self._set_paths(project_file_path)
 
-        config = self._read_default_config(self._config_file_path)
-        bg_img_size = self._copy_background_image(config, bg_image_file_path, key_answer)
+        config = self._read_default_config(self._config_file_path) 
+        bg_img_size = self._copy_background_image(config, bg_image_file_path, key_answer,hsi_layer_num) 
         self._process_config(config, bg_img_size)
 
         self._save_project_json()
@@ -135,6 +174,22 @@ class ProjectModel:
         self._read_project_json(project_file_path)
 
         # model will use subject to update observer views
+        
+    def load_mask(self, project_file_path, bg_img_path):
+        self.unload()
+        self._set_paths(project_file_path)
+        self._read_project_mask(project_file_path, bg_img_path)
+        
+    def load_HSI_layer(self, project_file_path, bg_image_file_path=None, key_answer="paviaU",hsi_layer_num=1):
+        self.unload()
+        self._set_paths(project_file_path)
+        config = self._read_default_config(self._config_file_path)
+        
+        bg_img_size = self._copy_background_image(config, bg_image_file_path, key_answer,hsi_layer_num)
+        
+        #self._read_project_HSI_layer(project_file_path)
+        return bg_img_size
+        
 
     def _set_paths(self, project_file_path):
         self.projectPath = project_file_path
@@ -150,9 +205,11 @@ class ProjectModel:
         obj = self._read_json_file(config_file_path)
         return obj.default_project_settings
 
-    def _copy_background_image(self, config, bg_image_file_path, key_answer):
-        # returns img_size (w, h) if bg_image exists, otherwise returns None
+    def _copy_background_image(self, config, bg_image_file_path, key_answer, hsi_layer_num):
+        # возвращает img_size (w, h), если bg_image существует, иначе возвращает None
         if bg_image_file_path:
+            
+           
             if not os.path.exists(self.maskRootDir):
                 os.mkdir(self.maskRootDir)
                 
@@ -163,24 +220,38 @@ class ProjectModel:
             from PIL import Image as im
             from hsi import HSImage # ВСКРЫТЬ / ПОФИКСИТЬ
             
-            hsi_data = HSImage()
-            hsi_data.load_from_mat(path_to_file=bg_image_file_path, mat_key= key_answer) # "image" прикрутить ползунок запрашивать у пользователя мат-кей paviaU  / # добавить окно спросить у пользователя, какой ключ выбрать - 
+            hsi_data = HSImage() 
+            # добавить загрузку из различных источников от выбранного формата файла
+            # load_hsidata() - ваозвращает HSImage, принимает формат файла и путь к нему, реализация в Load_from у HSimage
             
+            try:
+                if ".mat" in bg_image_file_path:
+                    hsi_data.load_from_mat(path_to_file=bg_image_file_path, mat_key= key_answer)
+                elif ".h5" in bg_image_file_path:
+                    hsi_data.load_from_h5(path_to_file=bg_image_file_path, h5_key= key_answer)
+                elif ".np" in bg_image_file_path:
+                    hsi_data.load_from_npy(path_to_file=bg_image_file_path)
+                #hsi_data.load_from_h5(path_to_file=bg_image_file_path, h5_key= key_answer) # "image" прикрутить ползунок запрашивать у пользователя мат-кей paviaU  
+            except Exception:
+                ctypes.windll.user32.MessageBoxW(None, u"Неправельно введен Key_of_HSI или выбран некорректный HSI. Попробуйте еще раз.", u"Ошибка", 0) #     
+   
             #plt.imsave('filename.png', np.array(hsi_data[10]).reshape(610,340), cmap=cm.magma) # viridis
             
             #/ np.array(hsi_data).shape (250, 720, 1900)
-            self.hsi_MAXhsilayer =  np.array(hsi_data).shape[0]
+            self.hsi_MAXhsilayer =  np.array(hsi_data).shape[0] - 1
             hsi_h =  np.array(hsi_data).shape[1]
             hsi_w =  np.array(hsi_data).shape[2]
             
-            data = np.array(hsi_data[100]) # data = np.array(hsi_data[5], np.uint8).reshape(610,340)       int32
-           
+            
+            
+            data = np.array(hsi_data[hsi_layer_num]/50) # data = np.array(hsi_data[5], np.uint8).reshape(610,340)       int32
             
             #img_numpy = np.array(hsi_data[5], dtype=np.uint8)
             #img = im.fromarray(img_numpy, "RGB")
             
             #cv_bg = cv.imread(bg_image_file_path)
-            print(data.shape) # data.shape (720, 1900)
+            
+            ####print(data.shape) # data.shape (720, 1900)
             #cv_bg = im.fromarray(data) # , 'RGB'
 
             cv_bg = data
@@ -205,18 +276,18 @@ class ProjectModel:
             self.backgroundImagePath = os.path.join(self.maskRootDir, bg_filename)
             cv.imwrite(self.backgroundImagePath, cv_bg)
 
-            return w, h
+            return w, h, hsi_data
         return None
 
     def _process_config(self, config, bg_img_size):
         if bg_img_size:
-            w, h = bg_img_size
+            w, h, hsi = bg_img_size
         else:
             h = config.mask_height
             w = config.mask_width
         self.imgSize = (w, h)
 
-        # derive data from config
+        # получаем данные из конфига
         self.maskOpaque = config.mask_opaque
         self.activeMask = config.active_mask
         self.numMasks = len(config.layer_keys)
@@ -235,8 +306,8 @@ class ProjectModel:
 
     def _read_project_json(self, project_file_path):
         obj = self._read_json_file(project_file_path)
-
-        # use a background image if it exists in the mask dir
+ 
+        # используем бэкграунд HSI, если он существует в каталоге маски
         if os.path.exists(self.maskRootDir):
             bg_filename = self._generate_background_file_name(self.projectName)
             bg_file_path = os.path.join(self.maskRootDir, bg_filename)
@@ -245,14 +316,16 @@ class ProjectModel:
                 self.cvBackgroundImage = cv.cvtColor(cv_bg, cv.COLOR_BGR2RGBA)
                 self.backgroundImagePath = bg_file_path
 
-        # derive data from project file
+        # получаем данные из файла
         self.activeMask = obj.active_mask
         self.maskOpaque = obj.mask_opaque
         self.numMasks = len(obj.layer_keys)
         self.layerKeys = obj.layer_keys
         layers = obj.layers.__dict__
+        
 
         for i in range(self.numMasks):
+
             k = self.layerKeys[i]
             mask_filename = self._generate_mask_file_name(self.projectName, k)
             mask_path = os.path.join(self.maskRootDir, mask_filename)
@@ -265,13 +338,109 @@ class ProjectModel:
             if self.activeMask == i:
                 self.activeLayer = self.layers[k]
 
-        # fill in the missing data
+        # заполняем недостающие данные
+        mask0 = self.layers[self.layerKeys[0]].cvMask
+        self.imgSize = (mask0.shape[1], mask0.shape[0])
+        
+        
+    def _read_project_mask(self, project_file_path, bg_img_path):
+        obj = self._read_mask_file(project_file_path)
+ 
+        
+        # используем бэкграунд HSI, если он существует в каталоге маски
+        #if os.path.exists(self.maskRootDir):
+        #    print(self.maskRootDir)
+        #    bg_filename = self._generate_background_file_name(self.projectName)
+        #    bg_file_path = os.path.join(self.maskRootDir, bg_filename)
+            
+            
+            
+        #    if os.path.exists(bg_file_path):
+        #        print(bg_file_path)
+                
+        from matplotlib import pyplot as plt
+        import matplotlib.cm as cm
+        from PIL import Image as im
+               
+ 
+        l = np.array(obj).shape[0]
+        h = np.array(obj).shape[1]
+        w = np.array(obj).shape[2]
+        #plt.imsave('bg_layers.jpg', np.array(obj[2]).reshape(h,w)) # viridis
+        
+        #cv.imwrite('bg_layers.jpg', np.array(obj[2]))  #np.array(hsi_data[hsi_layer_num]/50)
+        
+        #bg_file_path = "C:/Users/retuo/Downloads/coffe/mask/q_background.jpg" # 'bg_layers.jpg'
+        bg_file_path = bg_img_path
+        
+        cv_bg = cv.imread(bg_file_path)
+        self.cvBackgroundImage = cv.cvtColor(cv_bg, cv.COLOR_BGR2RGBA)
+
+        #img_numpy = np.array(hsi_data[5], dtype=np.uint8)
+        #img = im.fromarray(img_numpy, "RGB")
+        
+        #cv_bg = cv.imread(bg_image_file_path)
+        self.backgroundImagePath = bg_file_path
+
+
+        
+        # получаем данные из файла
+        self.activeMask = -1
+        self.maskOpaque = False
+        self.numMasks = np.array(obj).shape[0] # 5
+        self.layerKeys = [int(i) for i in range(1, self.numMasks+1)] # ['1', '2', '3', '4', '5']
+        
+        #layers = {'1': SimpleNamespace(color='#ff80c0', locked=False, name='class_3', visible=True), '2': SimpleNamespace(color='#ff80c0', locked=False, name='class_2', visible=True), '3': SimpleNamespace(color='#ff80c0', locked=False, name='class_1', visible=True), '4': SimpleNamespace(color='#ff80c0', locked=False, name='class_4', visible=True), '5': SimpleNamespace(color='#ff80c0', locked=False, name='class_5', visible=True)}
+
+        print(self.numMasks)
+        print(self.layerKeys)
+        
+        colors = ['#ff8080','#ffff80','#80ff80','#80ffff','#0080ff','#ff80c0','#ff0000','#ff8040','#008080','#8080ff','#c0c0c0','#800040','#808040','#0000ff','#870c78']
+        for i in range(self.numMasks):
+            print(self.layerKeys[i])
+            k = self.layerKeys[i]
+            
+            
+            #mask_filename = self._generate_mask_file_name(self.projectName, k)
+            #mask_path = os.path.join(self.maskRootDir, mask_filename)
+            #cv_mask_bgr = cv.imread(mask_path)
+            #cv_mask = cv.cvtColor(cv_mask_bgr, cv.COLOR_BGR2GRAY)
+
+            
+            h = np.array(obj).shape[1]
+            w = np.array(obj).shape[2]
+            
+            cv_mask = np.array(obj[i]).reshape(h,w)
+            
+            from matplotlib import pyplot as plt
+            import matplotlib.cm as cm
+            plt.imsave('layers.png', np.array(obj[i]).reshape(h,w), cmap=cm.magma) # viridis
+            cv_mask_bgr = cv.imread('layers.png')
+            cv_mask = cv.cvtColor(cv_mask_bgr, cv.COLOR_BGR2GRAY)
+
+            layers = dict.fromkeys(self.layerKeys, SimpleNamespace(color=colors[self.numMasks-i], locked=False, name='class_'+str(self.numMasks-i), visible=True))
+            
+            layer = layers[k].__dict__
+            self.layers[k] = Layer(layer, cv_mask)
+
+            if self.activeMask == i:
+                self.activeLayer = self.layers[k]
+
+        # заполняем недостающие данные
         mask0 = self.layers[self.layerKeys[0]].cvMask
         self.imgSize = (mask0.shape[1], mask0.shape[0])
 
+
+
+    def _read_project_HSI_layer(self, project_file_path):
+        #obj = self._read_mask_file(project_file_path)
+        print("111")
+        
+        
+
     def _save_project_json(self):
-        # build a json from python data
-        # save json to file
+        # построим файл из данных python
+        # сохраним json в файл
 
         json_layers = {}
         for i in range(self.numMasks):
@@ -342,7 +511,7 @@ class ProjectModel:
         elif self.activeMask > z:
             self.set_active_layer(self.activeMask - 1)
 
-    # refactored here from LayerModel
+    # рефакторинг здесь из LayerModel
     def set_active_layer(self, z):
         self.activeMask = z
         self.activeLayer = self.get_layer_by_z(z)
