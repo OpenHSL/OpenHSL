@@ -1,5 +1,6 @@
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
+from openhsl.models.ssftt import SSFTT
 from openhsl.models.baseline import BASELINE
 from openhsl.models.hsicnn_luo import HSICNN
 from openhsl.models.nm3dcnn import NM3DCNN
@@ -30,10 +31,9 @@ hsi.load(path_to_data='../test_data/tr_pr/PaviaU.mat', key='paviaU')
 mask.load(path_to_data='../test_data/tr_pr/PaviaU_gt.mat', key='paviaU_gt')
 
 
-
 optimizer_params = {
-    "learning_rate": 0.1,
-    "weight_decay": 0.01
+    "learning_rate": 0.001,
+    "weight_decay": 0
 }
 
 scheduler_params = {
@@ -52,21 +52,17 @@ fit_params = {
     "train_sample_percentage": 0.25,
     "dataloader_mode": "fixed",
     #"optimizer": "AdamW",
-    #"optimizer_params": optimizer_params,
+    "optimizer_params": optimizer_params,
     #"loss": "CrossEntropyLoss",
     #"batch_size": 32,
     #"scheduler_type": 'StepLR',
     #"scheduler_params": scheduler_params
 }
-hsi.data = hsi.data[:, :, 10:]
 
-cnn = SpectralFormer(n_classes=mask.n_classes,
-                     #n_bands=hsi.data.shape[-1],
-                     n_bands=30,
-             #path_to_weights='./tmp/checkpoint/weights.h5',
-                     apply_pca=True,
-             #path_to_weights='../tests/checkpoints/m1_dcnn__net/m1dcnn/2023_08_23_16_42_13_epoch10_0.79.pth',
-                     device='cuda')
+cnn = SSFTT(n_classes=mask.n_classes,
+            n_bands=30,
+            apply_pca=True,
+            device='cuda')
 
 
 cnn.fit(X=hsi,

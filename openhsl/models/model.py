@@ -203,8 +203,8 @@ class Model(ABC):
         """
         net.to(device)
 
-        wandb = Model.init_wandb()
-        wandb.watch(net)
+        #wandb = Model.init_wandb()
+        #wandb.watch(net)
 
         save_epoch = epoch // 20 if epoch > 20 else 1
 
@@ -266,11 +266,12 @@ class Model(ABC):
                 scheduler.step()
 
             # check if wandb is initialized (ToDo: not preferable to check if condition every iteration)
+            """
             if wandb.run is not None:
                 wandb.log({"train_loss": avg_loss,
                            "val_accuracy": val_acc,
                            "learning_rate": optimizer.param_groups[0]['lr']})
-
+            """
 
             # Save the weights
             if e % save_epoch == 0:
@@ -282,7 +283,7 @@ class Model(ABC):
                     metric=abs(metric),
                 )
 
-        wandb.finish()
+        # wandb.finish()
 
         history = dict()
         history["train_loss"] = train_loss
