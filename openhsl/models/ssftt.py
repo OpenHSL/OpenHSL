@@ -297,7 +297,7 @@ class SSFTT(Model):
                 y_pred_test = np.concatenate((y_pred_test, outputs))
                 y_test = np.concatenate((y_test, labels))
         y_pred_test = np.reshape(y_pred_test, (X.data.shape[0], X.data.shape[1]))
-        #if y:
-        #    prediction[y.get_2d() == 0] = 0
+        if y:
+            y_pred_test[y.get_2d() == 0] = 0
         return y_pred_test + 1
 
