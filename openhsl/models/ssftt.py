@@ -13,7 +13,7 @@ from openhsl.models.model import Model
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 from openhsl.data.dataset import get_dataset
-from openhsl.data.utils import apply_pca, sample_gt
+from openhsl.data.utils import apply_pca, sample_gt, camel_to_snake
 from openhsl.data.ssftt_loader import create_data_loader, get_all_data_loader
 from openhsl.data.torch_dataloader import create_loader
 
@@ -274,6 +274,10 @@ class SSFTT(Model):
                                          val_loader=val_loader,
                                          device='cuda',
                                          scheduler=None)
+
+        Model.save_train_mask(model_name=camel_to_snake(str(self.model.__class__.__name__)),
+                              dataset_name=train_loader.dataset.name,
+                              mask=train_gt)
 
         self.train_loss = history["train_loss"]
         self.val_loss = history["val_loss"]

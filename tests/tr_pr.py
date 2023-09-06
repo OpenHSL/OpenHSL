@@ -50,8 +50,8 @@ augmentation_params = {
 }
 
 fit_params = {
-    "epochs": 10,
-    "train_sample_percentage": 0.1,
+    "epochs": 2,
+    "train_sample_percentage": 0.8,
     "dataloader_mode": "fixed",
     #"optimizer": "AdamW",
     "optimizer_params": optimizer_params,
