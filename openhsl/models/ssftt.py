@@ -7,19 +7,16 @@ import torch.nn.init as init
 from typing import Any, Dict, Optional
 import copy
 import numpy as np
-from tqdm import tqdm
 
 from openhsl.models.model import Model
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import apply_pca, sample_gt, camel_to_snake
-from openhsl.data.ssftt_loader import create_data_loader, get_all_data_loader
 from openhsl.data.torch_dataloader import create_loader
 
 
 def _weights_init(m):
-    classname = m.__class__.__name__
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv3d):
         init.kaiming_normal_(m.weight)
 
@@ -74,14 +71,14 @@ class Attention(nn.Module):
         self.do1 = nn.Dropout(dropout)
 
     def forward(self, x, mask=None):
-
-        b, n, _, h = *x.shape, self.heads
-        qkv = self.to_qkv(x).chunk(3, dim = -1)  # gets q = Q = Wq matmul x1, k = Wk mm x2, v = Wv mm x3
+        b, n, _ = x.shape
+        h = self.heads
+        qkv = self.to_qkv(x).chunk(3, dim=-1)  # gets q = Q = Wq matmul x1, k = Wk mm x2, v = Wv mm x3
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h=h), qkv)  # split into multi head attentions
 
         dots = torch.einsum('bhid,bhjd->bhij', q, k) * self.scale
 
-        if mask is not None:
+        if mask:
             mask = F.pad(mask.flatten(1), (1, 0), value=True)
             assert mask.shape[-1] == dots.shape[-1], 'mask has incorrect dimensions'
             mask = mask[:, None, :] * mask[:, :, None]
@@ -138,16 +135,14 @@ class SSFTT_Net(nn.Module):
                                                        kernel_size=(3, 3, 3),
                                                        bias=False),
                                              nn.BatchNorm3d(8),
-                                             nn.ReLU()
-        )
+                                             nn.ReLU())
 
         self.conv2d_features = nn.Sequential(nn.Conv2d(in_channels=8*28,
                                                        out_channels=64,
                                                        kernel_size=(3, 3),
                                                        bias=False),
                                              nn.BatchNorm2d(64),
-                                             nn.ReLU()
-        )
+                                             nn.ReLU())
 
         # Tokenization
         self.token_wA = nn.Parameter(torch.empty(1, self.L, 64),
