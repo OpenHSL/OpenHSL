@@ -27,9 +27,11 @@ print(f"{torch.cuda.is_available()=}")
 hsi = HSImage()
 mask = HSMask()
 
-hsi.load(path_to_data='../test_data/tr_pr/PaviaU.mat', key='paviaU')
-mask.load(path_to_data='../test_data/tr_pr/PaviaU_gt.mat', key='paviaU_gt')
+#hsi.load(path_to_data='../test_data/tr_pr/PaviaU.mat', key='paviaU')
+#mask.load(path_to_data='../test_data/tr_pr/PaviaU_gt.mat', key='paviaU_gt')
 
+hsi.load(path_to_data='../test_data/tr_pr/three_coffee_piles.mat', key='image')
+mask.load(path_to_data='../test_data/tr_pr/three_coffee_piles_new_gt.mat', key='img')
 
 optimizer_params = {
     "learning_rate": 0.001,
@@ -49,12 +51,12 @@ augmentation_params = {
 
 fit_params = {
     "epochs": 10,
-    "train_sample_percentage": 0.25,
+    "train_sample_percentage": 0.1,
     "dataloader_mode": "fixed",
     #"optimizer": "AdamW",
     "optimizer_params": optimizer_params,
     #"loss": "CrossEntropyLoss",
-    #"batch_size": 32,
+    "batch_size": 256,
     #"scheduler_type": 'StepLR',
     #"scheduler_params": scheduler_params
 }
@@ -62,8 +64,8 @@ fit_params = {
 cnn = SSFTT(n_classes=mask.n_classes,
             n_bands=30,
             apply_pca=True,
+            #path_to_weights='../tests/checkpoints/ssftt__net/ssftt/2023_09_06_10_56_37_epoch10_0.99.pth',
             device='cuda')
-
 
 cnn.fit(X=hsi,
         y=mask,

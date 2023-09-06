@@ -12,8 +12,10 @@ from tqdm import tqdm
 from openhsl.models.model import Model
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
-from openhsl.data.utils import apply_pca
+from openhsl.data.dataset import get_dataset
+from openhsl.data.utils import apply_pca, sample_gt
 from openhsl.data.ssftt_loader import create_data_loader, get_all_data_loader
+from openhsl.data.torch_dataloader import create_loader
 
 
 def _weights_init(m):
@@ -236,15 +238,26 @@ class SSFTT(Model):
         else:
             print('PCA will not apply')
 
-        train_dataloader, val_loader, _ = create_data_loader(X.data,
-                                                             y.get_2d(),
-                                                             fit_params['train_sample_percentage'])
+        self.hyperparams['batch_size'] = fit_params['batch_size']
+
+        img, gt = get_dataset(hsi=X, mask=y)
+
+        train_gt, _ = sample_gt(gt=gt,
+                                train_size=fit_params['train_sample_percentage'],
+                                mode=fit_params['dataloader_mode'])
+
+        train_gt, val_gt = sample_gt(gt=train_gt,
+                                     train_size=0.9,
+                                     mode=fit_params['dataloader_mode'])
+
+        train_loader = create_loader(img, train_gt, self.hyperparams, shuffle=True)
+        val_loader = create_loader(img, val_gt, self.hyperparams)
 
         fit_params.setdefault('epochs', 10)
         fit_params.setdefault('train_sample_percentage', 0.5)
         fit_params.setdefault('dataloader_mode', 'random')
         fit_params.setdefault('loss', nn.CrossEntropyLoss())
-        fit_params.setdefault('batch_size', 100)
+        fit_params.setdefault('batch_size', 32)
         fit_params.setdefault('optimizer_params', {'learning_rate': 0.001, 'weight_decay': 0})
         fit_params.setdefault('optimizer',
                               optim.Adam(self.model.parameters(),
@@ -257,7 +270,7 @@ class SSFTT(Model):
                                          optimizer=fit_params['optimizer'],
                                          criterion=fit_params['loss'],
                                          epoch=fit_params['epochs'],
-                                         data_loader=train_dataloader,
+                                         data_loader=train_loader,
                                          val_loader=val_loader,
                                          device='cuda',
                                          scheduler=None)
@@ -278,26 +291,16 @@ class SSFTT(Model):
         else:
             print('PCA will not apply')
 
-        test_loader = get_all_data_loader(X.data, y.get_2d())
+        self.hyperparams["test_stride"] = 1
+        self.hyperparams["batch_size"] = 64
+        img, gt = get_dataset(X, mask=None)
 
-        count = 0
-        # Model testing
         self.model.eval()
-        y_pred_test = 0
-        y_test = 0
-        for inputs, labels in tqdm(test_loader, desc="Inference on the image"):
-            inputs = inputs.to('cuda')
-            outputs = self.model(inputs)
-            outputs = np.argmax(outputs.detach().cpu().numpy(), axis=1)
-            if count == 0:
-                y_pred_test = outputs
-                y_test = labels
-                count = 1
-            else:
-                y_pred_test = np.concatenate((y_pred_test, outputs))
-                y_test = np.concatenate((y_test, labels))
-        y_pred_test = np.reshape(y_pred_test, (X.data.shape[0], X.data.shape[1]))
-        if y:
-            y_pred_test[y.get_2d() == 0] = 0
-        return y_pred_test + 1
+
+        probabilities = Model.test(net=self.model,
+                                   img=img,
+                                   hyperparams=self.hyperparams)
+        prediction = np.argmax(probabilities, axis=-1)
+
+        return prediction
 
