@@ -7,6 +7,7 @@ import torch.nn.init as init
 from typing import Any, Dict, Optional
 import copy
 import numpy as np
+import pickle as pk
 
 from openhsl.models.model import Model
 from openhsl.hsi import HSImage
@@ -229,7 +230,7 @@ class SSFTT(Model):
 
         if self.apply_pca:
             X = copy.deepcopy(X)
-            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
+            X.data, pca = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
 

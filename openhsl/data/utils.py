@@ -68,7 +68,8 @@ def is_coordinate_in_padded_area(coordinates: Tuple,
 
 
 def apply_pca(X: np.ndarray,
-              num_components: int = 75):
+              num_components: int = 75,
+              pca=None):
     """
 
     Args:
@@ -78,11 +79,16 @@ def apply_pca(X: np.ndarray,
     Returns:
 
     """
-    print(f'Will apply PCA from {X.data.shape[-1]} to {num_components}')
     newX = np.reshape(X, (-1, X.shape[2]))
-    pca = PCA(n_components=num_components, whiten=True, random_state=131)
-    newX = pca.fit_transform(newX)
-    newX = np.reshape(newX, (X.shape[0], X.shape[1], num_components))
+    if pca:
+        print(f'Will apply PCA from {X.data.shape[-1]} to {len(pca.components_)}')
+        newX = pca.transform(newX)
+        newX = np.reshape(newX, (X.shape[0], X.shape[1], len(pca.components_)))
+    else:
+        print(f'Will apply PCA from {X.data.shape[-1]} to {num_components}')
+        pca = PCA(n_components=num_components, whiten=True, random_state=131)
+        newX = pca.fit_transform(newX)
+        newX = np.reshape(newX, (X.shape[0], X.shape[1], num_components))
     return newX, pca
 # ----------------------------------------------------------------------------------------------------------------------
 

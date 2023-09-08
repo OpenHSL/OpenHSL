@@ -33,14 +33,15 @@ print(f"{torch.cuda.is_available()=}")
 hsi = HSImage()
 mask = HSMask()
 
-hsi_path = '../test_data/tr_pr/triple_corn.mat'
+hsi_path = '../test_data/tr_pr/pca_corn_1.mat'
 hsi_key = 'image'
-mask_path = '../test_data/tr_pr/triple_corn_mask.mat'
+mask_path = '../test_data/tr_pr/mask_corn_1.mat'
 mask_key = 'img'
 
 
 hsi.load(path_to_data=hsi_path, key=hsi_key)
 mask.load(path_to_data=mask_path, key=mask_key)
+
 
 print(np.unique(mask.get_2d()))
 
@@ -61,9 +62,9 @@ augmentation_params = {
 }
 
 fit_params = {
-    "epochs": 2,
-    "train_sample_percentage": 0.2,
-    "dataloader_mode": "fixed",
+    "epochs": 3,
+    "train_sample_percentage": 0.1,
+    "dataloader_mode": "random",
     #"optimizer": "AdamW",
     "optimizer_params": optimizer_params,
     #"loss": "CrossEntropyLoss",
@@ -72,36 +73,35 @@ fit_params = {
     #"scheduler_params": scheduler_params
 }
 
-p1 = '../tests/checkpoints/ssftt__net/ssftt/2023_09_06_15_10_40_epoch2_1.00.pth'
-p2 = '../tests/checkpoints/ssftt__net/ssftt/2023_09_06_15_22_25_epoch2_1.00.pth'
-p3 = '../tests/checkpoints/ssftt__net/ssftt/2023_09_06_15_30_43_epoch2_1.00.pth'
 
-w1 = torch.load(p1)
-w2 = torch.load(p2)
-w3 = torch.load(p3)
+path_1 = '../tests/checkpoints/ssftt__net/ssftt/2023_09_07_16_43_24_epoch3_1.00.pth'
+path_2 = '../tests/checkpoints/ssftt__net/ssftt/2023_09_07_17_25_19_epoch3_1.00.pth'
+path_3 = '../tests/checkpoints/ssftt__net/ssftt/2023_09_07_17_28_18_epoch3_0.99.pth'
+
+sdA = torch.load(path_1)
+sdB = torch.load(path_2)
+sdC = torch.load(path_3)
+
+metaM = dict()
+
+# MEGA META LEARNING
+for key in sdA:
+    metaM[key] = (sdA[key] + sdB[key] + sdB[key]) / 3.0
 
 
-#for key in w1:
-#    w1[key] = (w1[key] + w2[key] + w3[key]) / 3.
-
-
-cnn = SSFTT(n_classes=mask.n_classes+1,
+cnn = SSFTT(n_classes=mask.n_classes,
             n_bands=30,
-            apply_pca=True,
-            #path_to_weights='../tests/checkpoints/ssftt__net/ssftt/2023_09_06_15_10_40_epoch2_1.00.pth',
+            #apply_pca=True,
+            #path_to_weights='../tests/checkpoints/ssftt__net/ssftt/2023_09_07_17_06_56_epoch1_0.99.pth',
             device='cuda')
 
+cnn.model.load_state_dict(metaM)
 
-cnn.fit(X=hsi,
-        y=mask,
-        fit_params=fit_params)
+#cnn.fit(X=hsi,
+#        y=mask,
+#        fit_params=fit_params)
 
 draw_fit_plots(model=cnn)
-
-
-hsi = HSImage()
-mask = HSMask()
-
 
 pred = cnn.predict(X=hsi, y=mask)
 
