@@ -33,9 +33,9 @@ print(f"{torch.cuda.is_available()=}")
 hsi = HSImage()
 mask = HSMask()
 
-hsi_path = '../test_data/tr_pr/pca_corn_1.mat'
+hsi_path = '../test_data/tr_pr/vessel2_200b.mat'
 hsi_key = 'image'
-mask_path = '../test_data/tr_pr/mask_corn_1.mat'
+mask_path = '../test_data/tr_pr/vessel2_mask.mat'
 mask_key = 'img'
 
 
@@ -43,7 +43,7 @@ hsi.load(path_to_data=hsi_path, key=hsi_key)
 mask.load(path_to_data=mask_path, key=mask_key)
 
 
-print(np.unique(mask.get_2d()))
+print(mask.data.shape)
 
 optimizer_params = {
     "learning_rate": 0.001,
@@ -62,11 +62,12 @@ augmentation_params = {
 }
 
 fit_params = {
-    "epochs": 3,
-    "train_sample_percentage": 0.1,
-    "dataloader_mode": "random",
+    "epochs": 4,
+    "train_sample_percentage": 0.25,
+    "dataloader_mode": "fixed",
+    "get_train_mask": True,
     #"optimizer": "AdamW",
-    "optimizer_params": optimizer_params,
+    #"optimizer_params": optimizer_params,
     #"loss": "CrossEntropyLoss",
     "batch_size": 256,
     #"scheduler_type": 'StepLR',
@@ -74,32 +75,32 @@ fit_params = {
 }
 
 
-path_1 = '../tests/checkpoints/ssftt__net/ssftt/2023_09_07_16_43_24_epoch3_1.00.pth'
-path_2 = '../tests/checkpoints/ssftt__net/ssftt/2023_09_07_17_25_19_epoch3_1.00.pth'
-path_3 = '../tests/checkpoints/ssftt__net/ssftt/2023_09_07_17_28_18_epoch3_0.99.pth'
+# path_1 = '../tests/checkpoints/ssftt__net/ssftt/2023_09_07_16_43_24_epoch3_1.00.pth'
+# path_2 = '../tests/checkpoints/ssftt__net/ssftt/2023_09_07_17_25_19_epoch3_1.00.pth'
+# path_3 = '../tests/checkpoints/ssftt__net/ssftt/2023_09_07_17_28_18_epoch3_0.99.pth'
 
-sdA = torch.load(path_1)
-sdB = torch.load(path_2)
-sdC = torch.load(path_3)
+# sdA = torch.load(path_1)
+# sdB = torch.load(path_2)
+# sdC = torch.load(path_3)
 
-metaM = dict()
+#metaM = dict()
 
 # MEGA META LEARNING
-for key in sdA:
-    metaM[key] = (sdA[key] + sdB[key] + sdB[key]) / 3.0
+#for key in sdA:
+#    metaM[key] = (sdA[key] + sdB[key] + sdB[key]) / 3.0
 
 
 cnn = SSFTT(n_classes=mask.n_classes,
-            n_bands=30,
-            #apply_pca=True,
-            #path_to_weights='../tests/checkpoints/ssftt__net/ssftt/2023_09_07_17_06_56_epoch1_0.99.pth',
-            device='cuda')
+               n_bands=30,
+               apply_pca=True,
+               #path_to_weights='../tests/checkpoints/ssftt__net/ssftt/2023_09_07_17_06_56_epoch1_0.99.pth',
+               device='cuda')
 
-cnn.model.load_state_dict(metaM)
+#cnn.model.load_state_dict(metaM)
 
-#cnn.fit(X=hsi,
-#        y=mask,
-#        fit_params=fit_params)
+cnn.fit(X=hsi,
+        y=mask,
+        fit_params=fit_params)
 
 draw_fit_plots(model=cnn)
 
@@ -116,5 +117,3 @@ plt.imshow(np.hstack((color_pred, convert_to_color_(mask.get_2d()))))
 plt.show()
 
 print(classification_report(pred.flatten(), mask.get_2d().flatten()))
-
-

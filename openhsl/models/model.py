@@ -384,11 +384,10 @@ class Model(ABC):
         time_str = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         if not os.path.isdir(mask_dir):
             os.makedirs(mask_dir, exist_ok=True)
-        gray_filename = f"{mask_dir}/{time_str}_gray_mask.png"
+        gray_filename = f"{mask_dir}/{time_str}_gray_mask.npy"
         color_filename = f"{mask_dir}/{time_str}_color_mask.png"
-        gray = Image.fromarray(mask)
         color = Image.fromarray(convert_to_color_(mask))
-        gray.save(gray_filename)
+        np.save(gray_filename, mask)
         color.save(color_filename)
     # ------------------------------------------------------------------------------------------------------------------
 
