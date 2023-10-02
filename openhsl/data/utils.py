@@ -42,7 +42,6 @@ def create_patches(X: np.ndarray,
     if remove_zero_labels:
         patches_data = patches_data[patches_labels > 0, :, :, :]
         patches_labels = patches_labels[patches_labels > 0]
-        patches_labels -= 1
 
     return patches_data, patches_labels
 
@@ -228,13 +227,15 @@ def grouper(n, iterable):
 
 def sample_gt(gt: np.ndarray,
               train_size: float,
-              mode: str = 'random'):
+              mode: str = 'random',
+              msg: str = 'train/test'):
     """Extract a fixed percentage of samples from an array of labels.
 
     Args:
         gt: a 2D array of int labels
         train_size: [0, 1] float
         mode: str
+        msg: str
     Returns:
         train_gt, test_gt: 2D arrays of int labels
 
@@ -259,7 +260,7 @@ def sample_gt(gt: np.ndarray,
 
     # get fixed count of class sample for each class
     elif mode == 'fixed':
-        print(f"Sampling {mode} with train size = {train_size}")
+        print(f"Sampling {mode} with train size = {train_size} for {msg}")
         train_indices, test_indices = [], []
         for c in np.unique(gt):
             if c == 0:

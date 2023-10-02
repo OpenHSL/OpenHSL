@@ -14,7 +14,7 @@ from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import apply_pca, sample_gt, camel_to_snake
-from openhsl.data.torch_dataloader import create_loader
+from openhsl.data.torch_dataloader import create_torch_loader
 
 
 def _weights_init(m):
@@ -246,8 +246,8 @@ class SSFTT(Model):
                                      train_size=0.9,
                                      mode=fit_params['dataloader_mode'])
 
-        train_loader = create_loader(img, train_gt, self.hyperparams, shuffle=True)
-        val_loader = create_loader(img, val_gt, self.hyperparams)
+        train_loader = create_torch_loader(img, train_gt, self.hyperparams, shuffle=True)
+        val_loader = create_torch_loader(img, val_gt, self.hyperparams)
 
         fit_params.setdefault('epochs', 10)
         fit_params.setdefault('train_sample_percentage', 0.5)

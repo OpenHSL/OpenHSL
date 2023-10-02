@@ -14,7 +14,7 @@ import wandb
 from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
                                         sliding_window, sample_gt, convert_to_color_
-from openhsl.data.torch_dataloader import create_loader
+from openhsl.data.torch_dataloader import create_torch_loader
 
 
 class Model(ABC):
@@ -117,11 +117,13 @@ class Model(ABC):
 
         train_gt, _ = sample_gt(gt=gt,
                                 train_size=fit_params['train_sample_percentage'],
-                                mode=fit_params['dataloader_mode'])
+                                mode=fit_params['dataloader_mode'],
+                                msg='train_val/test')
 
         train_gt, val_gt = sample_gt(gt=train_gt,
                                      train_size=0.9,
-                                     mode=fit_params['dataloader_mode'])
+                                     mode=fit_params['dataloader_mode'],
+                                     msg='train/val')
 
         print(f'Full size: {np.sum(gt > 0)}')
         print(f'Train size: {np.sum(train_gt > 0)}')
@@ -129,8 +131,8 @@ class Model(ABC):
 
         # Generate the dataset
 
-        train_loader = create_loader(img, train_gt, hyperparams, shuffle=True)
-        val_loader = create_loader(img, val_gt, hyperparams)
+        train_loader = create_torch_loader(img, train_gt, hyperparams, shuffle=True)
+        val_loader = create_torch_loader(img, val_gt, hyperparams)
 
         Model.save_train_mask(model_name=camel_to_snake(str(model.__class__.__name__)),
                               dataset_name=train_loader.dataset.name,

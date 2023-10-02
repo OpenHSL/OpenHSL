@@ -249,13 +249,14 @@ class HSMask:
             ----------
             mask: np.ndarray
         """
-        mask_3d = []
+        h, w = mask.shape
+        count_classes = np.max(mask) + 1
+        mask_3d = np.zeros((h, w, count_classes))
+
         for cl in np.unique(mask):
+            mask_3d[:, :, cl] = (mask == cl).astype('uint8')
 
-            mask_3d.append((mask == cl).astype('uint8'))
-        mask_3d = np.array(mask_3d)
-
-        return np.transpose(mask_3d, (1, 2, 0))
+        return mask_3d
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod

@@ -2,7 +2,7 @@ import os
 import copy
 import numpy as np
 
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 
 import tensorflow as tf
 from keras.models import Sequential
@@ -27,18 +27,26 @@ class TF2DCNN:
                  path_to_weights: str = None,
                  device: str = 'cpu'):
 
+        self.hyperparams: dict[str: Any] = dict()
+        self.hyperparams['patch_size'] = 5
+        self.hyperparams['n_classes'] = n_classes
+        self.hyperparams['ignored_labels'] = [0]
+        self.hyperparams['device'] = device
+        self.hyperparams['n_bands'] = n_bands
+        self.hyperparams['center_pixel'] = True
+        self.hyperparams['net_name'] = 'tf2d'
+
+        self.pca = None
+
         self.train_loss = []
         self.val_loss = []
         self.train_accs = []
         self.val_accs = []
 
-        self.patch_size = 5
-        self.n_bands = n_bands
-        self.class_count = n_classes - 1
         self.apply_pca = apply_pca
-        input_shape = (self.n_bands, self.patch_size, self.patch_size)
+        input_shape = (self.hyperparams['n_bands'], self.hyperparams['patch_size'], self.hyperparams['patch_size'])
 
-        C1 = 3 * self.n_bands
+        C1 = 3 * self.hyperparams['n_bands']
 
         self.model = Sequential()
 
@@ -48,9 +56,9 @@ class TF2DCNN:
         self.model.add(Dropout(0.25))
 
         self.model.add(Flatten())
-        self.model.add(Dense(6 * self.n_bands, activation='relu'))
+        self.model.add(Dense(6 * self.hyperparams['n_bands'], activation='relu'))
         self.model.add(Dropout(0.5))
-        self.model.add(Dense(self.class_count, activation='softmax'))
+        self.model.add(Dense(self.hyperparams['n_classes'], activation='softmax'))
 
         sgd = SGD(learning_rate=0.0001,
                   decay=1e-6,
@@ -71,7 +79,7 @@ class TF2DCNN:
 
         if self.apply_pca:
             X = copy.deepcopy(X)
-            X.data, _ = apply_pca(X.data, self.n_bands)
+            X.data, self.pca = apply_pca(X.data, self.hyperparams['n_bands'])
         else:
             print('PCA will not apply')
 
@@ -99,7 +107,10 @@ class TF2DCNN:
                                            epochs=fit_params['epochs'])
 
         types = (tf.float32, tf.int32)
-        shapes = ((self.n_bands, self.patch_size, self.patch_size), (self.class_count,))
+        shapes = ((self.hyperparams['n_bands'],
+                   self.hyperparams['patch_size'],
+                   self.hyperparams['patch_size']),
+                  (self.hyperparams['n_classes'],))
 
         ds_train = tf.data.Dataset.from_generator(lambda: train_generator, types, shapes).batch(fit_params['batch_size'])
         ds_val = tf.data.Dataset.from_generator(lambda: val_generator, types, shapes).batch(fit_params['batch_size'])
@@ -135,26 +146,27 @@ class TF2DCNN:
 
         if self.apply_pca:
             X = copy.deepcopy(X)
-            X.data, _ = apply_pca(X.data, self.n_bands)
+            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'], self.pca)
         else:
             print('PCA will not apply')
 
         types = tf.float32
-        shapes = (self.n_bands, self.patch_size, self.patch_size)
+        shapes = (self.hyperparams['n_bands'], self.hyperparams['patch_size'], self.hyperparams['patch_size'])
+
         X = X.data
 
-        test_generator = get_test_generator(X, patch_size=self.patch_size)
+        test_generator = get_test_generator(X, patch_size=self.hyperparams['patch_size'])
         ds_test = tf.data.Dataset.from_generator(lambda: test_generator, types, shapes).batch(128)
 
         # TODO bad issue
         total = sum([1 for i in ds_test])
 
-        test_generator = get_test_generator(X, patch_size=self.patch_size)
+        test_generator = get_test_generator(X, patch_size=self.hyperparams['patch_size'])
         ds_test = tf.data.Dataset.from_generator(lambda: test_generator, types, shapes).batch(128)
 
         prediction = self.model.predict(ds_test, steps=total)
         pr = np.argmax(prediction, axis=1)
-        predicted_mask = np.reshape(pr, (X.shape[0], X.shape[1]))
+        predicted_mask = np.reshape(pr, (X.data.shape[0], X.data.shape[1]))
 
-        return predicted_mask + 1
+        return predicted_mask
     # ------------------------------------------------------------------------------------------------------------------

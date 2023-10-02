@@ -1,21 +1,22 @@
 import torch
 import torch.utils
 import torch.utils.data
+import keras
 import numpy as np
 import torch.utils.data as udata
 from typing import Dict, Any
 from openhsl.data.utils import is_coordinate_in_padded_area
 
 
-def create_loader(img: np.array,
-                  gt: np.array,
-                  hyperparams: Dict,
-                  shuffle: Any = False):
-    dataset = DataLoader(img, gt, **hyperparams)
+def create_torch_loader(img: np.array,
+                        gt: np.array,
+                        hyperparams: Dict,
+                        shuffle: Any = False):
+    dataset = TorchDataLoader(img, gt, **hyperparams)
     return udata.DataLoader(dataset, batch_size=hyperparams["batch_size"], shuffle=shuffle)
 
 
-class DataLoader(torch.utils.data.Dataset):
+class TorchDataLoader(torch.utils.data.Dataset):
     """ Generic class for a hyperspectral scene """
 
     def __init__(self,
@@ -32,7 +33,7 @@ class DataLoader(torch.utils.data.Dataset):
             data_augmentation: bool, set to True to perform random flips
             supervision: 'full' or 'semi' supervised algorithms
         """
-        super(DataLoader, self).__init__()
+        super(TorchDataLoader, self).__init__()
         self.data = data
         self.label = gt
         self.name = hyperparams["net_name"]
