@@ -75,7 +75,6 @@ class NM3DCNN_Net(nn.Module):
         self.bn_conv4 = nn.BatchNorm3d(16)
 
         self.features_size = self._get_final_flattened_size()
-        print(self.features_size)
 
         self.fc = nn.Linear(self.features_size, n_classes)
 

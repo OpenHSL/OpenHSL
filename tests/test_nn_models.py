@@ -18,8 +18,8 @@ from time import time
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 
-from openhsl.models.baseline import BASELINE
-from openhsl.models.hsicnn_luo import HSICNN
+from openhsl.models.fcnn import FCNN
+from openhsl.models.hsicnn_luo import HSICNN as Luo
 from openhsl.models.m1dcnn import M1DCNN
 from openhsl.models.m3dcnn_sharma import M3DCNN as SHARMA
 from openhsl.models.m3dcnn_li import M3DCNN as LI
@@ -63,7 +63,7 @@ def get_accuracy(pretrained_model,
 def test_baseline(return_inference_test_data):
     n_classes = len(return_inference_test_data[1])
 
-    model = BASELINE(n_classes=n_classes, device='cuda', n_bands=250)
+    model = FCNN(n_classes=n_classes, device='cuda', n_bands=250)
 
     assert get_inference_time(pretrained_model=model, dataset=return_inference_test_data)
 
@@ -71,7 +71,7 @@ def test_baseline(return_inference_test_data):
 def test_hsicnn_luo(return_inference_test_data):
     n_classes = len(return_inference_test_data[1])
 
-    model = HSICNN(n_classes=n_classes, device='cuda', n_bands=250)
+    model = Luo(n_classes=n_classes, device='cuda', n_bands=250)
 
     assert get_inference_time(pretrained_model=model, dataset=return_inference_test_data)
 

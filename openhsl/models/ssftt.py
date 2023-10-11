@@ -237,14 +237,15 @@ class SSFTT(Model):
         self.hyperparams['batch_size'] = fit_params['batch_size']
 
         img, gt = get_dataset(hsi=X, mask=y)
-
         train_gt, _ = sample_gt(gt=gt,
                                 train_size=fit_params['train_sample_percentage'],
-                                mode=fit_params['dataloader_mode'])
+                                mode=fit_params['dataloader_mode'],
+                                msg='train_val/test')
 
         train_gt, val_gt = sample_gt(gt=train_gt,
                                      train_size=0.9,
-                                     mode=fit_params['dataloader_mode'])
+                                     mode=fit_params['dataloader_mode'],
+                                     msg='train/val')
 
         train_loader = create_torch_loader(img, train_gt, self.hyperparams, shuffle=True)
         val_loader = create_torch_loader(img, val_gt, self.hyperparams)

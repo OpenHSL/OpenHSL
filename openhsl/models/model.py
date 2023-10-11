@@ -361,7 +361,7 @@ class Model(ABC):
                     data = data.unsqueeze(1)
 
                 indices = [b[1:] for b in batch]
-                data = data.to(device)
+                data = data.to(device, dtype=torch.float)
                 output = net(data)
                 if isinstance(output, tuple):
                     output = output[0]
@@ -388,9 +388,9 @@ class Model(ABC):
             os.makedirs(mask_dir, exist_ok=True)
         gray_filename = f"{mask_dir}/{time_str}_gray_mask.npy"
         color_filename = f"{mask_dir}/{time_str}_color_mask.png"
-        color = Image.fromarray(convert_to_color_(mask))
+        #color = Image.fromarray(convert_to_color_(mask))
         np.save(gray_filename, mask)
-        color.save(color_filename)
+        #color.save(color_filename)
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod

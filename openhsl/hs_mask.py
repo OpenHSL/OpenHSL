@@ -4,6 +4,7 @@ from PIL import Image
 from scipy.io import loadmat, savemat
 from typing import Optional, Dict
 import os.path
+import json
 
 
 class HSMask:
@@ -63,7 +64,8 @@ class HSMask:
 
             self.n_classes = self.data.shape[-1]
         else:
-            print("void mask")
+            print("Created void mask")
+            print("Class labeles is empty")
             self.data = None
             self.label_class = None
     # ------------------------------------------------------------------------------------------------------------------
@@ -357,7 +359,7 @@ class HSMask:
 
         # updates number of classes after loading mask
         self.n_classes = self.data.shape[-1]
-        self.label_class = {}
+        self.load_class_info(path_to_data)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_mat(self,
@@ -380,6 +382,7 @@ class HSMask:
         """
         temp_dict = {mat_key: self.data}
         savemat(path_to_file, temp_dict)
+        self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_h5(self,
@@ -405,6 +408,7 @@ class HSMask:
 
         with h5py.File(path_to_file, 'w') as f:
             f.create_dataset(h5_key, data=self.data)
+        self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
     
     def save_to_npy(self,
@@ -422,6 +426,7 @@ class HSMask:
             Path to file
         """
         np.save(path_to_file, self.data)
+        self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_image(self,
@@ -440,12 +445,26 @@ class HSMask:
         """
         img = Image.fromarray(self.data[:, :, 0])
         img.save(path_to_save_file)
+        self.save_class_info(path_to_save_file)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_class_info(self):
-        pass
+    def load_class_info(self, path_to_data):
+        path_to_data = '.'.join(path_to_data.split('.')[:-1]) + '_metainfo.json'
+        if os.path.exists(path_to_data):
+            with open(path_to_data, 'r') as json_file:
+                data = json.load(json_file)
+            self.label_class = data['label_class']
+        else:
+            print("Metainfo file does not exist!")
+            self.label_class = {}
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_class_info(self):
-        pass
+    def save_class_info(self, path_to_data):
+        path_to_data = '.'.join(path_to_data.split('.')[:-1]) + '_metainfo.json'
+        if not self.label_class:
+            print('Wavelengths are empty! Save as empy dict')
+            self.label_class = {}
+        data = {"label_class": self.label_class}
+        with open(path_to_data, 'w') as outfile:
+            outfile.write(json.dumps(data))
     # ------------------------------------------------------------------------------------------------------------------
