@@ -1,3 +1,6 @@
+import sys
+sys.path.append('./')
+
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 from openhsl.models.ssftt import SSFTT
@@ -70,6 +73,8 @@ fit_params = {
     #"optimizer_params": optimizer_params,
     #"loss": "CrossEntropyLoss",
     "batch_size": 256,
+    "wandb_vis": False,
+    "tensorboard_vis": False,
     #"scheduler_type": 'StepLR',
     #"scheduler_params": scheduler_params
 }

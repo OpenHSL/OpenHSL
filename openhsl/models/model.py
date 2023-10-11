@@ -15,6 +15,7 @@ from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
                                         sliding_window, sample_gt, convert_to_color_
 from openhsl.data.torch_dataloader import create_torch_loader
+from openhsl.utils import init_wandb, init_tensorboard
 
 
 class Model(ABC):
@@ -48,34 +49,7 @@ class Model(ABC):
         raise NotImplemented("Method predict must be implemented!")
     # ------------------------------------------------------------------------------------------------------------------
 
-    @staticmethod
-    def init_wandb():
-        """
-        Initialize wandb from yaml file
 
-        Returns
-        -------
-        wandb: wandb
-        """
-        # open wandb credentials from the root directory
-        with open('../wandb_credentials.yaml', 'r') as file:
-            wandb_config = yaml.safe_load(file)
-
-        required_fields = ['api_key', 'project', 'entity', 'run']
-        for field in required_fields:
-            if field not in wandb_config['wandb']:
-                raise ValueError(f'Missing {field} in wandb configuration')
-
-        os.environ["WANDB_API_KEY"] = wandb_config['wandb']['api_key']
-        wandb.login(key=wandb_config['wandb']['api_key'])
-
-        wandb.init(project=wandb_config['wandb']['project'],
-                   entity=wandb_config['wandb']['entity'],
-                   name=wandb_config['wandb']['run'],
-                   mode="online")
-
-        return wandb
-    # ------------------------------------------------------------------------------------------------------------------
     @staticmethod
     def fit_nn(X,
                y,
@@ -177,9 +151,12 @@ class Model(ABC):
               scheduler: torch.optim.lr_scheduler,
               data_loader: udata.DataLoader,
               epoch,
+              wandb_vis: False,
+              tensorboard_vis: False,
               display_iter=100,
               device=None,
-              val_loader=None):
+              val_loader=None,
+              ):
         """
         Training loop to optimize a network for several epochs and a specified loss
         Parameters
@@ -202,11 +179,38 @@ class Model(ABC):
                 torch device to use (defaults to CPU)
             val_loader:
                 validation dataset
+            wandb_vis:
+                Flag to enable weights & biases visualisation
+            tensorboard_vis:
+                Flag to enable Tensorboard logging and visualisation
         """
         net.to(device)
 
-        #wandb = Model.init_wandb()
-        #wandb.watch(net)
+        """
+        if wandb_vis:
+            try:
+                wandb_run = init_wandb(path='wandb.yaml')
+            except wandb.errors.UsageError as e:
+                print(e)
+                wandb_run = None
+            except wandb.errors.AuthenticationError as e:
+                print(e)
+                wandb_run = None
+            except wandb.errors.CommError as e:
+                print(e)
+                wandb_run = None
+            if wandb_run:
+                wandb_run.watch(net)
+        else:
+            wandb_run = None
+        """
+        if wandb_vis:
+            wandb_run = init_wandb(path='wandb.yaml')
+        if wandb_run:
+            wandb_run.watch(net)
+
+        if tensorboard_vis:
+            writer = init_tensorboard(path_dir='tensorboard')
 
         save_epoch = epoch // 20 if epoch > 20 else 1
 
@@ -266,14 +270,19 @@ class Model(ABC):
             # Update the scheduler (ToDo: not preferable to check if condition every iteration)
             if scheduler is not None:
                 scheduler.step()
+            # log metrics
+            if wandb_run:
+                wandb_run.log({"train_loss": avg_loss,
+                                 "val_accuracy": val_acc,
+                                 "learning_rate": optimizer.param_groups[0]['lr']})
 
-            # check if wandb is initialized (ToDo: not preferable to check if condition every iteration)
-            """
-            if wandb.run is not None:
-                wandb.log({"train_loss": avg_loss,
-                           "val_accuracy": val_acc,
-                           "learning_rate": optimizer.param_groups[0]['lr']})
-            """
+            if tensorboard_vis:
+                writer.add_scalar('Loss/train', avg_loss, e)
+                #writer.add_scalar('Loss/test', np.random.random(), e)
+                #writer.add_scalar('Accuracy/train', np.random.random(), e)
+                writer.add_scalar('Accuracy/val', val_acc, e)
+                writer.add_scalar('Learning rate', optimizer.param_groups[0]['lr'], e)
+                #writer.add_hparams({'lr': 0.1*e, 'bsize': e}, {'hparam/accuracy': 10*e, 'hparam/loss': 10*e})
 
             # Save the weights
             if e % save_epoch == 0:
@@ -285,7 +294,11 @@ class Model(ABC):
                     metric=abs(metric),
                 )
 
-        # wandb.finish()
+        if wandb_run:
+            wandb_run.finish()
+
+        if tensorboard_vis:
+            writer.close()
 
         history = dict()
         history["train_loss"] = train_loss
