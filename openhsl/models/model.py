@@ -186,28 +186,10 @@ class Model(ABC):
         """
         net.to(device)
 
-        """
-        if wandb_vis:
-            try:
-                wandb_run = init_wandb(path='wandb.yaml')
-            except wandb.errors.UsageError as e:
-                print(e)
-                wandb_run = None
-            except wandb.errors.AuthenticationError as e:
-                print(e)
-                wandb_run = None
-            except wandb.errors.CommError as e:
-                print(e)
-                wandb_run = None
-            if wandb_run:
-                wandb_run.watch(net)
-        else:
-            wandb_run = None
-        """
         if wandb_vis:
             wandb_run = init_wandb(path='wandb.yaml')
-        if wandb_run:
-            wandb_run.watch(net)
+            if wandb_run:
+                wandb_run.watch(net)
 
         if tensorboard_vis:
             writer = init_tensorboard(path_dir='tensorboard')
@@ -271,10 +253,11 @@ class Model(ABC):
             if scheduler is not None:
                 scheduler.step()
             # log metrics
-            if wandb_run:
-                wandb_run.log({"train_loss": avg_loss,
-                                 "val_accuracy": val_acc,
-                                 "learning_rate": optimizer.param_groups[0]['lr']})
+            if wandb_vis:
+                if wandb_run:
+                    wandb_run.log({"train_loss": avg_loss,
+                                     "val_accuracy": val_acc,
+                                     "learning_rate": optimizer.param_groups[0]['lr']})
 
             if tensorboard_vis:
                 writer.add_scalar('Loss/train', avg_loss, e)
@@ -294,8 +277,9 @@ class Model(ABC):
                     metric=abs(metric),
                 )
 
-        if wandb_run:
-            wandb_run.finish()
+        if wandb_vis:
+            if wandb_run:
+                wandb_run.finish()
 
         if tensorboard_vis:
             writer.close()
