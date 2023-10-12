@@ -7,7 +7,7 @@ from sklearn import preprocessing
 from typing import Optional, Dict
 from openhsl.data.utils import apply_pca, pad_with_zeros, split_train_test_set, create_patches
 
-from keras.utils import np_utils
+#from keras.utils import np_utils
 
 
 def standartize_data(X: np.ndarray):
@@ -52,10 +52,10 @@ def preprocess_data(X: np.ndarray,
     X_train, X_val, y_train, y_val = split_train_test_set(X_train, y_train, 0.1)
 
     X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[3], X_train.shape[1], X_train.shape[2]))
-    y_train = np_utils.to_categorical(y_train)
+    #y_train = np_utils.to_categorical(y_train)
 
     X_val = np.reshape(X_val, (X_val.shape[0], X_val.shape[3], X_val.shape[1], X_val.shape[2]))
-    y_val = np_utils.to_categorical(y_val)
+    #y_val = np_utils.to_categorical(y_val)
 
     return X_train, X_val, y_train, y_val
 # ----------------------------------------------------------------------------------------------------------------------
@@ -96,4 +96,55 @@ def get_test_generator(X: np.array,
                                               image_patch.shape[0],
                                               image_patch.shape[1]).astype('float32')
             yield image_patch
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+class Gen:
+    def __init__(self, X, indices, labels, patch_size, num_classes):
+        self.X = X
+        self.indices = indices
+        self.labels = labels
+        self.patch_size = patch_size
+        self.num_classes = num_classes
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, i):
+        x, y = self.indices[i]
+        x += self.patch_size // 2
+        y += self.patch_size // 2
+        x1, y1 = x - self.patch_size // 2, y - self.patch_size // 2  # left up bound
+        x2, y2 = x1 + self.patch_size, y1 + self.patch_size  # right down bound
+
+        data = self.X[x1:x2, y1:y2]
+        data = data.reshape(data.shape[2],
+                            data.shape[0],
+                            data.shape[1]).astype('float32')
+
+        label = np.zeros(self.num_classes)
+        label[self.labels[i]] = 1  # one-hot encoding
+        return data, label
+
+
+def get_train_val_gens(X: np.array,
+                       y: np.array,
+                       train_sample_percentage: float,
+                       patch_size: int = 5):
+    X = pad_with_zeros(X, margin=patch_size // 2)
+    test_ratio = 1.0 - train_sample_percentage
+    x_pos, y_pos = np.nonzero(y)
+
+    indices = np.array([(i, j) for i, j in zip(x_pos, y_pos)])
+    labels = np.array([y[i, j] for i, j in zip(x_pos, y_pos)])
+
+    X_train, _, y_train, _ = split_train_test_set(indices, labels, test_ratio)
+    X_train, X_val, y_train, y_val = split_train_test_set(X_train, y_train, 0.9)
+
+    num_classes = np.max(y) + 1
+    train_gen = Gen(X, X_train, y_train, patch_size, num_classes=num_classes)
+    val_gen = Gen(X, X_val, y_val, patch_size, num_classes=num_classes)
+
+    return train_gen, val_gen
+
 # ----------------------------------------------------------------------------------------------------------------------

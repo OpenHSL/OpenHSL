@@ -12,10 +12,11 @@ from keras.optimizers import SGD
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 from openhsl.data.utils import apply_pca
-from openhsl.data.tf_dataloader import preprocess_data, get_data_generator, get_test_generator
+from openhsl.data.tf_dataloader import preprocess_data, get_data_generator, get_test_generator, get_train_val_gens
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+#os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
 
 
 class TF2DCNN:
@@ -90,21 +91,26 @@ class TF2DCNN:
         fit_params.setdefault('scheduler_type', None)
         fit_params.setdefault('scheduler_params', None)
 
-        X_train, X_val, y_train, y_val = preprocess_data(X=X.data,
-                                                         y=y.get_2d(),
-                                                         train_sample_percentage=fit_params['train_sample_percentage'],
-                                                         patch_size=5)
+        #X_train, X_val, y_train, y_val = preprocess_data(X=X.data,
+        #                                                 y=y.get_2d(),
+        #                                                 train_sample_percentage=fit_params['train_sample_percentage'],
+        #                                                 patch_size=5)
 
-        print(f'X_train shape: {np.shape(X_train)}, y_train shape: {np.shape(y_train)}')
-        print(f'X_val shape: {np.shape(X_val)}, y_val shape: {np.shape(y_val)}')
+        #print(f'X_train shape: {np.shape(X_train)}, y_train shape: {np.shape(y_train)}')
+        #print(f'X_val shape: {np.shape(X_val)}, y_val shape: {np.shape(y_val)}')
 
-        train_generator = get_data_generator(X=X_train,
-                                             y=y_train,
-                                             epochs=fit_params['epochs'])
+        #train_generator = get_data_generator(X=X_train,
+        #                                     y=y_train,
+        #                                     epochs=fit_params['epochs'])
 
-        val_generator = get_data_generator(X=X_val,
-                                           y=y_val,
-                                           epochs=fit_params['epochs'])
+        #val_generator = get_data_generator(X=X_val,
+        #                                   y=y_val,
+         #                                  epochs=fit_params['epochs'])
+
+        train_generator, val_generator = get_train_val_gens(X=X.data,
+                                                            y=y.get_2d(),
+                                                            train_sample_percentage=fit_params['train_sample_percentage'],
+                                                            patch_size=5)
 
         types = (tf.float32, tf.int32)
         shapes = ((self.hyperparams['n_bands'],
@@ -112,11 +118,14 @@ class TF2DCNN:
                    self.hyperparams['patch_size']),
                   (self.hyperparams['n_classes'],))
 
-        ds_train = tf.data.Dataset.from_generator(lambda: train_generator, types, shapes).batch(fit_params['batch_size'])
-        ds_val = tf.data.Dataset.from_generator(lambda: val_generator, types, shapes).batch(fit_params['batch_size'])
+        ds_train = tf.data.Dataset.from_generator(lambda: train_generator, types, shapes).batch(fit_params['batch_size']).repeat()
+        ds_val = tf.data.Dataset.from_generator(lambda: val_generator, types, shapes).batch(fit_params['batch_size']).repeat()
 
-        steps = len(y_train) / fit_params['batch_size']
-        val_steps = len(y_val) / fit_params['batch_size']
+        #steps = len(y_train) / fit_params['batch_size']
+        #val_steps = len(y_val) / fit_params['batch_size']
+
+        steps = len(train_generator) / fit_params['batch_size']
+        val_steps = len(val_generator) / fit_params['batch_size']
 
         checkpoint_filepath = './tmp/checkpoint'
 

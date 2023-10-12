@@ -26,18 +26,18 @@ import torch
 print(f"{torch.cuda.is_available()=}")
 
 
-hsi_path = '../test_data/tr_pr/PaviaU.mat'
-hsi_key = 'paviaU'
-mask_path = '../test_data/tr_pr/PaviaU_gt.mat'
-mask_key = 'paviaU_gt'
+#hsi_path = '../test_data/tr_pr/PaviaU.mat'
+#hsi_key = 'paviaU'
+#mask_path = '../test_data/tr_pr/PaviaU_gt.mat'
+#mask_key = 'paviaU_gt'
 
 hsi = HSImage()
 mask = HSMask()
 
-#hsi_path = '../test_data/tr_pr/corn_1.mat'
-#hsi_key = 'image'
-#mask_path = '../test_data/tr_pr/mask_corn_1.mat'
-#mask_key = 'img'
+hsi_path = '../demo_data/corn_1.mat'
+hsi_key = 'image'
+mask_path = '../demo_data/mask_corn_1.mat'
+mask_key = 'img'
 
 
 hsi.load(path_to_data=hsi_path, key=hsi_key)
@@ -63,8 +63,8 @@ augmentation_params = {
 }
 
 fit_params = {
-    "epochs": 5,
-    "train_sample_percentage": 0.1,
+    "epochs": 10,
+    "train_sample_percentage": 0.25,
     "dataloader_mode": "fixed",
     "get_train_mask": True,
     #"optimizer": "AdamW",
@@ -75,13 +75,13 @@ fit_params = {
     #"scheduler_params": scheduler_params
 }
 
-cnn = SSFTT(n_classes=mask.n_classes,
-          #n_bands=hsi.data.shape[-1],
-          n_bands=30,
-          apply_pca=True,
-          #path_to_weights='../tests/tmp/checkpoint/weights.h5',
-          #path_to_weights='../tests/checkpoints/li3_dcnn__net/m3dcnn_li/2023_10_09_16_45_39_epoch10_0.98.pth',
-          device='cuda')
+cnn = TF2DCNN(n_classes=mask.n_classes,
+              #n_bands=hsi.data.shape[-1],
+              n_bands=30,
+              apply_pca=True,
+              #path_to_weights='../tests/tmp/checkpoint/weights.h5',
+              #path_to_weights='../tests/checkpoints/li3_dcnn__net/m3dcnn_li/2023_10_09_16_45_39_epoch10_0.98.pth',
+              device='cuda')
 
 cnn.fit(X=hsi,
         y=mask,
