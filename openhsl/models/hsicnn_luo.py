@@ -140,6 +140,8 @@ class HSICNN(Model):
                                         weight_decay=fit_params['optimizer_params']['weight_decay']))
         fit_params.setdefault('scheduler_type', None)
         fit_params.setdefault('scheduler_params', None)
+        fit_params.setdefault('wandb_vis', False)
+        fit_params.setdefault('tensorboard_viz', False)
 
         self.model, history = super().fit_nn(X=X,
                                              y=y,
