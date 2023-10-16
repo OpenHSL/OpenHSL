@@ -1,6 +1,7 @@
 import os
 import copy
 import numpy as np
+import wandb
 
 from typing import Optional, Dict, Any
 
@@ -13,10 +14,9 @@ from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 from openhsl.data.utils import apply_pca
 from openhsl.data.tf_dataloader import preprocess_data, get_data_generator, get_test_generator, get_train_val_gens
-
+from openhsl.utils import init_wandb
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-#os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
 
 
 class TF2DCNN:
@@ -132,6 +132,22 @@ class TF2DCNN:
         if not os.path.exists(checkpoint_filepath):
             os.makedirs(checkpoint_filepath)
 
+        # add visualisations via callbacks
+        callbacks = []
+
+        if fit_params['wandb_vis']:
+            wandb_run = init_wandb(path='wandb.yaml')
+            if wandb_run:
+                wandb_callback = wandb.keras.WandbCallback(monitor='val_loss',
+
+                                                           log_evaluation=True,
+                                                           )
+                callbacks.append(wandb_callback)
+
+        if fit_params['tensorboard_vis']:
+            tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./tensorboard")
+            callbacks.append(tensorboard_callback)
+
         history = self.model.fit(ds_train,
                                  validation_data=ds_val,
                                  validation_steps=val_steps,
@@ -139,7 +155,9 @@ class TF2DCNN:
                                  batch_size=fit_params['batch_size'],
                                  epochs=fit_params['epochs'],
                                  steps_per_epoch=steps,
-                                 verbose=1)
+                                 verbose=1,
+                                 callbacks=callbacks
+                                 )
 
         self.train_loss = history.history.get('loss', [])
         self.val_loss = history.history.get('val_loss', [])
@@ -147,6 +165,10 @@ class TF2DCNN:
         self.val_accs = history.history.get('val_accuracy', [])
 
         self.model.save(f'{checkpoint_filepath}/weights.h5')
+
+        if fit_params['wandb_vis']:
+            if wandb_run:
+                wandb_run.finish()
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,

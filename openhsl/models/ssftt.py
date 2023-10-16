@@ -266,11 +266,14 @@ class SSFTT(Model):
         self.model, history = self.train(net=self.model,
                                          optimizer=fit_params['optimizer'],
                                          criterion=fit_params['loss'],
+                                         scheduler=None,
                                          epoch=fit_params['epochs'],
                                          data_loader=train_loader,
                                          val_loader=val_loader,
                                          device='cuda',
-                                         scheduler=None)
+                                         wandb_vis=fit_params['wandb_vis'],
+                                         tensorboard_vis=fit_params['tensorboard_vis']
+                                         )
 
         Model.save_train_mask(model_name=camel_to_snake(str(self.model.__class__.__name__)),
                               dataset_name=train_loader.dataset.name,
