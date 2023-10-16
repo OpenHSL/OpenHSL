@@ -13,6 +13,7 @@ from openhsl.models.model import Model
 from openhsl.data.dataset import get_dataset
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
+from openhsl.utils import init_wandb, init_tensorboard
 
 
 def choose_train_and_test_point(train_data: np.ndarray,
@@ -481,7 +482,7 @@ def valid_epoch(model, valid_loader, criterion, optimizer):
             tar = np.append(tar, t.data.cpu().numpy())
             pre = np.append(pre, p.data.cpu().numpy())
 
-        return tar, pre
+        return top1.avg, objs.avg, tar, pre
 
 
 def test_epoch(model, test_loader):
@@ -532,6 +533,8 @@ class SpectralFormer(Model):
         fit_params.setdefault('loss', nn.CrossEntropyLoss())
         fit_params.setdefault('scheduler_type', None)
         fit_params.setdefault('scheduler_params', None)
+        fit_params.setdefault('wandb_vis', False)
+        fit_params.setdefault('tensorboard_viz', False)
 
         data = X
         # train, test and concat data of labels
@@ -593,6 +596,15 @@ class SpectralFormer(Model):
         label_test_loader = Data.DataLoader(Label_test, batch_size=batch_size, shuffle=True)
         label_true_loader = Data.DataLoader(Label_true, batch_size=200, shuffle=False)
 
+
+        if fit_params['wandb_vis']:
+            wandb_run = init_wandb(path='wandb.yaml')
+            if wandb_run:
+                wandb_run.watch(self.model)
+
+        if fit_params['tensorboard_vis']:
+            writer = init_tensorboard(path_dir='tensorboard')
+
         for epoch in trange(fit_params['epochs']):
 
             self.model.train()
@@ -603,10 +615,38 @@ class SpectralFormer(Model):
             print(f"Epoch: {epoch + 1} train_loss: {train_obj} train_acc: {train_acc}")
 
             self.model.eval()
-            tar_v, pre_v = valid_epoch(model=self.model,
-                                       valid_loader=label_test_loader,
-                                       criterion=fit_params['loss'],
-                                       optimizer=fit_params['optimizer'])
+            val_acc, val_obj, tar_v, pre_v = valid_epoch(model=self.model,
+                                                         valid_loader=label_test_loader,
+                                                         criterion=fit_params['loss'],
+                                                         optimizer=fit_params['optimizer'])
+
+            print(f"Epoch: {epoch + 1} train_loss: {train_obj} train_acc: {train_acc}")
+
+            # Log metrics
+            if fit_params['wandb_vis']:
+                if wandb_run:
+                    wandb_run.log({"Loss/train": train_obj,
+                                   "Loss/val": val_obj,
+                                   "Accuracy/train": train_acc,
+                                   "Accuracy/val": val_acc,
+                                   "Learning rate": fit_params['optimizer'].param_groups[0]['lr']
+                                   }
+                                 )
+
+            if fit_params['tensorboard_vis']:
+                writer.add_scalar('Loss/train', train_obj, epoch)
+                writer.add_scalar('Loss/val', val_obj, epoch)
+                writer.add_scalar('Accuracy/train', train_acc, epoch)
+                writer.add_scalar('Accuracy/val', val_acc, epoch)
+                writer.add_scalar('Learning rate', fit_params['optimizer'].param_groups[0]['lr'], epoch)
+
+        if fit_params['wandb_vis']:
+            if wandb_run:
+                wandb_run.finish()
+
+        if fit_params['tensorboard_vis']:
+            writer.close()
+
         torch.save(self.model.state_dict(), 'spectral_former' + ".pth")
 
     def predict(self,

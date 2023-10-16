@@ -119,6 +119,8 @@ class Model(ABC):
                                      data_loader=train_loader,
                                      epoch=fit_params['epochs'],
                                      val_loader=val_loader,
+                                     wandb_vis=fit_params['wandb_vis'],
+                                     tensorboard_vis=fit_params['tensorboard_vis'],
                                      device=hyperparams['device'])
         return model, history
     # ------------------------------------------------------------------------------------------------------------------
@@ -205,8 +207,8 @@ class Model(ABC):
         for e in t:
             # Set the network to training mode
             net.train()
-            avg_loss = 0.0
-            accuracy = 0.0
+            avg_train_loss = 0.0
+            train_accuracy = 0.0
             total = 0
             # Run the training loop for one epoch
             for batch_idx, (data, target) in (enumerate(data_loader)):
@@ -218,36 +220,36 @@ class Model(ABC):
                 loss = criterion(output, target)
                 loss.backward()
                 optimizer.step()
-                avg_loss += loss.item()
+                avg_train_loss += loss.item()
                 losses.append(loss.item())
                 _, output = torch.max(output, dim=1)
                 for out, pred in zip(output.view(-1), target.view(-1)):
                     if out.item() in [0]:
                         continue
                     else:
-                        accuracy += out.item() == pred.item()
+                        train_accuracy += out.item() == pred.item()
                         total += 1
 
             # Update the scheduler
-            avg_loss /= len(data_loader)
-            train_loss.append(avg_loss)
-            train_acc = accuracy / total
+            avg_train_loss /= len(data_loader)
+            train_loss.append(avg_train_loss)
+            train_acc = train_accuracy / total
             train_accuracies.append(train_acc)
 
             if val_loader: # ToDo: not preferable to check if condition every iteration
-                val_acc, loss = Model.val(net, criterion, val_loader, device=device)
+                val_acc, avg_val_loss = Model.val(net, criterion, val_loader, device=device)
 
                 t.set_postfix_str(f"train accuracy: {train_acc}\t"
                                   f"val accuracy: {val_acc}\t"
-                                  f"train loss: {avg_loss}\t"
-                                  f"val loss: {loss}")
+                                  f"train loss: {avg_train_loss}\t"
+                                  f"val loss: {avg_val_loss}")
                 t.refresh()
 
-                val_loss.append(loss)
+                val_loss.append(avg_val_loss)
                 val_accuracies.append(val_acc)
                 metric = -val_acc  # ToDo WTF
             else:
-                metric = avg_loss
+                metric = avg_train_loss
 
             # Update the scheduler (ToDo: not preferable to check if condition every iteration)
             if scheduler is not None:
@@ -255,17 +257,20 @@ class Model(ABC):
             # log metrics
             if wandb_vis:
                 if wandb_run:
-                    wandb_run.log({"train_loss": avg_loss,
-                                     "val_accuracy": val_acc,
-                                     "learning_rate": optimizer.param_groups[0]['lr']})
+                    wandb_run.log({"Loss/train": avg_train_loss,
+                                   "Loss/val": avg_val_loss,
+                                   "Accuracy/train": train_acc,
+                                   "Accuracy/val": val_acc,
+                                   "Learning rate": optimizer.param_groups[0]['lr']
+                                   }
+                                 )
 
             if tensorboard_vis:
-                writer.add_scalar('Loss/train', avg_loss, e)
-                #writer.add_scalar('Loss/test', np.random.random(), e)
-                #writer.add_scalar('Accuracy/train', np.random.random(), e)
+                writer.add_scalar('Loss/train', avg_train_loss, e)
+                writer.add_scalar('Loss/val', avg_val_loss, e)
+                writer.add_scalar('Accuracy/train', train_acc, e)
                 writer.add_scalar('Accuracy/val', val_acc, e)
                 writer.add_scalar('Learning rate', optimizer.param_groups[0]['lr'], e)
-                #writer.add_hparams({'lr': 0.1*e, 'bsize': e}, {'hparam/accuracy': 10*e, 'hparam/loss': 10*e})
 
             # Save the weights
             if e % save_epoch == 0:
