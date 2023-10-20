@@ -90,22 +90,8 @@ class TF2DCNN:
         # ToDo: add setdefault for optimizer, optimizer params and loss as in other models fit
         fit_params.setdefault('scheduler_type', None)
         fit_params.setdefault('scheduler_params', None)
-
-        #X_train, X_val, y_train, y_val = preprocess_data(X=X.data,
-        #                                                 y=y.get_2d(),
-        #                                                 train_sample_percentage=fit_params['train_sample_percentage'],
-        #                                                 patch_size=5)
-
-        #print(f'X_train shape: {np.shape(X_train)}, y_train shape: {np.shape(y_train)}')
-        #print(f'X_val shape: {np.shape(X_val)}, y_val shape: {np.shape(y_val)}')
-
-        #train_generator = get_data_generator(X=X_train,
-        #                                     y=y_train,
-        #                                     epochs=fit_params['epochs'])
-
-        #val_generator = get_data_generator(X=X_val,
-        #                                   y=y_val,
-         #                                  epochs=fit_params['epochs'])
+        fit_params.setdefault('wandb_vis', False)
+        fit_params.setdefault('tensorboard_vis', False)
 
         train_generator, val_generator = get_train_val_gens(X=X.data,
                                                             y=y.get_2d(),
@@ -118,16 +104,15 @@ class TF2DCNN:
                    self.hyperparams['patch_size']),
                   (self.hyperparams['n_classes'],))
 
-        ds_train = tf.data.Dataset.from_generator(lambda: train_generator, types, shapes).batch(fit_params['batch_size']).repeat()
-        ds_val = tf.data.Dataset.from_generator(lambda: val_generator, types, shapes).batch(fit_params['batch_size']).repeat()
-
-        #steps = len(y_train) / fit_params['batch_size']
-        #val_steps = len(y_val) / fit_params['batch_size']
+        ds_train = tf.data.Dataset.from_generator(lambda: train_generator, types, shapes)
+        ds_train = ds_train.batch(fit_params['batch_size']).repeat()
+        ds_val = tf.data.Dataset.from_generator(lambda: val_generator, types, shapes)
+        ds_val = ds_val.batch(fit_params['batch_size']).repeat()
 
         steps = len(train_generator) / fit_params['batch_size']
         val_steps = len(val_generator) / fit_params['batch_size']
 
-        checkpoint_filepath = './tmp/checkpoint'
+        checkpoint_filepath = './checkpoints/tf2dcnn/'
 
         if not os.path.exists(checkpoint_filepath):
             os.makedirs(checkpoint_filepath)

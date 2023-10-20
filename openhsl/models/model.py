@@ -89,6 +89,9 @@ class Model(ABC):
         else:
             raise ValueError('Unsupported scheduler type')
 
+        fit_params.setdefault('wandb_vis', False)
+        fit_params.setdefault('tensorboard_vis', False)
+
         train_gt, _ = sample_gt(gt=gt,
                                 train_size=fit_params['train_sample_percentage'],
                                 mode=fit_params['dataloader_mode'],
@@ -189,7 +192,7 @@ class Model(ABC):
         net.to(device)
 
         if wandb_vis:
-            wandb_run = init_wandb(path='wandb.yaml')
+            wandb_run = init_wandb(path='../wandb.yaml')
             if wandb_run:
                 wandb_run.watch(net)
 

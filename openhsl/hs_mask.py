@@ -167,19 +167,8 @@ class HSMask:
 
         """
         # input mask must have 2 dimensions
-        if len(mask.shape) > 2:
-            return False
-
-        # data type in mask must be integer
-        if mask.dtype not in ["uint8", "uint16", "uint32", "uint64",
-                              "int8", "int16", "int32", "int64"]:
-            return False
-
-        # number of classes in mask must be as 0,1,2... not 1,2... not 0,2,5 ...
-        if np.all(np.unique(mask) != np.array(range(0, len(np.unique(mask))))):
-            return False
-
-        return True
+        valid_types = ["uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64"]
+        return len(mask.shape) == 2 and mask.dtype in valid_types
     # ------------------------------------------------------------------------------------------------------------------
 
     def __is_correct_binary_layer(self, layer: np.ndarray) -> bool:

@@ -122,6 +122,7 @@ class SSFTT_Net(nn.Module):
                  in_channels=1,
                  n_classes=3,
                  num_tokens=4,
+                 n_bands=28,
                  dim=64,
                  depth=1,
                  heads=8,
@@ -138,7 +139,7 @@ class SSFTT_Net(nn.Module):
                                              nn.BatchNorm3d(8),
                                              nn.ReLU())
 
-        self.conv2d_features = nn.Sequential(nn.Conv2d(in_channels=8*28,
+        self.conv2d_features = nn.Sequential(nn.Conv2d(in_channels=8*(n_bands-2),
                                                        out_channels=64,
                                                        kernel_size=(3, 3),
                                                        bias=False),
@@ -172,7 +173,7 @@ class SSFTT_Net(nn.Module):
         x = self.conv3d_features(x)
         x = rearrange(x, 'b c h w y -> b (c h) w y')
         x = self.conv2d_features(x)
-        x = rearrange(x,'b c h w -> b (h w) c')
+        x = rearrange(x, 'b c h w -> b (h w) c')
 
         wa = rearrange(self.token_wA, 'b h w -> b w h')  # Transpose
         A = torch.einsum('bij,bjk->bik', x, wa)
@@ -212,7 +213,7 @@ class SSFTT(Model):
         self.hyperparams['center_pixel'] = True
         self.hyperparams['net_name'] = 'ssftt'
 
-        self.model = SSFTT_Net(in_channels=1, n_classes=n_classes)
+        self.model = SSFTT_Net(in_channels=1, n_bands=n_bands, n_classes=n_classes)
 
         if path_to_weights:
             self.model.load_state_dict(torch.load(path_to_weights))
@@ -263,12 +264,27 @@ class SSFTT(Model):
         fit_params.setdefault('scheduler_type', None)
         fit_params.setdefault('scheduler_params', None)
         fit_params.setdefault('wandb_vis', False)
-        fit_params.setdefault('tensorboard_viz', False)
+        fit_params.setdefault('tensorboard_vis', False)
+
+        if fit_params['scheduler_type'] == 'StepLR':
+            scheduler = optim.lr_scheduler.StepLR(optimizer=fit_params['optimizer'],
+                                                  **fit_params['scheduler_params'])
+        elif fit_params['scheduler_type'] == 'CosineAnnealingLR':
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer=fit_params['optimizer'],
+                                                             **fit_params['scheduler_params'])
+        elif fit_params['scheduler_type'] == 'ReduceLROnPlateau':
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=fit_params['optimizer'],
+                                                             **fit_params['scheduler_params'])
+        elif fit_params['scheduler_type'] is None:
+            scheduler = None
+        else:
+            raise ValueError('Unsupported scheduler type')
+
 
         self.model, history = self.train(net=self.model,
                                          optimizer=fit_params['optimizer'],
                                          criterion=fit_params['loss'],
-                                         scheduler=None,
+                                         scheduler=scheduler,
                                          epoch=fit_params['epochs'],
                                          data_loader=train_loader,
                                          val_loader=val_loader,

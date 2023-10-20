@@ -139,7 +139,7 @@ def get_train_val_gens(X: np.array,
     labels = np.array([y[i, j] for i, j in zip(x_pos, y_pos)])
 
     X_train, _, y_train, _ = split_train_test_set(indices, labels, test_ratio)
-    X_train, X_val, y_train, y_val = split_train_test_set(X_train, y_train, 0.9)
+    X_train, X_val, y_train, y_val = split_train_test_set(X_train, y_train, 0.1)
 
     num_classes = np.max(y) + 1
     train_gen = Gen(X, X_train, y_train, patch_size, num_classes=num_classes)

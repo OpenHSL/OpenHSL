@@ -136,10 +136,11 @@ def draw_fit_plots(model):
     plt.show()
 
 
-def draw_colored_mask(mask: HSMask, predicted_mask: np.array = None):
+def draw_colored_mask(mask: HSMask,
+                      predicted_mask: np.array = None,
+                      stack_type='v'):
 
-    def tmp(l: list):
-        return [i / 255 for i in l]
+    tmp = lambda x: [i / 255 for i in x]
 
     palette = get_palette(np.max(mask.get_2d()))
 
@@ -147,12 +148,15 @@ def draw_colored_mask(mask: HSMask, predicted_mask: np.array = None):
     t = 1
     cmap = {k: tmp(rgb) + [t] for k, rgb in palette.items()}
 
-    patches = [mpatches.Patch(color=cmap[i], label=mask.label_class[str(i)]) for i in cmap]
+    patches = [mpatches.Patch(color=cmap[i], label=mask.label_class.get(str(i), 'no information')) for i in cmap]
 
     plt.figure(figsize=(12, 12))
     if np.any(predicted_mask):
         color_pred = convert_to_color_(predicted_mask, palette=palette)
-        combined = np.vstack((color_gt, color_pred))
+        if stack_type == 'v':
+            combined = np.vstack((color_gt, color_pred))
+        if stack_type == 'h':
+            combined = np.hstack((color_gt, color_pred))
         plt.imshow(combined, label='Colored ground truth and predicted masks')
     else:
         plt.imshow(color_gt, label='Colored ground truth mask')
