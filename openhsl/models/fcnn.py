@@ -1,6 +1,3 @@
-import copy
-from openhsl.data.utils import apply_pca
-
 from typing import Any, Optional, Dict
 import numpy as np
 
@@ -60,11 +57,9 @@ class FCNN(Model):
                  n_classes,
                  device,
                  n_bands,
-                 apply_pca=False,
                  path_to_weights=None
                  ):
         super(FCNN, self).__init__()
-        self.apply_pca = apply_pca
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 1
         self.hyperparams['n_classes'] = n_classes
@@ -97,12 +92,6 @@ class FCNN(Model):
             y: HSMask,
             fit_params: Dict):
 
-        if self.apply_pca:
-            X = copy.copy(X)
-            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
-        else:
-            print('PCA will not apply')
-
         fit_params.setdefault('epochs', 10)
         fit_params.setdefault('train_sample_percentage', 0.5)
         fit_params.setdefault('dataloader_mode', 'random')
@@ -131,15 +120,10 @@ class FCNN(Model):
 
     def predict(self,
                 X: HSImage,
-                y: Optional[HSMask] = None) -> np.ndarray:
+                y: Optional[HSMask] = None,
+                batch_size=100) -> np.ndarray:
 
-        if self.apply_pca:
-            X = copy.deepcopy(X)
-            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
-        else:
-            print('PCA will not apply')
-
-        self.hyperparams.setdefault('batch_size', 100)
+        self.hyperparams.setdefault('batch_size', batch_size)
         prediction = super().predict_nn(X=X,
                                         y=y,
                                         model=self.model,

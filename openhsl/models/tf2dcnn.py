@@ -1,5 +1,4 @@
 import os
-import copy
 import numpy as np
 import wandb
 
@@ -12,8 +11,8 @@ from keras.optimizers import SGD
 
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
-from openhsl.data.utils import apply_pca
-from openhsl.data.tf_dataloader import preprocess_data, get_data_generator, get_test_generator, get_train_val_gens
+from openhsl.data.dataset import get_dataset
+from openhsl.data.tf_dataloader import get_test_generator, get_train_val_gens
 from openhsl.utils import init_wandb
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -24,7 +23,6 @@ class TF2DCNN:
     def __init__(self,
                  n_classes: int,
                  n_bands: int,
-                 apply_pca=False,
                  path_to_weights: str = None,
                  device: str = 'cpu'):
 
@@ -37,14 +35,11 @@ class TF2DCNN:
         self.hyperparams['center_pixel'] = True
         self.hyperparams['net_name'] = 'tf2d'
 
-        self.pca = None
-
         self.train_loss = []
         self.val_loss = []
         self.train_accs = []
         self.val_accs = []
 
-        self.apply_pca = apply_pca
         input_shape = (self.hyperparams['n_bands'], self.hyperparams['patch_size'], self.hyperparams['patch_size'])
 
         C1 = 3 * self.hyperparams['n_bands']
@@ -78,12 +73,6 @@ class TF2DCNN:
             y: HSMask,
             fit_params: Dict):
 
-        if self.apply_pca:
-            X = copy.deepcopy(X)
-            X.data, self.pca = apply_pca(X.data, self.hyperparams['n_bands'])
-        else:
-            print('PCA will not apply')
-
         fit_params.setdefault('epochs', 10)
         fit_params.setdefault('train_sample_percentage', 0.5)
         fit_params.setdefault('batch_size', 32)
@@ -93,8 +82,11 @@ class TF2DCNN:
         fit_params.setdefault('wandb_vis', False)
         fit_params.setdefault('tensorboard_vis', False)
 
-        train_generator, val_generator = get_train_val_gens(X=X.data,
-                                                            y=y.get_2d(),
+
+        img, gt = get_dataset(X, y)
+
+        train_generator, val_generator = get_train_val_gens(X=img,
+                                                            y=gt,
                                                             train_sample_percentage=fit_params['train_sample_percentage'],
                                                             patch_size=5)
 
@@ -158,27 +150,22 @@ class TF2DCNN:
 
     def predict(self,
                 X: HSImage,
-                y: Optional[HSMask] = None) -> np.ndarray:
-
-        if self.apply_pca:
-            X = copy.deepcopy(X)
-            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'], self.pca)
-        else:
-            print('PCA will not apply')
+                y: Optional[HSMask] = None,
+                batch_size=128) -> np.ndarray:
 
         types = tf.float32
         shapes = (self.hyperparams['n_bands'], self.hyperparams['patch_size'], self.hyperparams['patch_size'])
 
-        X = X.data
+        img, gt = get_dataset(X, y)
 
-        test_generator = get_test_generator(X, patch_size=self.hyperparams['patch_size'])
-        ds_test = tf.data.Dataset.from_generator(lambda: test_generator, types, shapes).batch(128)
+        test_generator = get_test_generator(img, patch_size=self.hyperparams['patch_size'])
+        ds_test = tf.data.Dataset.from_generator(lambda: test_generator, types, shapes).batch(batch_size)
 
         # TODO bad issue
         total = sum([1 for i in ds_test])
 
-        test_generator = get_test_generator(X, patch_size=self.hyperparams['patch_size'])
-        ds_test = tf.data.Dataset.from_generator(lambda: test_generator, types, shapes).batch(128)
+        test_generator = get_test_generator(img, patch_size=self.hyperparams['patch_size'])
+        ds_test = tf.data.Dataset.from_generator(lambda: test_generator, types, shapes).batch(batch_size)
 
         prediction = self.model.predict(ds_test, steps=total)
         pr = np.argmax(prediction, axis=1)

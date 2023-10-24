@@ -5,15 +5,13 @@ from einops import rearrange
 from torch import nn
 import torch.nn.init as init
 from typing import Any, Dict, Optional
-import copy
 import numpy as np
-import pickle as pk
 
 from openhsl.models.model import Model
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 from openhsl.data.dataset import get_dataset
-from openhsl.data.utils import apply_pca, sample_gt, camel_to_snake
+from openhsl.data.utils import sample_gt, camel_to_snake
 from openhsl.data.torch_dataloader import create_torch_loader
 
 
@@ -199,11 +197,9 @@ class SSFTT(Model):
                  n_classes,
                  device,
                  n_bands,
-                 apply_pca=False,
                  path_to_weights=None
                  ):
         super(SSFTT, self).__init__()
-        self.apply_pca = apply_pca
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 13
         self.hyperparams['n_classes'] = n_classes
@@ -228,12 +224,6 @@ class SSFTT(Model):
             X: HSImage,
             y: HSMask,
             fit_params: Dict):
-
-        if self.apply_pca:
-            X = copy.deepcopy(X)
-            X.data, pca = apply_pca(X.data, self.hyperparams['n_bands'])
-        else:
-            print('PCA will not apply')
 
         self.hyperparams['batch_size'] = fit_params['batch_size']
 
@@ -280,7 +270,6 @@ class SSFTT(Model):
         else:
             raise ValueError('Unsupported scheduler type')
 
-
         self.model, history = self.train(net=self.model,
                                          optimizer=fit_params['optimizer'],
                                          criterion=fit_params['loss'],
@@ -305,16 +294,11 @@ class SSFTT(Model):
 
     def predict(self,
                 X: HSImage,
-                y: Optional[HSMask] = None) -> np.ndarray:
-
-        if self.apply_pca:
-            X = copy.deepcopy(X)
-            X.data, _ = apply_pca(X.data, self.hyperparams['n_bands'])
-        else:
-            print('PCA will not apply')
+                y: Optional[HSMask] = None,
+                batch_size=64) -> np.ndarray:
 
         self.hyperparams["test_stride"] = 1
-        self.hyperparams["batch_size"] = 64
+        self.hyperparams["batch_size"] = batch_size
         img, gt = get_dataset(X, mask=None)
 
         self.model.eval()

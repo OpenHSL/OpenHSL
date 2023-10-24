@@ -138,6 +138,7 @@ def draw_fit_plots(model):
 
 def draw_colored_mask(mask: HSMask,
                       predicted_mask: np.array = None,
+                      mask_labels: dict = None,
                       stack_type='v'):
 
     tmp = lambda x: [i / 255 for i in x]
@@ -148,7 +149,12 @@ def draw_colored_mask(mask: HSMask,
     t = 1
     cmap = {k: tmp(rgb) + [t] for k, rgb in palette.items()}
 
-    patches = [mpatches.Patch(color=cmap[i], label=mask.label_class.get(str(i), 'no information')) for i in cmap]
+    if mask_labels:
+        labels = mask_labels
+    else:
+        labels = mask.label_class
+
+    patches = [mpatches.Patch(color=cmap[i], label=labels.get(str(i), 'no information')) for i in cmap]
 
     plt.figure(figsize=(12, 12))
     if np.any(predicted_mask):
@@ -160,7 +166,7 @@ def draw_colored_mask(mask: HSMask,
         plt.imshow(combined, label='Colored ground truth and predicted masks')
     else:
         plt.imshow(color_gt, label='Colored ground truth mask')
-
-    plt.legend(handles=patches, loc=4, borderaxespad=0.)
+    if labels:
+        plt.legend(handles=patches, loc=4, borderaxespad=0.)
     plt.show()
     return color_gt
