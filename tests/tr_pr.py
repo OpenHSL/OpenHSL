@@ -75,7 +75,7 @@ cnn = TF2DCNN(n_classes=mask.n_classes,
               device='cuda')
 
 cnn.fit(X=hsi_pca,  # or hsi
-        y=mask,
+        y=mask.get_2d(),
         fit_params=fit_params)
 
 draw_fit_plots(model=cnn)

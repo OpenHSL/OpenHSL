@@ -5,7 +5,7 @@ import scipy.ndimage
 
 from sklearn import preprocessing
 from typing import Optional, Dict
-from openhsl.data.utils import apply_pca, pad_with_zeros, split_train_test_set, create_patches
+from openhsl.data.utils import  pad_with_zeros, split_train_test_set, create_patches
 
 #from keras.utils import np_utils
 

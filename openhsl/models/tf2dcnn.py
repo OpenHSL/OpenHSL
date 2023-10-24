@@ -2,7 +2,7 @@ import os
 import numpy as np
 import wandb
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 
 import tensorflow as tf
 from keras.models import Sequential
@@ -69,8 +69,8 @@ class TF2DCNN:
     # ------------------------------------------------------------------------------------------------------------------
 
     def fit(self,
-            X: HSImage,
-            y: HSMask,
+            X: Union[HSImage, np.ndarray],
+            y: Union[HSMask, np.ndarray],
             fit_params: Dict):
 
         fit_params.setdefault('epochs', 10)
@@ -149,7 +149,7 @@ class TF2DCNN:
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
-                X: HSImage,
+                X: Union[HSImage],
                 y: Optional[HSMask] = None,
                 batch_size=128) -> np.ndarray:
 

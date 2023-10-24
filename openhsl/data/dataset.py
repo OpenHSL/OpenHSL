@@ -37,7 +37,7 @@ def get_dataset(hsi: HSImage, mask: Optional[HSMask] = None) -> Tuple[np.ndarray
     else:
         raise Exception(f"Wrong type of hsi, {type(hsi)}")
 
-    if mask:
+    if np.any(mask):
         if isinstance(mask, HSMask):
             gt = mask.get_2d()
         elif isinstance(mask, np.ndarray):
