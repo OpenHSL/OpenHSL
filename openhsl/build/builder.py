@@ -67,7 +67,11 @@ class HSBuilder:
             self.__get_metainfo()
 
         self.hsi: Optional[HSImage] = None
-        self.frame_iterator = RawData(path_to_data=path_to_data, type_data=data_type)
+        self.frame_iterator = RawData(path_to_data=path_to_data, 
+                                      type_data=data_type,
+                                      path_to_gps=path_to_gps)
+        
+        self.files = self.frame_iterator.files
     # ------------------------------------------------------------------------------------------------------------------
 
     def __get_metainfo(self):
@@ -340,7 +344,9 @@ class HSBuilder:
             
         data = np.array(preproc_frames)
         if self.path_to_gps:
-            data = build_hypercube_by_videos(data.astype("uint8"), self.path_to_gps)
+            data = build_hypercube_by_videos(data.astype("uint8"), 
+                                             self.path_to_gps,
+                                             self.files)
         if flip_wavelengths:
             data = np.flip(data, axis=2)
         self.hsi = HSImage(hsi=data, wavelengths=None)
