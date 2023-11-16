@@ -29,6 +29,7 @@ PI_2 = math.pi / 2.0
 def blur_band(band):
     return blur_image(band) if BLUR_AUTO else band
 
+
 def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str) -> np.ndarray:
     """
         build_hypercube_by_videos(cube, gps_filename)
@@ -64,7 +65,7 @@ def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str) -> np.ndarray
     bands = np.array(bands)
     bands = np.transpose(bands, (2, 1, 0))
     return bands
-# -------------------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 # TODO interpolate doesn't use gps data, but inner computation. Define this more clearly
@@ -141,7 +142,7 @@ def calculate_rel_alt(rel_alt: List) -> List:
     """
 
     return [alt / COS_PITCH for alt in rel_alt]
-# -------------------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def calculate_lat_lon(latitude: List[float],
