@@ -2,5 +2,4 @@
 OpenHSL инструмент с открытым кодом для формирования, обработки и анализа гиперспектральных изображений (ГСИ), полученных сканирующим гиперспектрометром.
 
 Демо-материалы можно посмотреть здесь:
-1) [Пример формирования ГСИ из сырых данных](https://github.com/OpenHSL/OpenHSL/blob/main/Builder%20demo.ipynb)
-2) [Пример обучения нейросетевых классификаторов на размеченных ГСИ](https://github.com/OpenHSL/OpenHSL/blob/main/TrainerPredictor%20demo.ipynb)
+1) [Пример обучения нейросетевых классификаторов на размеченных ГСИ](https://github.com/OpenHSL/OpenHSL/blob/main/corn%20demo.ipynb)
