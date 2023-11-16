@@ -119,7 +119,9 @@ class RawData:
     """
 
     """
-    def __init__(self, path_to_data: str, type_data: str):
+    def __init__(self, path_to_data: 
+                 str, type_data: str,
+                 path_to_gps: str = None):
         if path_to_data.split(".")[-1] not in SUPPORTED_FORMATS:
             if not dir_exists(path_to_data):
                 raise ValueError("Path {} not found or {} format not supported".format(path_to_data, path_to_data.split(".")[-1]))
@@ -127,7 +129,16 @@ class RawData:
                 self.files = load_data(path_to_data, SUPPORTED_IMG_FORMATS)
                 self.files.sort(key=lambda f: int(re.sub('\D', '', f)))
             elif type_data == "video":
-                self.files = load_data(path_to_data, SUPPORTED_VIDEO_FORMATS)
+                self.files = []
+                files = load_data(path_to_data, SUPPORTED_VIDEO_FORMATS)
+                if path_to_gps is not None:
+                    gps = pd.read_csv(path_to_gps, delimiter=";")
+                    start_points = gps[gps["cam_ID"] == "Hypercam start point"]
+                    start_points = list(start_points["timing"])
+                    for start_point in start_points:
+                        for file in files:
+                            if start_point in file:
+                                self.files.append(file)
         
         else:
             self.files = [path_to_data]

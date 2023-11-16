@@ -30,7 +30,7 @@ def blur_band(band):
     return blur_image(band) if BLUR_AUTO else band
 
 
-def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str) -> np.ndarray:
+def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str, files: List) -> np.ndarray:
     """
         build_hypercube_by_videos(cube, gps_filename)
 
@@ -53,6 +53,20 @@ def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str) -> np.ndarray
     """
     x, y, z = cube.shape  # in gaidel_legacy it's x=m, y=k, z=n
     gps = pd.read_csv(gps_filename, delimiter=CSV_DELIMITER)
+
+    start_points = gps[gps[HEADER_CAM_ID] == "Hypercam start point"]
+    start_points = list(start_points["timing"])
+    start_indexes = gps.loc[gps[HEADER_CAM_ID] == "Hypercam start point"].index.tolist()
+
+    end_indexes = gps.loc[gps[HEADER_CAM_ID] == "Hypercam end point"].index.tolist()
+
+    start_points_dict = {}
+    for i in range(len(start_points)):
+        for file in files:
+            if start_points[i] in file:
+                start_points_dict[start_points[i]] = gps.loc[start_indexes[i]:end_indexes[i]]
+
+    gps = pd.concat(start_points_dict.values(), ignore_index=True)
     gps = gps.loc[gps[HEADER_CAM_ID] == GPS_HYPERCAM_FRAME].head(x)
 
     bands = interpolate(cube,
