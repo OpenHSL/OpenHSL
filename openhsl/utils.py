@@ -3,13 +3,16 @@ import yaml
 from pathlib import Path
 import math
 import numpy as np
+from itertools import product
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
+from sklearn.cluster import KMeans
 
+from openhsl.hsi import HSImage
 from openhsl.data.utils import convert_to_color_, get_palette
 from openhsl.hs_mask import HSMask
 import wandb
-from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import SummaryWriter
 
 
 def dir_exists(path: str) -> bool:
@@ -170,3 +173,71 @@ def draw_colored_mask(mask: HSMask,
         plt.legend(handles=patches, loc=4, borderaxespad=0.)
     plt.show()
     return color_gt
+
+
+def cluster_hsi(hsi: HSImage, n_clusters: int = 2) -> np.ndarray:
+    km = KMeans(n_clusters=n_clusters)
+    h, w, _ = hsi.data.shape
+    pred = km.fit_predict(hsi.to_spectral_list())
+    return pred.reshape((h, w))
+
+
+def NDVI(hsi, red, nir) -> np.ndarray:
+    pass
+
+
+def ANDVI():
+    pass
+
+
+def norm_diff_index(channel_1: np.ndarray,
+                    channel_2: np.ndarray) -> np.ndarray:
+    mask = (channel_1 - channel_2) / (channel_1 + channel_2)
+    mask[np.isnan(mask)] = 1
+    magic_threshold = 2
+    mask[mask < magic_threshold] = 0
+    mask[mask >= magic_threshold] = 1
+    return mask
+
+
+def ANDI(cube: np.ndarray,
+                             example_1: np.ndarray,
+                             example_2: np.ndarray) -> np.ndarray:
+    example_1_size = example_1[:, :, 0].size
+    example_2_size = example_2[:, :, 0].size
+
+    min_score = 2.0
+    best_idx = None, None
+
+    if example_1.shape[2] == example_2.shape[2]:
+        channels_count = example_1.shape[2]
+    else:
+        raise ValueError("Different numbers of channels in two sets")
+
+    for ind_1, ind_2 in product(range(channels_count), range(channels_count)):
+
+        # skip main diagonal
+        if ind_1 == ind_2:
+            continue
+
+        ndi = norm_diff_index(channel_1=example_1[:, :, ind_1],
+                              channel_2=example_1[:, :, ind_2])
+
+        score = np.sum(ndi) / example_1_size
+
+        ndi = norm_diff_index(channel_1=example_2[:, :, ind_1],
+                              channel_2=example_2[:, :, ind_2])
+
+        score += (example_2_size - np.sum(ndi)) / example_2_size
+
+        if score < min_score:
+            min_score = score
+            best_idx = ind_1, ind_2
+
+    print(best_idx)
+
+    ndi = norm_diff_index(channel_1=cube[:, :, best_idx[0]],
+                          channel_2=cube[:, :, best_idx[1]])
+
+    return ndi
+
