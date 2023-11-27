@@ -7,6 +7,7 @@ from itertools import product
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 from sklearn.cluster import KMeans, SpectralClustering
+from scipy.stats import ttest_ind
 
 from openhsl.hsi import HSImage
 from openhsl.data.utils import convert_to_color_, get_palette
@@ -193,8 +194,26 @@ def NDVI(hsi, red, nir) -> np.ndarray:
     pass
 
 
-def ANDVI():
-    pass
+def ANDVI(hsi):
+    def ndi(img, l_red, r_red, l_nir, r_nir):
+        red = np.mean(img[:, :, l_red: r_red], axis=2)
+        nir = np.mean(img[:, :, l_nir: r_nir], axis=2)
+        mask = (nir - red) / (nir + red)
+        mask[nir + red == 0] = 0
+        return mask > 0.1
+
+    def get_ttest(img, mask):
+        green = img[mask == 1]
+        soil = img[mask == 0]
+        return ttest_ind(green[:2000], soil[:2000])
+
+    p_v = []
+    for i in range(98, 148):
+        mask = ndi(hsi, 97, i, 148, 250)
+        p_v.append(np.mean(get_ttest(hsi, mask)[1]))
+    res_red_right = np.argmin(np.log(p_v))
+    print(f'right border of red is {res_red_right}\'s band')
+    return ndi(hsi, 97, res_red_right, 148, 250)
 
 
 def norm_diff_index(channel_1: np.ndarray,
