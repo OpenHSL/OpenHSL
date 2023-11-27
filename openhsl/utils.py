@@ -6,13 +6,13 @@ import numpy as np
 from itertools import product
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, SpectralClustering
 
 from openhsl.hsi import HSImage
 from openhsl.data.utils import convert_to_color_, get_palette
 from openhsl.hs_mask import HSMask
 import wandb
-#from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 
 
 def dir_exists(path: str) -> bool:
@@ -175,8 +175,15 @@ def draw_colored_mask(mask: HSMask,
     return color_gt
 
 
-def cluster_hsi(hsi: HSImage, n_clusters: int = 2) -> np.ndarray:
-    km = KMeans(n_clusters=n_clusters)
+def get_cluster(cl_type):
+    if cl_type == 'KMeans':
+        return KMeans
+    elif cl_type == 'SpectralClustering':
+        return SpectralClustering
+
+
+def cluster_hsi(hsi: HSImage, n_clusters: int = 2, cl_type='Kmeans') -> np.ndarray:
+    km = get_cluster(cl_type=cl_type)(n_clusters=n_clusters)
     h, w, _ = hsi.data.shape
     pred = km.fit_predict(hsi.to_spectral_list())
     return pred.reshape((h, w))

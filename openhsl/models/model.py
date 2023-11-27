@@ -33,6 +33,8 @@ class Model(ABC):
         self.train_accs = []
         self.val_accs = []
         self.model = None
+        self.wandb_run = None
+        self.writer = None
 
     @abstractmethod
     def fit(self,
@@ -49,6 +51,13 @@ class Model(ABC):
         raise NotImplemented("Method predict must be implemented!")
     # ------------------------------------------------------------------------------------------------------------------
 
+    def init_wandb(self, path='../wandb.yaml'):
+        self.wandb_run = init_wandb(path=path)
+        if self.wandb_run:
+            self.wandb_run.watch(self.model)
+
+    def init_tensorboard(self, path='tensorboard'):
+        self.writer = init_tensorboard(path_dir=path)
 
     @staticmethod
     def fit_nn(X,
@@ -188,16 +197,20 @@ class Model(ABC):
                 Flag to enable weights & biases visualisation
             tensorboard_vis:
                 Flag to enable Tensorboard logging and visualisation
+            wandb_path:
+                ...
+            tensorboard_path:
+                ...
         """
         net.to(device)
 
-        if wandb_vis:
-            wandb_run = init_wandb(path='../wandb.yaml')
-            if wandb_run:
-                wandb_run.watch(net)
+        #if wandb_vis:
+        #    wandb_run = init_wandb(path=wandb_path)
+        #    if wandb_run:
+        #        wandb_run.watch(net)
 
-        if tensorboard_vis:
-            writer = init_tensorboard(path_dir='tensorboard')
+        #if tensorboard_vis:
+        #    writer = init_tensorboard(path_dir=tensorboard_path)
 
         save_epoch = epoch // 20 if epoch > 20 else 1
 
@@ -258,22 +271,21 @@ class Model(ABC):
             if scheduler is not None:
                 scheduler.step()
             # log metrics
-            if wandb_vis:
-                if wandb_run:
-                    wandb_run.log({"Loss/train": avg_train_loss,
+            if net.wandb_run:
+                net.wandb_run.log({"Loss/train": avg_train_loss,
                                    "Loss/val": avg_val_loss,
                                    "Accuracy/train": train_acc,
                                    "Accuracy/val": val_acc,
                                    "Learning rate": optimizer.param_groups[0]['lr']
-                                   }
-                                 )
+                                }
+                             )
 
-            if tensorboard_vis:
-                writer.add_scalar('Loss/train', avg_train_loss, e)
-                writer.add_scalar('Loss/val', avg_val_loss, e)
-                writer.add_scalar('Accuracy/train', train_acc, e)
-                writer.add_scalar('Accuracy/val', val_acc, e)
-                writer.add_scalar('Learning rate', optimizer.param_groups[0]['lr'], e)
+            if net.writer:
+                net.writer.add_scalar('Loss/train', avg_train_loss, e)
+                net.writer.add_scalar('Loss/val', avg_val_loss, e)
+                net.writer.add_scalar('Accuracy/train', train_acc, e)
+                net.writer.add_scalar('Accuracy/val', val_acc, e)
+                net.writer.add_scalar('Learning rate', optimizer.param_groups[0]['lr'], e)
 
             # Save the weights
             if e % save_epoch == 0:
@@ -285,12 +297,11 @@ class Model(ABC):
                     metric=abs(metric),
                 )
 
-        if wandb_vis:
-            if wandb_run:
-                wandb_run.finish()
+        if net.wandb_run:
+            net.wandb_run.finish()
 
-        if tensorboard_vis:
-            writer.close()
+        if net.writer:
+            net.writer.close()
 
         history = dict()
         history["train_loss"] = train_loss
