@@ -133,7 +133,7 @@ def interpolate(cube: np.ndarray,
     # check if the nearest distance is greater than the limit
     prediction[nearest_dit[:, 0] > DISTANCE_LIMIT, :] = np.zeros(k)
 
-    prediction = prediction.reshape(m_target, n_target, k)
+    prediction = prediction.reshape(m_target, n_target, k)[:, ::-1, :]
 
     return prediction
 # ----------------------------------------------------------------------------------------------------------------------

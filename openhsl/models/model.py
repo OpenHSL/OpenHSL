@@ -9,12 +9,12 @@ import numpy as np
 import datetime
 from tqdm import trange, tqdm
 from PIL import Image
-import wandb
 
 from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
                                         sliding_window, sample_gt, convert_to_color_
 from openhsl.data.torch_dataloader import create_loader
+from openhsl.utils import init_wandb, init_tensorboard
 
 
 class Model(ABC):
@@ -32,6 +32,8 @@ class Model(ABC):
         self.train_accs = []
         self.val_accs = []
         self.model = None
+        self.wandb_run = None
+        self.writer = None
 
     @abstractmethod
     def fit(self,
@@ -48,34 +50,14 @@ class Model(ABC):
         raise NotImplemented("Method predict must be implemented!")
     # ------------------------------------------------------------------------------------------------------------------
 
-    @staticmethod
-    def init_wandb():
-        """
-        Initialize wandb from yaml file
+    def init_wandb(self, path='../wandb.yaml'):
+        self.wandb_run = init_wandb(path=path)
+        if self.wandb_run:
+            self.wandb_run.watch(self.model)
 
-        Returns
-        -------
-        wandb: wandb
-        """
-        # open wandb credentials from the root directory
-        with open('../wandb_credentials.yaml', 'r') as file:
-            wandb_config = yaml.safe_load(file)
+    def init_tensorboard(self, path='tensorboard'):
+        self.writer = init_tensorboard(path_dir=path)
 
-        required_fields = ['api_key', 'project', 'entity', 'run']
-        for field in required_fields:
-            if field not in wandb_config['wandb']:
-                raise ValueError(f'Missing {field} in wandb configuration')
-
-        os.environ["WANDB_API_KEY"] = wandb_config['wandb']['api_key']
-        wandb.login(key=wandb_config['wandb']['api_key'])
-
-        wandb.init(project=wandb_config['wandb']['project'],
-                   entity=wandb_config['wandb']['entity'],
-                   name=wandb_config['wandb']['run'],
-                   mode="online")
-
-        return wandb
-    # ------------------------------------------------------------------------------------------------------------------
     @staticmethod
     def fit_nn(X,
                y,
@@ -115,13 +97,18 @@ class Model(ABC):
         else:
             raise ValueError('Unsupported scheduler type')
 
+        fit_params.setdefault('wandb_vis', False)
+        fit_params.setdefault('tensorboard_vis', False)
+
         train_gt, _ = sample_gt(gt=gt,
                                 train_size=fit_params['train_sample_percentage'],
-                                mode=fit_params['dataloader_mode'])
+                                mode=fit_params['dataloader_mode'],
+                                msg='train_val/test')
 
         train_gt, val_gt = sample_gt(gt=train_gt,
                                      train_size=0.9,
-                                     mode=fit_params['dataloader_mode'])
+                                     mode=fit_params['dataloader_mode'],
+                                     msg='train/val')
 
         print(f'Full size: {np.sum(gt > 0)}')
         print(f'Train size: {np.sum(train_gt > 0)}')
@@ -143,6 +130,8 @@ class Model(ABC):
                                      data_loader=train_loader,
                                      epoch=fit_params['epochs'],
                                      val_loader=val_loader,
+                                     wandb_vis=fit_params['wandb_vis'],
+                                     tensorboard_vis=fit_params['tensorboard_vis'],
                                      device=hyperparams['device'])
         return model, history
     # ------------------------------------------------------------------------------------------------------------------
@@ -175,9 +164,12 @@ class Model(ABC):
               scheduler: torch.optim.lr_scheduler,
               data_loader: udata.DataLoader,
               epoch,
+              wandb_vis: False,
+              tensorboard_vis: False,
               display_iter=100,
               device=None,
-              val_loader=None):
+              val_loader=None,
+              ):
         """
         Training loop to optimize a network for several epochs and a specified loss
         Parameters
@@ -200,11 +192,24 @@ class Model(ABC):
                 torch device to use (defaults to CPU)
             val_loader:
                 validation dataset
+            wandb_vis:
+                Flag to enable weights & biases visualisation
+            tensorboard_vis:
+                Flag to enable Tensorboard logging and visualisation
+            wandb_path:
+                ...
+            tensorboard_path:
+                ...
         """
         net.to(device)
 
-        wandb = Model.init_wandb()
-        wandb.watch(net)
+        #if wandb_vis:
+        #    wandb_run = init_wandb(path=wandb_path)
+        #    if wandb_run:
+        #        wandb_run.watch(net)
+
+        #if tensorboard_vis:
+        #    writer = init_tensorboard(path_dir=tensorboard_path)
 
         save_epoch = epoch // 20 if epoch > 20 else 1
 
@@ -217,8 +222,8 @@ class Model(ABC):
         for e in t:
             # Set the network to training mode
             net.train()
-            avg_loss = 0.0
-            accuracy = 0.0
+            avg_train_loss = 0.0
+            train_accuracy = 0.0
             total = 0
             # Run the training loop for one epoch
             for batch_idx, (data, target) in (enumerate(data_loader)):
@@ -230,47 +235,56 @@ class Model(ABC):
                 loss = criterion(output, target)
                 loss.backward()
                 optimizer.step()
-                avg_loss += loss.item()
+                avg_train_loss += loss.item()
                 losses.append(loss.item())
                 _, output = torch.max(output, dim=1)
                 for out, pred in zip(output.view(-1), target.view(-1)):
                     if out.item() in [0]:
                         continue
                     else:
-                        accuracy += out.item() == pred.item()
+                        train_accuracy += out.item() == pred.item()
                         total += 1
 
             # Update the scheduler
-            avg_loss /= len(data_loader)
-            train_loss.append(avg_loss)
-            train_acc = accuracy / total
+            avg_train_loss /= len(data_loader)
+            train_loss.append(avg_train_loss)
+            train_acc = train_accuracy / total
             train_accuracies.append(train_acc)
 
             if val_loader: # ToDo: not preferable to check if condition every iteration
-                val_acc, loss = Model.val(net, criterion, val_loader, device=device)
+                val_acc, avg_val_loss = Model.val(net, criterion, val_loader, device=device)
 
                 t.set_postfix_str(f"train accuracy: {train_acc}\t"
                                   f"val accuracy: {val_acc}\t"
-                                  f"train loss: {avg_loss}\t"
-                                  f"val loss: {loss}")
+                                  f"train loss: {avg_train_loss}\t"
+                                  f"val loss: {avg_val_loss}")
                 t.refresh()
 
-                val_loss.append(loss)
+                val_loss.append(avg_val_loss)
                 val_accuracies.append(val_acc)
                 metric = -val_acc  # ToDo WTF
             else:
-                metric = avg_loss
+                metric = avg_train_loss
 
             # Update the scheduler (ToDo: not preferable to check if condition every iteration)
             if scheduler is not None:
                 scheduler.step()
+            # log metrics
+            if net.wandb_run:
+                net.wandb_run.log({"Loss/train": avg_train_loss,
+                                   "Loss/val": avg_val_loss,
+                                   "Accuracy/train": train_acc,
+                                   "Accuracy/val": val_acc,
+                                   "Learning rate": optimizer.param_groups[0]['lr']
+                                }
+                             )
 
-            # check if wandb is initialized (ToDo: not preferable to check if condition every iteration)
-            if wandb.run is not None:
-                wandb.log({"train_loss": avg_loss,
-                           "val_accuracy": val_acc,
-                           "learning_rate": optimizer.param_groups[0]['lr']})
-
+            if net.writer:
+                net.writer.add_scalar('Loss/train', avg_train_loss, e)
+                net.writer.add_scalar('Loss/val', avg_val_loss, e)
+                net.writer.add_scalar('Accuracy/train', train_acc, e)
+                net.writer.add_scalar('Accuracy/val', val_acc, e)
+                net.writer.add_scalar('Learning rate', optimizer.param_groups[0]['lr'], e)
 
             # Save the weights
             if e % save_epoch == 0:
@@ -282,7 +296,11 @@ class Model(ABC):
                     metric=abs(metric),
                 )
 
-        wandb.finish()
+        if net.wandb_run:
+            net.wandb_run.finish()
+
+        if net.writer:
+            net.writer.close()
 
         history = dict()
         history["train_loss"] = train_loss
@@ -358,7 +376,7 @@ class Model(ABC):
                     data = data.unsqueeze(1)
 
                 indices = [b[1:] for b in batch]
-                data = data.to(device)
+                data = data.to(device, dtype=torch.float)
                 output = net(data)
                 if isinstance(output, tuple):
                     output = output[0]
@@ -383,12 +401,11 @@ class Model(ABC):
         time_str = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         if not os.path.isdir(mask_dir):
             os.makedirs(mask_dir, exist_ok=True)
-        gray_filename = f"{mask_dir}/{time_str}_gray_mask.png"
+        gray_filename = f"{mask_dir}/{time_str}_gray_mask.npy"
         color_filename = f"{mask_dir}/{time_str}_color_mask.png"
-        gray = Image.fromarray(mask)
-        color = Image.fromarray(convert_to_color_(mask))
-        gray.save(gray_filename)
-        color.save(color_filename)
+        #color = Image.fromarray(convert_to_color_(mask))
+        np.save(gray_filename, mask)
+        #color.save(color_filename)
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
