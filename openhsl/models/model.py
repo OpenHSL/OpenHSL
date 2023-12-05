@@ -55,9 +55,11 @@ class Model(ABC):
         self.wandb_run = init_wandb(path=path)
         if self.wandb_run:
             self.wandb_run.watch(self.model)
+    # ------------------------------------------------------------------------------------------------------------------
 
     def init_tensorboard(self, path='tensorboard'):
         self.writer = init_tensorboard(path_dir=path)
+    # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
     def fit_nn(X,
@@ -98,8 +100,8 @@ class Model(ABC):
         else:
             raise ValueError('Unsupported scheduler type')
 
-        fit_params.setdefault('wandb_vis', False)
-        fit_params.setdefault('tensorboard_vis', False)
+        fit_params.setdefault('wandb', None)
+        fit_params.setdefault('tensorboard', None)
 
         train_gt, _ = sample_gt(gt=gt,
                                 train_size=fit_params['train_sample_percentage'],
@@ -131,8 +133,8 @@ class Model(ABC):
                                      data_loader=train_loader,
                                      epoch=fit_params['epochs'],
                                      val_loader=val_loader,
-                                     wandb_vis=fit_params['wandb_vis'],
-                                     tensorboard_vis=fit_params['tensorboard_vis'],
+                                     wandb_run=fit_params['wandb'],
+                                     writer=fit_params['tensorboard'],
                                      device=hyperparams['device'])
         return model, history
     # ------------------------------------------------------------------------------------------------------------------
@@ -165,9 +167,8 @@ class Model(ABC):
               scheduler: torch.optim.lr_scheduler,
               data_loader: udata.DataLoader,
               epoch,
-              wandb_vis: False,
-              tensorboard_vis: False,
-              display_iter=100,
+              wandb_run=None,
+              writer=None,
               device=None,
               val_loader=None,
               ):
@@ -271,8 +272,8 @@ class Model(ABC):
             if scheduler is not None:
                 scheduler.step()
             # log metrics
-            if net.wandb_run:
-                net.wandb_run.log({"Loss/train": avg_train_loss,
+            if wandb_run:
+                wandb_run.log({"Loss/train": avg_train_loss,
                                    "Loss/val": avg_val_loss,
                                    "Accuracy/train": train_acc,
                                    "Accuracy/val": val_acc,
@@ -280,7 +281,7 @@ class Model(ABC):
                                 }
                              )
 
-            if net.writer:
+            if writer:
                 net.writer.add_scalar('Loss/train', avg_train_loss, e)
                 net.writer.add_scalar('Loss/val', avg_val_loss, e)
                 net.writer.add_scalar('Accuracy/train', train_acc, e)
@@ -297,11 +298,11 @@ class Model(ABC):
                     metric=abs(metric),
                 )
 
-        if net.wandb_run:
-            net.wandb_run.finish()
+        if wandb_run:
+            wandb_run.finish()
 
-        if net.writer:
-            net.writer.close()
+        if writer:
+            writer.close()
 
         history = dict()
         history["train_loss"] = train_loss

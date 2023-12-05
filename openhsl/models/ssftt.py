@@ -253,8 +253,8 @@ class SSFTT(Model):
                                          weight_decay=fit_params['optimizer_params']['weight_decay']))
         fit_params.setdefault('scheduler_type', None)
         fit_params.setdefault('scheduler_params', None)
-        fit_params.setdefault('wandb_vis', False)
-        fit_params.setdefault('tensorboard_vis', False)
+        fit_params.setdefault('wandb', self.wandb_run)
+        fit_params.setdefault('tensorboard', self.writer)
 
         if fit_params['scheduler_type'] == 'StepLR':
             scheduler = optim.lr_scheduler.StepLR(optimizer=fit_params['optimizer'],
@@ -278,8 +278,8 @@ class SSFTT(Model):
                                          data_loader=train_loader,
                                          val_loader=val_loader,
                                          device='cuda',
-                                         wandb_vis=fit_params['wandb_vis'],
-                                         tensorboard_vis=fit_params['tensorboard_vis']
+                                         wandb_run=fit_params['wandb'],
+                                         writer=fit_params['tensorboard']
                                          )
 
         Model.save_train_mask(model_name=camel_to_snake(str(self.model.__class__.__name__)),
