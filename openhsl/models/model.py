@@ -9,11 +9,12 @@ import numpy as np
 import datetime
 from tqdm import trange, tqdm
 from PIL import Image
+import wandb
 
 from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
                                         sliding_window, sample_gt, convert_to_color_
-from openhsl.data.torch_dataloader import create_loader
+from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.utils import init_wandb, init_tensorboard
 
 
@@ -116,8 +117,8 @@ class Model(ABC):
 
         # Generate the dataset
 
-        train_loader = create_loader(img, train_gt, hyperparams, shuffle=True)
-        val_loader = create_loader(img, val_gt, hyperparams)
+        train_loader = create_torch_loader(img, train_gt, hyperparams, shuffle=True)
+        val_loader = create_torch_loader(img, val_gt, hyperparams)
 
         Model.save_train_mask(model_name=camel_to_snake(str(model.__class__.__name__)),
                               dataset_name=train_loader.dataset.name,

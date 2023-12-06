@@ -6,6 +6,44 @@ import sklearn.model_selection
 import seaborn as sns
 from typing import Tuple
 from sklearn.decomposition import PCA
+from sklearn.model_selection import train_test_split
+
+
+def split_train_test_set(X: np.ndarray,
+                         y: np.ndarray,
+                         test_ratio: float):
+    X_train, X_test, y_train, y_test = train_test_split(X,
+                                                        y,
+                                                        test_size=test_ratio,
+                                                        random_state=345,
+                                                        stratify=y)
+    return X_train, X_test, y_train, y_test
+
+
+def create_patches(X: np.ndarray,
+                   y: np.ndarray,
+                   patch_size: int = 5,
+                   remove_zero_labels: bool = True):
+
+    margin = int((patch_size - 1) / 2)
+    zero_padded_X = pad_with_zeros(X, margin=margin)
+    # split patches
+    patches_data = np.zeros((X.shape[0] * X.shape[1], patch_size, patch_size, X.shape[2]))
+    patches_labels = np.zeros((X.shape[0] * X.shape[1]))
+
+    patch_index = 0
+    for r in range(margin, zero_padded_X.shape[0] - margin):
+        for c in range(margin, zero_padded_X.shape[1] - margin):
+            patch = zero_padded_X[r - margin:r + margin + 1, c - margin:c + margin + 1]
+            patches_data[patch_index, :, :, :] = patch
+            patches_labels[patch_index] = y[r - margin, c - margin]
+            patch_index = patch_index + 1
+
+    if remove_zero_labels:
+        patches_data = patches_data[patches_labels > 0, :, :, :]
+        patches_labels = patches_labels[patches_labels > 0]
+
+    return patches_data, patches_labels
 
 
 def is_coordinate_in_padded_area(coordinates: Tuple,
@@ -29,7 +67,8 @@ def is_coordinate_in_padded_area(coordinates: Tuple,
 
 
 def apply_pca(X: np.ndarray,
-              num_components: int = 75):
+              num_components: int = 75,
+              pca=None):
     """
 
     Args:
@@ -39,11 +78,16 @@ def apply_pca(X: np.ndarray,
     Returns:
 
     """
-    print(f'Will apply PCA from {X.data.shape[-1]} to {num_components}')
     newX = np.reshape(X, (-1, X.shape[2]))
-    pca = PCA(n_components=num_components, whiten=True, random_state=131)
-    newX = pca.fit_transform(newX)
-    newX = np.reshape(newX, (X.shape[0], X.shape[1], num_components))
+    if pca:
+        print(f'Will apply PCA from {X.data.shape[-1]} to {len(pca.components_)}')
+        newX = pca.transform(newX)
+        newX = np.reshape(newX, (X.shape[0], X.shape[1], len(pca.components_)))
+    else:
+        print(f'Will apply PCA from {X.data.shape[-1]} to {num_components}')
+        pca = PCA(n_components=num_components, whiten=True, random_state=131)
+        newX = pca.fit_transform(newX)
+        newX = np.reshape(newX, (X.shape[0], X.shape[1], num_components))
     return newX, pca
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -183,13 +227,15 @@ def grouper(n, iterable):
 
 def sample_gt(gt: np.ndarray,
               train_size: float,
-              mode: str = 'random'):
+              mode: str = 'random',
+              msg: str = 'train/test'):
     """Extract a fixed percentage of samples from an array of labels.
 
     Args:
         gt: a 2D array of int labels
         train_size: [0, 1] float
         mode: str
+        msg: str
     Returns:
         train_gt, test_gt: 2D arrays of int labels
 
@@ -214,7 +260,7 @@ def sample_gt(gt: np.ndarray,
 
     # get fixed count of class sample for each class
     elif mode == 'fixed':
-        print(f"Sampling {mode} with train size = {train_size}")
+        print(f"Sampling {mode} with train size = {train_size} for {msg}")
         train_indices, test_indices = [], []
         for c in np.unique(gt):
             if c == 0:
@@ -260,7 +306,7 @@ def camel_to_snake(name):
 
 def get_palette(num_classes):
     palette = {0: (0, 0, 0)}
-    for k, color in enumerate(sns.color_palette("hls", num_classes - 1)):
+    for k, color in enumerate(sns.color_palette("hls", num_classes)):
         palette[k + 1] = tuple(np.asarray(255 * np.array(color), dtype="uint8"))
 
     return palette
@@ -279,7 +325,7 @@ def convert_to_color_(arr_2d, palette=None):
     """
     arr_3d = np.zeros((arr_2d.shape[0], arr_2d.shape[1], 3), dtype=np.uint8)
     if palette is None:
-        palette = get_palette(len(np.unique(arr_2d)))
+        palette = get_palette(np.max(arr_2d))
 
     for c, i in palette.items():
         m = arr_2d == c

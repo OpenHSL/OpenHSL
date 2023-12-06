@@ -4,6 +4,7 @@ from PIL import Image
 from scipy.io import loadmat, savemat
 from typing import Optional, Dict
 import os.path
+import json
 
 
 class HSMask:
@@ -63,7 +64,8 @@ class HSMask:
 
             self.n_classes = self.data.shape[-1]
         else:
-            print("void mask")
+            print("Created void mask")
+            print("Class labeles is empty")
             self.data = None
             self.label_class = None
     # ------------------------------------------------------------------------------------------------------------------
@@ -165,19 +167,8 @@ class HSMask:
 
         """
         # input mask must have 2 dimensions
-        if len(mask.shape) > 2:
-            return False
-
-        # data type in mask must be integer
-        if mask.dtype not in ["uint8", "uint16", "uint32", "uint64",
-                              "int8", "int16", "int32", "int64"]:
-            return False
-
-        # number of classes in mask must be as 0,1,2... not 1,2... not 0,2,5 ...
-        if np.all(np.unique(mask) != np.array(range(0, len(np.unique(mask))))):
-            return False
-
-        return True
+        valid_types = ["uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64"]
+        return len(mask.shape) == 2 and mask.dtype in valid_types
     # ------------------------------------------------------------------------------------------------------------------
 
     def __is_correct_binary_layer(self, layer: np.ndarray) -> bool:
@@ -249,13 +240,14 @@ class HSMask:
             ----------
             mask: np.ndarray
         """
-        mask_3d = []
+        h, w = mask.shape
+        count_classes = np.max(mask) + 1
+        mask_3d = np.zeros((h, w, count_classes))
+
         for cl in np.unique(mask):
+            mask_3d[:, :, cl] = (mask == cl).astype('uint8')
 
-            mask_3d.append((mask == cl).astype('uint8'))
-        mask_3d = np.array(mask_3d)
-
-        return np.transpose(mask_3d, (1, 2, 0))
+        return mask_3d
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
@@ -356,7 +348,7 @@ class HSMask:
 
         # updates number of classes after loading mask
         self.n_classes = self.data.shape[-1]
-        self.label_class = {}
+        self.load_class_info(path_to_data)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_mat(self,
@@ -379,6 +371,7 @@ class HSMask:
         """
         temp_dict = {mat_key: self.data}
         savemat(path_to_file, temp_dict)
+        self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_h5(self,
@@ -404,6 +397,7 @@ class HSMask:
 
         with h5py.File(path_to_file, 'w') as f:
             f.create_dataset(h5_key, data=self.data)
+        self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
     
     def save_to_npy(self,
@@ -421,6 +415,7 @@ class HSMask:
             Path to file
         """
         np.save(path_to_file, self.data)
+        self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_image(self,
@@ -439,12 +434,26 @@ class HSMask:
         """
         img = Image.fromarray(self.data[:, :, 0])
         img.save(path_to_save_file)
+        self.save_class_info(path_to_save_file)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_class_info(self):
-        pass
+    def load_class_info(self, path_to_data):
+        path_to_data = '.'.join(path_to_data.split('.')[:-1]) + '_metainfo.json'
+        if os.path.exists(path_to_data):
+            with open(path_to_data, 'r') as json_file:
+                data = json.load(json_file)
+            self.label_class = data['label_class']
+        else:
+            print("Metainfo file does not exist!")
+            self.label_class = {}
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_class_info(self):
-        pass
+    def save_class_info(self, path_to_data):
+        path_to_data = '.'.join(path_to_data.split('.')[:-1]) + '_metainfo.json'
+        if not self.label_class:
+            print('Wavelengths are empty! Save as empy dict')
+            self.label_class = {}
+        data = {"label_class": self.label_class}
+        with open(path_to_data, 'w') as outfile:
+            outfile.write(json.dumps(data))
     # ------------------------------------------------------------------------------------------------------------------
