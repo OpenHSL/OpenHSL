@@ -224,7 +224,7 @@ class SSFTT(Model):
             X: HSImage,
             y: HSMask,
             fit_params: Dict):
-
+        fit_params.setdefault('batch_size', 32)
         self.hyperparams['batch_size'] = fit_params['batch_size']
 
         img, gt = get_dataset(hsi=X, mask=y)
@@ -245,7 +245,7 @@ class SSFTT(Model):
         fit_params.setdefault('train_sample_percentage', 0.5)
         fit_params.setdefault('dataloader_mode', 'random')
         fit_params.setdefault('loss', nn.CrossEntropyLoss())
-        fit_params.setdefault('batch_size', 32)
+        #fit_params.setdefault('batch_size', 32)
         fit_params.setdefault('optimizer_params', {'learning_rate': 0.001, 'weight_decay': 0})
         fit_params.setdefault('optimizer',
                               optim.Adam(self.model.parameters(),
