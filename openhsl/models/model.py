@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import os
-import yaml
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -8,8 +7,6 @@ import torch.utils.data as udata
 import numpy as np
 import datetime
 from tqdm import trange, tqdm
-from PIL import Image
-import wandb
 
 from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
@@ -256,11 +253,12 @@ class Model(ABC):
             if val_loader: # ToDo: not preferable to check if condition every iteration
                 val_acc, avg_val_loss = Model.val(net, criterion, val_loader, device=device)
 
-                t.set_postfix_str(f"train accuracy: {train_acc}\t"
-                                  f"val accuracy: {val_acc}\t"
-                                  f"train loss: {avg_train_loss}\t"
-                                  f"val loss: {avg_val_loss}")
-                t.refresh()
+                t.set_postfix({'train_acc': "{:.3f}".format(train_acc),
+                               'val_acc': "{:.3f}".format(val_acc),
+                               'train_loss': "{:.3f}".format(avg_train_loss),
+                               'val_loss': "{:.3f}".format(avg_val_loss)
+                               }
+                              )
 
                 val_loss.append(avg_val_loss)
                 val_accuracies.append(val_acc)
