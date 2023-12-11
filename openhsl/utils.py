@@ -104,6 +104,42 @@ def init_tensorboard(path_dir='tensorboard'):
 
     return writer
 
+# ----------------------------------------------------------------------------------------------------------------------
+
+class EarlyStopping:
+    """
+    EarlyStopping class
+
+    Attributes
+    ----------
+    tolerance: int
+        number of epochs to wait after min has been hit
+    min_delta: float
+        minimum change in the monitored quantity to qualify as an improvement
+    counter: int
+        number of epochs since min has been hit
+    early_stop: bool
+        True if the training process has to be stopped
+
+    Methods
+    -------
+    __call__(train_loss, validation_loss)
+        call method to check if the training process has to be stopped
+    """
+
+    def __init__(self, tolerance=5, min_delta=0):
+
+        self.tolerance = tolerance
+        self.min_delta = min_delta
+        self.counter = 0
+        self.early_stop = False
+
+    def __call__(self, train_loss, validation_loss):
+        if (validation_loss - train_loss) > self.min_delta:
+            self.counter +=1
+            if self.counter >= self.tolerance:
+                self.early_stop = True
+
 
 def draw_fit_plots(model):
     """

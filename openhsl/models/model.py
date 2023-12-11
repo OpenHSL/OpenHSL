@@ -12,7 +12,7 @@ from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
                                         sliding_window, sample_gt, convert_to_color_
 from openhsl.data.torch_dataloader import create_torch_loader
-from openhsl.utils import init_wandb, init_tensorboard
+from openhsl.utils import init_wandb, init_tensorboard, EarlyStopping
 
 
 class Model(ABC):
@@ -212,12 +212,14 @@ class Model(ABC):
 
         save_epoch = epoch // 20 if epoch > 20 else 1
 
+        early_stopping = EarlyStopping(tolerance=5, min_delta=10)
+
         losses = []
         train_accuracies = []
         val_accuracies = []
         train_loss = []
         val_loss = []
-        t = trange(1, epoch + 1, desc='Train loop', leave=True)
+        t = trange(1, epoch + 1, desc='Train loop', leave=True, dynamic_ncols=True)
         for e in t:
             # Set the network to training mode
             net.train()
@@ -269,6 +271,7 @@ class Model(ABC):
             # Update the scheduler (ToDo: not preferable to check if condition every iteration)
             if scheduler is not None:
                 scheduler.step()
+
             # log metrics
             if wandb_run:
                 wandb_run.log({"Loss/train": avg_train_loss,
@@ -295,6 +298,12 @@ class Model(ABC):
                     epoch=e,
                     metric=abs(metric),
                 )
+
+            # Early stopping
+            early_stopping(avg_train_loss, avg_val_loss)
+            if early_stopping.early_stop:
+                print("Early stopping")
+                break
 
         if wandb_run:
             wandb_run.finish()
