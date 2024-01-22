@@ -4,7 +4,7 @@ from openhsl.hs_mask import HSMask
 from openhsl.models.model import Model
 
 import numpy as np
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, Union
 
 import torch
 import torch.nn as nn
@@ -155,8 +155,8 @@ class NM3DCNN(Model):
     # ------------------------------------------------------------------------------------------------------------------
 
     def fit(self,
-            X: HSImage,
-            y: HSMask,
+            X: Union[HSImage, np.ndarray],
+            y: Union[HSMask, np.ndarray],
             fit_params: Dict):
 
         fit_params.setdefault('epochs', 10)

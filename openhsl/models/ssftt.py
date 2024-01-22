@@ -4,8 +4,9 @@ import torch.optim as optim
 from einops import rearrange
 from torch import nn
 import torch.nn.init as init
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 import numpy as np
+from openhsl.models.model import train, val, test, save_model, save_train_mask
 
 from openhsl.models.model import Model
 from openhsl.hsi import HSImage
@@ -221,8 +222,8 @@ class SSFTT(Model):
         self.hyperparams["center_pixel"] = True
 
     def fit(self,
-            X: HSImage,
-            y: HSMask,
+            X: Union[HSImage, np.ndarray],
+            y: Union[HSMask, np.ndarray],
             fit_params: Dict):
         fit_params.setdefault('batch_size', 32)
         self.hyperparams['batch_size'] = fit_params['batch_size']
@@ -270,21 +271,20 @@ class SSFTT(Model):
         else:
             raise ValueError('Unsupported scheduler type')
 
-        self.model, history = self.train(net=self.model,
-                                         optimizer=fit_params['optimizer'],
-                                         criterion=fit_params['loss'],
-                                         scheduler=scheduler,
-                                         epoch=fit_params['epochs'],
-                                         data_loader=train_loader,
-                                         val_loader=val_loader,
-                                         device='cuda',
-                                         wandb_run=fit_params['wandb'],
-                                         writer=fit_params['tensorboard']
-                                         )
-
-        Model.save_train_mask(model_name=camel_to_snake(str(self.model.__class__.__name__)),
-                              dataset_name=train_loader.dataset.name,
-                              mask=train_gt)
+        self.model, history = train(net=self.model,
+                                    optimizer=fit_params['optimizer'],
+                                    criterion=fit_params['loss'],
+                                    scheduler=scheduler,
+                                    epoch=fit_params['epochs'],
+                                    data_loader=train_loader,
+                                    val_loader=val_loader,
+                                    device='cuda',
+                                    wandb_run=fit_params['wandb'],
+                                    writer=fit_params['tensorboard']
+                                    )
+        save_train_mask(model_name=camel_to_snake(str(self.model.__class__.__name__)),
+                        dataset_name=train_loader.dataset.name,
+                        mask=train_gt)
 
         self.train_loss = history["train_loss"]
         self.val_loss = history["val_loss"]
@@ -303,7 +303,7 @@ class SSFTT(Model):
 
         self.model.eval()
 
-        probabilities = Model.test(net=self.model,
+        probabilities = test(net=self.model,
                                    img=img,
                                    hyperparams=self.hyperparams)
         prediction = np.argmax(probabilities, axis=-1)

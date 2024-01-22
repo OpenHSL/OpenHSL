@@ -4,7 +4,7 @@ from openhsl.hs_mask import HSMask
 from openhsl.models.model import Model
 
 import numpy as np
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, Union
 
 import torch
 import torch.nn as nn
@@ -50,8 +50,6 @@ class M3DCNN_Net(nn.Module):
         self.dropout = nn.Dropout(p=0.6)
 
         self.features_size = self._get_final_flattened_size()
-        print(self.features_size)
-
         self.fc = nn.Linear(self.features_size, n_classes)
 
         self.apply(self.weight_init)
@@ -136,8 +134,8 @@ class M3DCNN(Model):
     # ------------------------------------------------------------------------------------------------------------------
 
     def fit(self,
-            X: HSImage,
-            y: HSMask,
+            X: Union[HSImage, np.ndarray],
+            y: Union[HSMask, np.ndarray],
             fit_params: Dict):
 
         fit_params.setdefault('epochs', 10)
@@ -145,7 +143,7 @@ class M3DCNN(Model):
         fit_params.setdefault('dataloader_mode', 'random')
         fit_params.setdefault('loss', nn.CrossEntropyLoss(weight=self.hyperparams["weights"]))
         fit_params.setdefault('batch_size', 40)
-        fit_params.setdefault('optimizer_params', {'learning_rate': 0.01, 'weight_decay': 0.01})
+        fit_params.setdefault('optimizer_params', {'learning_rate': 0.001, 'weight_decay': 0.01})
         fit_params.setdefault('optimizer',
                               optim.SGD(self.model.parameters(),
                                         lr=fit_params['optimizer_params']["learning_rate"],

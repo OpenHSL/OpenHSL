@@ -73,11 +73,48 @@ class HSImage:
         return self.data.shape[-1]
     # ------------------------------------------------------------------------------------------------------------------
 
+    def calibrate_white_reference(self, coefficients):
+        self.data = self.data / coefficients[None, None, :]
+    # ------------------------------------------------------------------------------------------------------------------
+
     def to_spectral_list(self):
+        """
+        Converts HSI to list of spectrals (as ravel)
+
+        ^ y
+        | [0][1][2]
+        | [2][3][4] --> [1][2][3][4][5][6][7][8][9]
+        | [5][6][7]
+        --------> x
+
+        Returns
+        -------
+        list
+        """
         return np.reshape(self.data, (self.data.shape[0] * self.data.shape[1], self.data.shape[2]))
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_spectral_list(self, spectral_list, height, width):
+        """
+        Create HSI from spectral list with height and width
+
+
+                                          ^ y
+                                          | [0][1][2]
+        [1][2][3][4][5][6][7][8][9] -->   | [2][3][4] -> [1][2][3][4][5][6][7][8][9]
+                                          | [5][6][7]
+                                          --------> x
+
+        Parameters
+        ----------
+        spectral_list
+        height
+        width
+
+        Returns
+        -------
+
+        """
         self.data = np.reshape(spectral_list, (height, width, len(spectral_list[0])))
     # ------------------------------------------------------------------------------------------------------------------
 
