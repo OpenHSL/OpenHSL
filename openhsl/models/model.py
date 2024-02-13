@@ -9,7 +9,7 @@ import torch.utils.data as udata
 import numpy as np
 import datetime
 from tqdm import trange, tqdm
-from typing import Iterable
+from typing import Iterable, Dict
 
 from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
@@ -86,6 +86,10 @@ class Model(ABC):
 
         hyperparams['batch_size'] = fit_params['batch_size']
 
+        #sheduler = get_scheduler(scheduler_type=fit_params['scheduler_type'],
+        #                         optimizer=fit_params['optimizer'],
+        #                         scheduler_params=**fit_params['scheduler_params'])
+
         if fit_params['scheduler_type'] == 'StepLR':
             scheduler = optim.lr_scheduler.StepLR(optimizer=fit_params['optimizer'],
                                                   **fit_params['scheduler_params'])
@@ -123,19 +127,19 @@ class Model(ABC):
         val_loader = create_torch_loader(img, val_gt, hyperparams)
 
         save_train_mask(model_name=camel_to_snake(str(model.__class__.__name__)),
-                              dataset_name=train_loader.dataset.name,
-                              mask=train_gt)
+                        dataset_name=train_loader.dataset.name,
+                        mask=train_gt)
 
         model, history = train(net=model,
-                                     optimizer=fit_params['optimizer'],
-                                     criterion=fit_params['loss'],
-                                     scheduler=scheduler,
-                                     data_loader=train_loader,
-                                     epoch=fit_params['epochs'],
-                                     val_loader=val_loader,
-                                     wandb_run=fit_params['wandb'],
-                                     writer=fit_params['tensorboard'],
-                                     device=hyperparams['device'])
+                               optimizer=fit_params['optimizer'],
+                               criterion=fit_params['loss'],
+                               scheduler=scheduler,
+                               data_loader=train_loader,
+                               epoch=fit_params['epochs'],
+                               val_loader=val_loader,
+                               wandb_run=fit_params['wandb'],
+                               writer=fit_params['tensorboard'],
+                               device=hyperparams['device'])
 
         return model, history
     # ------------------------------------------------------------------------------------------------------------------
@@ -152,8 +156,8 @@ class Model(ABC):
         model.eval()
 
         probabilities = test(net=model,
-                                   img=img,
-                                   hyperparams=hyperparams)
+                             img=img,
+                             hyperparams=hyperparams)
         prediction = np.argmax(probabilities, axis=-1)
         # fill void areas in result with zeros
         if y:
@@ -162,12 +166,50 @@ class Model(ABC):
     # ------------------------------------------------------------------------------------------------------------------
 
 
+def get_optimizer(net: nn.Module,
+                  optimizer_type: str,
+                  optimizer_params: Dict):
+    if optimizer_type == 'SGD':
+        optimizer = optim.SGD(net.parameters(),
+                              **optimizer_params)
+    elif optimizer_type == 'Adam':
+        optimizer = optim.Adam(net.parameters(),
+                               **optimizer_params)
+    elif optimizer_type == 'Adagrad':
+        optimizer = optim.Adagrad(net.parameters(),
+                                  **optimizer_params)
+    else:
+        raise ValueError('Unsupported optimizer type')
+
+    return optimizer
+
+
+def get_scheduler(scheduler_type: str,
+                  optimizer,
+                  scheduler_params):
+
+    if scheduler_type == 'StepLR':
+        scheduler = optim.lr_scheduler.StepLR(optimizer=optimizer,
+                                              **scheduler_params)
+    elif scheduler_type == 'CosineAnnealingLR':
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer,
+                                                         **scheduler_params)
+    elif scheduler_type == 'ReduceLROnPlateau':
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,
+                                                         **scheduler_params)
+    elif scheduler_type is None:
+        scheduler = None
+    else:
+        raise ValueError('Unsupported scheduler type')
+
+    return scheduler
+
+
 def train_one_epoch(net: torch.nn.Module,
                     criterion: torch.nn.Module,
                     data_loader: Iterable,
                     optimizer: torch.optim.Optimizer,
-                    device: torch.device,
-                    epoch: int):
+                    device: torch.device):
     net.train()
     avg_train_loss = 0.0
     train_accuracy = 0.0
@@ -201,8 +243,30 @@ def train_one_epoch(net: torch.nn.Module,
     return train_metrics
 
 
-def val_one_epoch():
-    pass
+def val_one_epoch(net: nn.Module,
+                  criterion: torch.nn.Module,
+                  data_loader: udata.DataLoader,
+                  device: torch.device):
+    # TODO : fix me using metrics()
+    val_accuracy, total = 0.0, 0.0
+    avg_loss = 0
+    ignored_labels = data_loader.dataset.ignored_labels
+    for batch_idx, (data, target) in enumerate(data_loader):
+        with torch.no_grad():
+            # Load the data into the GPU if required
+            data, target = data.to(device), target.to(device)
+            output = net(data)
+            loss = criterion(output, target)
+            avg_loss += loss.item()
+            _, output = torch.max(output, dim=1)
+            for out, pred in zip(output.view(-1), target.view(-1)):
+                if out.item() in ignored_labels:
+                    continue
+                else:
+                    val_accuracy += out.item() == pred.item()
+                    total += 1
+
+    return val_accuracy / total, avg_loss / len(data_loader)
 
 
 def train(net: nn.Module,
@@ -255,12 +319,10 @@ def train(net: nn.Module,
         # Set the network to training mode
 
         train_metrics = train_one_epoch(net=net,
-                                              criterion=criterion,
-                                              data_loader=data_loader,
-                                              optimizer=optimizer,
-                                              device=device,
-                                              epoch=e
-                                              )
+                                        criterion=criterion,
+                                        data_loader=data_loader,
+                                        optimizer=optimizer,
+                                        device=device)
 
         train_accuracies.append(train_metrics["train_acc"])
         train_loss.append(train_metrics["avg_train_loss"])
