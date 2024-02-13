@@ -251,10 +251,9 @@ class HSImage:
             path_to_file: str
                 Path to .tiff file
             """
-            # TODO GDAL or what?
-        raster = rasterio.open(path_to_file)
-        band = raster.read()
-        self.data = band.transpose((1, 2, 0))
+        with rasterio.open(path_to_file) as raster:
+            band = raster.read()
+            self.data = band.transpose((1, 2, 0))
         self.load_metadata(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -379,6 +378,7 @@ class HSImage:
 
         with rasterio.open(path_to_file, 'w', **d) as dst:
             dst.write(self.data.transpose((2, 0, 1)))
+        self.save_metadata(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_h5(self,

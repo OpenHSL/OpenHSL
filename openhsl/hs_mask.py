@@ -1,4 +1,5 @@
 import h5py
+import rasterio
 import numpy as np
 from PIL import Image
 from scipy.io import loadmat, savemat
@@ -346,6 +347,17 @@ class HSMask:
             else:
                 raise ValueError("Unsupported type of mask")
 
+        elif file_extension == '.tiff' or file_extension == '.tif':
+            with rasterio.open(path_to_data) as raster:
+                tmp_data = raster.read()
+                tmp_data = tmp_data.transpose((1, 2, 0))
+            if HSMask.__is_correct_2d_mask(tmp_data):
+                self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
+            elif HSMask.__is_correct_3d_mask(tmp_data):
+                self.data = tmp_data
+            else:
+                raise ValueError("Unsupported type of mask")
+
         # updates number of classes after loading mask
         self.n_classes = self.data.shape[-1]
         self.load_class_info(path_to_data)
@@ -417,6 +429,34 @@ class HSMask:
         np.save(path_to_file, self.data)
         self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
+
+    def save_to_tiff(self,
+                     path_to_file: str):
+        if not path_to_file.endswith('.tif') and not path_to_file.endswith('.tiff'):
+            raise Exception('Incorrect file format')
+
+        dt = 'int8'
+        if self.data.dtype.name == 'uint8' or self.data.dtype.name == 'int8':
+            dt = 'int8'
+        elif self.data.dtype.name == 'uint16' or self.data.dtype.name == 'int16':
+            dt = 'int16'
+        elif self.data.dtype.name == 'uint32' or self.data.dtype.name == 'int32':
+            dt = 'int32'
+
+        d = {'driver': 'GTiff',
+             'dtype': dt,
+             'nodata': None,
+             'width': self.data.shape[1],
+             'height': self.data.shape[0],
+             'count': self.data.shape[2],
+             # 'crs': CRS.from_epsg(32736),
+             # 'transform': Affine(10.0, 0.0, 653847.1979372115, 0.0, -10.0, 7807064.5603836905),
+             # 'tiled': False,
+             'interleave': 'band'}
+
+        with rasterio.open(path_to_file, 'w', **d) as dst:
+            dst.write(self.data.transpose((2, 0, 1)))
+        self.save_class_info(path_to_file)
 
     def save_image(self,
                    path_to_save_file: str):
