@@ -1,4 +1,4 @@
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, Union
 import numpy as np
 
 from openhsl.models.model import Model
@@ -88,8 +88,8 @@ class FCNN(Model):
 # ------------------------------------------------------------------------------------------------------------------
 
     def fit(self,
-            X: HSImage,
-            y: HSMask,
+            X: Union[HSImage, np.ndarray],
+            y: Union[HSMask, np.ndarray],
             fit_params: Dict):
 
         fit_params.setdefault('epochs', 10)

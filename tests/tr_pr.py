@@ -11,7 +11,8 @@ from openhsl.models.hsicnn_luo import HSICNN as Luo
 from openhsl.models.m1dcnn import M1DCNN
 # from openhsl.models.m3dcnn_sharma import M3DCNN as Sharma
 # from openhsl.models.m3dcnn_hamida import M3DCNN as Hamida
-# from openhsl.models.m3dcnn_he import M3DCNN as He
+from openhsl.models.m3dcnn_he import M3DCNN as He
+#from openhsl.models.ss3dftt import SSFTT
 from openhsl.models.m3dcnn_li import M3DCNN as Li
 from openhsl.models.tf2dcnn import TF2DCNN
 
@@ -24,10 +25,10 @@ from matplotlib import pyplot as plt
 from openhsl.data.utils import apply_pca
 
 
-# hsi_path = '../demo_data/corn_1.mat'
-# hsi_key = 'image'
-# mask_path = '../demo_data/mask_corn_1.mat'
-# mask_key = 'img'
+#hsi_path = '../demo_data/corn_1.mat'
+#hsi_key = 'image'
+#mask_path = '../demo_data/mask_corn_1.mat'
+#mask_key = 'img'
 
 
 hsi_path = '../test_data/tr_pr/PaviaU.mat'
@@ -41,16 +42,17 @@ mask = HSMask()
 hsi.load(path_to_data=hsi_path, key=hsi_key)
 mask.load(path_to_data=mask_path, key=mask_key)
 
-hsi_pca, _ = apply_pca(hsi.data, 30)
+hsi_pca = hsi.data
+#hsi_pca, _ = apply_pca(hsi.data, 40)
 
 optimizer_params = {
-    "learning_rate": 0.001,
+    "learning_rate": 0.1,
     "weight_decay": 0
 }
 
 scheduler_params = {
-    "step_size": 1,
-    "gamma": 0.1
+    "step_size": 5,
+    "gamma": 0.5
 }
 
 augmentation_params = {
@@ -61,26 +63,28 @@ augmentation_params = {
 
 fit_params = {
     "epochs": 10,
-    "train_sample_percentage": 0.2,
+    "train_sample_percentage": 0.1,
     "dataloader_mode": "fixed",
     "wandb_vis": False,
-    # "optimizer_params": optimizer_params,
+    "optimizer_params": optimizer_params,
     "batch_size": 128,
     "scheduler_type": 'StepLR',
     "scheduler_params": scheduler_params
 }
 
-cnn = TF2DCNN(n_classes=mask.n_classes,
-              n_bands=hsi_pca.data.shape[-1],  # or hsi.data.shape[-1]
-              device='cuda')
+cnn = M1DCNN(n_classes=mask.n_classes,
+             n_bands=hsi_pca.data.shape[-1],  # or hsi.data.shape[-1]
+             device='cuda')
 
-cnn.fit(X=hsi_pca,  # or hsi
+# cnn.init_wandb()
+
+cnn.fit(X=hsi,  # or hsi
         y=mask.get_2d(),
         fit_params=fit_params)
 
 draw_fit_plots(model=cnn)
 
-pred = cnn.predict(X=hsi_pca,  # or hsi
+pred = cnn.predict(X=hsi,  # or hsi
                    y=mask,
                    batch_size=100)
 

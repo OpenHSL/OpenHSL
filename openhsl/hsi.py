@@ -1,6 +1,7 @@
 import os.path
 
 import h5py
+import rasterio
 import numpy as np
 from os import listdir, mkdir
 from os.path import isdir, splitext
@@ -73,11 +74,48 @@ class HSImage:
         return self.data.shape[-1]
     # ------------------------------------------------------------------------------------------------------------------
 
+    def calibrate_white_reference(self, coefficients):
+        self.data = self.data / coefficients[None, None, :]
+    # ------------------------------------------------------------------------------------------------------------------
+
     def to_spectral_list(self):
+        """
+        Converts HSI to list of spectrals (as ravel)
+
+        ^ y
+        | [0][1][2]
+        | [2][3][4] --> [1][2][3][4][5][6][7][8][9]
+        | [5][6][7]
+        --------> x
+
+        Returns
+        -------
+        list
+        """
         return np.reshape(self.data, (self.data.shape[0] * self.data.shape[1], self.data.shape[2]))
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_spectral_list(self, spectral_list, height, width):
+        """
+        Create HSI from spectral list with height and width
+
+
+                                          ^ y
+                                          | [0][1][2]
+        [1][2][3][4][5][6][7][8][9] -->   | [2][3][4] -> [1][2][3][4][5][6][7][8][9]
+                                          | [5][6][7]
+                                          --------> x
+
+        Parameters
+        ----------
+        spectral_list
+        height
+        width
+
+        Returns
+        -------
+
+        """
         self.data = np.reshape(spectral_list, (height, width, len(spectral_list[0])))
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -172,7 +210,7 @@ class HSImage:
         elif path_to_data.endswith('.npy'):
             self.load_from_npy(path_to_file=path_to_data)
         elif path_to_data.endswith('.tiff') or path_to_data.endswith('.tif'):
-            pass
+            self.load_from_tiff(path_to_file=path_to_data)
         else:
             raise Exception('Unsupported file extension')
     # ------------------------------------------------------------------------------------------------------------------
@@ -213,10 +251,10 @@ class HSImage:
             path_to_file: str
                 Path to .tiff file
             """
-            # TODO GDAL or what?
-        self.data = ...
-        self.wavelengths = ...
-        pass
+        with rasterio.open(path_to_file) as raster:
+            band = raster.read()
+            self.data = band.transpose((1, 2, 0))
+        self.load_metadata(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_npy(self,
@@ -316,8 +354,31 @@ class HSImage:
             path_to_file: str
                 Path to saving file
         """
-        # TODO GDAL?
-        ...
+        if not path_to_file.endswith('.tif') and not path_to_file.endswith('.tiff'):
+            raise Exception('Incorrect file format')
+
+        dt = 'int8'
+        if self.data.dtype.name == 'uint8' or self.data.dtype.name == 'int8':
+            dt = 'int8'
+        elif self.data.dtype.name == 'uint16' or self.data.dtype.name == 'int16':
+            dt = 'int16'
+        elif self.data.dtype.name == 'uint32' or self.data.dtype.name == 'int32':
+            dt = 'int32'
+
+        d = {'driver': 'GTiff',
+             'dtype': dt,
+             'nodata': None,
+             'width': self.data.shape[1],
+             'height': self.data.shape[0],
+             'count': self.data.shape[2],
+             # 'crs': CRS.from_epsg(32736),
+             # 'transform': Affine(10.0, 0.0, 653847.1979372115, 0.0, -10.0, 7807064.5603836905),
+             # 'tiled': False,
+             'interleave': 'band'}
+
+        with rasterio.open(path_to_file, 'w', **d) as dst:
+            dst.write(self.data.transpose((2, 0, 1)))
+        self.save_metadata(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_h5(self,
