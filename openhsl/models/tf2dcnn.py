@@ -134,6 +134,7 @@ class TF2DCNN:
         if fit_params['tensorboard_vis']:
             tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./tensorboard")
             callbacks.append(tensorboard_callback)
+
         # TODO add it to GUI
         callbacks.append(SendStatsCallback())
 
