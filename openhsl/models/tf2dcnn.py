@@ -8,6 +8,7 @@ import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten, Conv2D, BatchNormalization
 from keras.optimizers import SGD
+from keras.callbacks import Callback
 
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
@@ -16,6 +17,16 @@ from openhsl.data.tf_dataloader import get_test_generator, get_train_val_gens
 from openhsl.utils import init_wandb
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+
+class SendStatsCallback(Callback):
+
+    def on_epoch_end(self, epoch, logs=None):
+        train_loss = logs['loss']
+        val_loss = logs['val_loss']
+
+        train_acc = logs['accuracy']
+        val_acc = logs['val_accuracy']
 
 
 class TF2DCNN:
@@ -82,7 +93,6 @@ class TF2DCNN:
         fit_params.setdefault('wandb_vis', False)
         fit_params.setdefault('tensorboard_vis', False)
 
-
         img, gt = get_dataset(X, y)
 
         train_generator, val_generator = get_train_val_gens(X=img,
@@ -124,6 +134,8 @@ class TF2DCNN:
         if fit_params['tensorboard_vis']:
             tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./tensorboard")
             callbacks.append(tensorboard_callback)
+        # TODO add it to GUI
+        callbacks.append(SendStatsCallback())
 
         history = self.model.fit(ds_train,
                                  validation_data=ds_val,
