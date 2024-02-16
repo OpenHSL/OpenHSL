@@ -34,15 +34,18 @@ models_dict = {
     # "TF2DCNN": TF2DCNN
 }
 
+stop_train = False
 
 class TrainWorker(QObject):
     progress_signal = Signal(dict)
 
     @Slot(dict)
     def do_train(self, fits):
+        global stop_train
         try:
             net = fits["model"](n_bands=fits["hsi"].data.shape[-1],
                                 n_classes=fits["mask"].n_classes,
+                                path_to_weights=False,
                                 device=fits["device"])
 
             net.hyperparams["batch_size"] = fits["fit_params"]["batch_size"]
@@ -95,6 +98,10 @@ class TrainWorker(QObject):
                 self.progress_signal.emit({"epoch": e + 1,
                                            "val_loss": temp_val[1],
                                            "train_loss": temp_train['avg_train_loss']})
+
+                if stop_train:
+                    stop_train = False
+                    break
 
             self.progress_signal.emit({"end": True})
         except Exception as e:
@@ -167,6 +174,7 @@ class MainWindow(CIU):
         self.ui.start_learning_btn.clicked.connect(self.start_learning)
         self.ui.browse_weight_for_train_btn.clicked.connect(self.browse_weight_for_train)
         self.ui.browse_weight_for_inference_btn.clicked.connect(self.browse_weight_for_inference)
+        self.ui.stop_train_btn.clicked.connect(self.stop_train)
 
         # OTHER INTERACT
         self.ui.horizontalSlider.valueChanged.connect(
@@ -467,6 +475,11 @@ class MainWindow(CIU):
         if file_name:
             self.ui.current_loaded_weight_for_inference.setText(self.cut_path_with_deep(file_name, 2))
             self.loaded_weight_for_inference = file_name
+
+    def stop_train(self):
+        if not self.ui.start_learning_btn.isEnabled():
+            global stop_train
+            stop_train = True
 
 
 if __name__ == '__main__':
