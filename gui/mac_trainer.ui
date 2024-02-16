@@ -110,7 +110,7 @@
        <item>
         <widget class="QStackedWidget" name="stackedWidget">
          <property name="currentIndex">
-          <number>0</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="inference_widget">
           <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -468,14 +468,14 @@
             </widget>
            </item>
            <item>
-            <widget class="QFrame" name="frame_8">
+            <widget class="QFrame" name="frame_2">
              <property name="frameShape">
               <enum>QFrame::NoFrame</enum>
              </property>
              <property name="frameShadow">
               <enum>QFrame::Raised</enum>
              </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <layout class="QVBoxLayout" name="verticalLayout_10">
               <property name="spacing">
                <number>0</number>
               </property>
@@ -492,27 +492,54 @@
                <number>0</number>
               </property>
               <item>
-               <widget class="QPushButton" name="start_learning_btn">
-                <property name="text">
-                 <string>Start Train</string>
+               <widget class="QFrame" name="frame_8">
+                <property name="frameShape">
+                 <enum>QFrame::NoFrame</enum>
                 </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Raised</enum>
+                </property>
+                <layout class="QHBoxLayout" name="horizontalLayout_8">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QPushButton" name="start_learning_btn">
+                   <property name="text">
+                    <string>Start Train</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="stop_train_btn">
+                   <property name="text">
+                    <string>Stop Train</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
                </widget>
               </item>
               <item>
-               <widget class="QPushButton" name="stop_train_btn">
-                <property name="text">
-                 <string>Stop Train</string>
+               <widget class="QProgressBar" name="learning_progressbar">
+                <property name="value">
+                 <number>0</number>
                 </property>
                </widget>
               </item>
              </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QProgressBar" name="learning_progressbar">
-             <property name="value">
-              <number>0</number>
-             </property>
             </widget>
            </item>
           </layout>
@@ -585,16 +612,16 @@
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <property name="spacing">
-           <number>0</number>
+           <number>-1</number>
           </property>
           <property name="leftMargin">
-           <number>0</number>
+           <number>10</number>
           </property>
           <property name="topMargin">
            <number>0</number>
           </property>
           <property name="rightMargin">
-           <number>0</number>
+           <number>10</number>
           </property>
           <property name="bottomMargin">
            <number>0</number>
@@ -932,7 +959,7 @@
            <number>0</number>
           </property>
           <property name="bottomMargin">
-           <number>0</number>
+           <number>10</number>
           </property>
           <item alignment="Qt::AlignHCenter|Qt::AlignTop">
            <widget class="QLabel" name="label">

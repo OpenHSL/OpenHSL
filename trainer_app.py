@@ -416,7 +416,7 @@ class MainWindow(CIU):
             fits = {"hsi": self.current_train_hsi,
                     "mask": self.current_train_mask,
                     "model": models_dict[str(self.ui.choose_model_for_inference.currentText())],
-                    "device": self.ui.device_box2.currentText(),
+                    "device": self.devices_dict[str(self.ui.device_box2.currentText())],
                     "optimizer_params": optimizer_params,
                     "scheduler_params": scheduler_params,
                     "fit_params": fit_params}
