@@ -1,17 +1,10 @@
-import os
 import sys
-import torch
 import torch.nn as nn
-import numpy as np
 from tqdm import trange
-import matplotlib.pyplot as plt
-from sklearn.metrics import classification_report, confusion_matrix
 
-from PyQt5.QtWidgets import (QApplication, QFileDialog, QMainWindow, QWidget,
-                             QVBoxLayout)
+from PyQt5.QtWidgets import (QApplication, QFileDialog)
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import QThread, QObject, pyqtSignal as Signal, pyqtSlot as Slot
-import pyqtgraph as pg
 
 from gui.utils import (get_file_name, get_file_extension, get_file_directory,
                        request_keys_from_h5_file, request_keys_from_mat_file,
@@ -26,85 +19,86 @@ from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.models.model import train_one_epoch, val_one_epoch, get_optimizer, get_scheduler
 from openhsl.data.utils import get_palette, convert_to_color_, sample_gt
 
-# from openhsl.models.baseline import BASELINE -- is this fcnn?
-from openhsl.models.hsicnn_luo import HSICNN
+# from openhsl.models.ssftt import SSFTT # why I need to use einops rearrange for this model
+# maybe we should use numpy rearrange for it
+
 from openhsl.models.m1dcnn import M1DCNN
-from openhsl.models.m3dcnn_hamida import M3DCNN as HAMIDA
-from openhsl.models.m3dcnn_he import M3DCNN as HE
 from openhsl.models.m3dcnn_li import M3DCNN as LI
-from openhsl.models.m3dcnn_sharma import M3DCNN as SHARMA
 from openhsl.models.nm3dcnn import NM3DCNN
 
-models_dict = {  # "BASELINE": BASELINE,
-    "HSICNN": HSICNN,
+models_dict = {
     "M1DCNN": M1DCNN,
-    "M3DCNN_hamida": HAMIDA,
-    "M3DCNN_he": HE,
     "M3DCNN_li": LI,
-    "M3DCNN_sharma": SHARMA,
-    "NM3DCNN": NM3DCNN}
+    "NM3DCNN": NM3DCNN,
+    # "SSFTT": SSFTT,
+    # "TF2DCNN": TF2DCNN
+}
+
 
 class TrainWorker(QObject):
     progress_signal = Signal(dict)
 
     @Slot(dict)
     def do_train(self, fits):
-        net = fits["model"](n_bands=fits["hsi"].data.shape[-1],
-                            n_classes=fits["mask"].n_classes,
-                            device=fits["device"])
+        try:
+            net = fits["model"](n_bands=fits["hsi"].data.shape[-1],
+                                n_classes=fits["mask"].n_classes,
+                                device=fits["device"])
 
-        net.hyperparams["batch_size"] = fits["fit_params"]["batch_size"]
-        img, gt = get_dataset(fits["hsi"], fits["mask"])
-        train_gt, _ = sample_gt(gt=gt,
-                                train_size=fits["fit_params"]['train_sample_percentage'],
-                                mode=fits["fit_params"]['dataloader_mode'],
-                                msg='train_val/test')
+            net.hyperparams["batch_size"] = fits["fit_params"]["batch_size"]
+            img, gt = get_dataset(fits["hsi"], fits["mask"])
+            train_gt, _ = sample_gt(gt=gt,
+                                    train_size=fits["fit_params"]['train_sample_percentage'],
+                                    mode=fits["fit_params"]['dataloader_mode'],
+                                    msg='train_val/test')
 
-        train_gt, val_gt = sample_gt(gt=train_gt,
-                                     train_size=0.9,
-                                     mode=fits["fit_params"]['dataloader_mode'],
-                                     msg='train/val')
+            train_gt, val_gt = sample_gt(gt=train_gt,
+                                         train_size=0.9,
+                                         mode=fits["fit_params"]['dataloader_mode'],
+                                         msg='train/val')
 
-        train_data_loader = create_torch_loader(img,
-                                                train_gt,
-                                                net.hyperparams,
-                                                shuffle=True)
+            train_data_loader = create_torch_loader(img,
+                                                    train_gt,
+                                                    net.hyperparams,
+                                                    shuffle=True)
 
-        val_data_loader = create_torch_loader(img,
-                                              val_gt,
-                                              net.hyperparams)
+            val_data_loader = create_torch_loader(img,
+                                                  val_gt,
+                                                  net.hyperparams)
 
-        criterion = nn.CrossEntropyLoss(weight=net.hyperparams["weights"])
-        optimizer = get_optimizer(net=net.model,
-                                  optimizer_type='SGD',
-                                  optimizer_params=fits["optimizer_params"])
+            criterion = nn.CrossEntropyLoss(weight=net.hyperparams["weights"])
+            optimizer = get_optimizer(net=net.model,
+                                      optimizer_type='SGD',
+                                      optimizer_params=fits["optimizer_params"])
 
-        scheduler = get_scheduler(scheduler_type=fits["fit_params"]['scheduler_type'],
-                                  optimizer=optimizer,
-                                  scheduler_params=fits["scheduler_params"])
+            scheduler = get_scheduler(scheduler_type=fits["fit_params"]['scheduler_type'],
+                                      optimizer=optimizer,
+                                      scheduler_params=fits["scheduler_params"])
 
-        device = net.hyperparams['device']
-        net.model.to(device)
-        for e in trange(fits["fit_params"]['epochs']):
-            temp_train = train_one_epoch(net=net.model,
+            device = net.hyperparams['device']
+            net.model.to(device)
+            for e in trange(fits["fit_params"]['epochs']):
+                temp_train = train_one_epoch(net=net.model,
+                                             criterion=criterion,
+                                             data_loader=train_data_loader,
+                                             optimizer=optimizer,
+                                             device=device)
+                if scheduler is not None:
+                    scheduler.step()
+
+                temp_val = val_one_epoch(net=net.model,
                                          criterion=criterion,
-                                         data_loader=train_data_loader,
-                                         optimizer=optimizer,
+                                         data_loader=val_data_loader,
                                          device=device)
-            if scheduler is not None:
-                scheduler.step()
 
-            temp_val = val_one_epoch(net=net.model,
-                                     criterion=criterion,
-                                     data_loader=val_data_loader,
-                                     device=device)
+                # temp_train и val_train можно дергать для графика!
+                self.progress_signal.emit({"epoch": e + 1,
+                                           "val_loss": temp_val[1],
+                                           "train_loss": temp_train['avg_train_loss']})
 
-            # temp_train и val_train можно дергать для графика!
-            self.progress_signal.emit({"epoch": e + 1,
-                                       "val_loss": temp_val[1],
-                                       "train_loss": temp_train['avg_train_loss']})
-
-        self.progress_signal.emit({"end": True})
+            self.progress_signal.emit({"end": True})
+        except Exception as e:
+            self.progress_signal.emit({"error": str(e)})
 
 
 class MainWindow(CIU):
@@ -122,9 +116,16 @@ class MainWindow(CIU):
         self.loaded_weight_for_train = None
         self.loaded_weight_for_inference = None
 
-        self.devices = get_gpu_info()
-        self.ui.device_box.addItems(self.devices)
-        self.ui.device_box2.addItems(self.devices)
+        devices = get_gpu_info()
+        self.devices_dict = {"cpu": "cpu"}
+        devices.remove("cpu")
+
+        for i, device in enumerate(devices):
+            self.devices_dict[device] = i
+
+        devices.append("cpu")
+        self.ui.device_box.addItems(devices)
+        self.ui.device_box2.addItems(devices)
         self.current_device = self.ui.device_box.currentText()
 
         self.current_train_hsi = None
@@ -153,21 +154,9 @@ class MainWindow(CIU):
         # NAVIGATION
         self.ui.trainer_mod_btn.clicked.connect(lambda:
                                                 self.ui.stackedWidget.setCurrentWidget(self.ui.trainer_widget))
-        self.ui.trainer_mod_btn.clicked.connect(lambda:
-                                                self.ui.trainer_mod_btn.setStyleSheet(
-                                                    "background-color: rgb(210, 210, 210);"))
-        self.ui.trainer_mod_btn.clicked.connect(lambda:
-                                                self.ui.inference_mod_btn.setStyleSheet(
-                                                    "background-color: rgb(255, 255, 255);"))
 
         self.ui.inference_mod_btn.clicked.connect(lambda:
                                                   self.ui.stackedWidget.setCurrentWidget(self.ui.inference_widget))
-        self.ui.inference_mod_btn.clicked.connect(lambda:
-                                                  self.ui.inference_mod_btn.setStyleSheet(
-                                                      "background-color: rgb(210, 210, 210);"))
-        self.ui.inference_mod_btn.clicked.connect(lambda:
-                                                  self.ui.trainer_mod_btn.setStyleSheet(
-                                                      "background-color: rgb(255, 255, 255);"))
 
         # BUTTON CONNECTIONS
         self.ui.import_data_btn.clicked.connect(self.extract_data)
@@ -176,6 +165,8 @@ class MainWindow(CIU):
         self.ui.data_to_train_btn.clicked.connect(self.data_to_train)
         self.ui.data_to_test_btn.clicked.connect(self.data_to_test)
         self.ui.start_learning_btn.clicked.connect(self.start_learning)
+        self.ui.browse_weight_for_train_btn.clicked.connect(self.browse_weight_for_train)
+        self.ui.browse_weight_for_inference_btn.clicked.connect(self.browse_weight_for_inference)
 
         # OTHER INTERACT
         self.ui.horizontalSlider.valueChanged.connect(
@@ -410,13 +401,16 @@ class MainWindow(CIU):
                 "step_size": float(self.ui.step_size_edit.text()),
                 "gamma": float(self.ui.gamma_edit.text())}
 
+            scheduler_type = str(self.ui.scheduler_type_edit.currentText()
+                                 ) if self.ui.scheduler_type_edit.currentText() != "None" else None
+
             fit_params = {
                 "epochs": int(self.ui.epochs_edit.text()),
                 "train_sample_percentage": float(self.ui.train_split_edit.text()),
                 "dataloader_mode": str(self.ui.dataloader_mode_edit.currentText()),
                 "batch_size": int(self.ui.batch_size_edit.text()),
                 "optimizer_params": optimizer_params,
-                "scheduler_type": self.ui.scheduler_type_edit.currentText(),
+                "scheduler_type": scheduler_type,
                 "scheduler_params": scheduler_params}
 
             fits = {"hsi": self.current_train_hsi,
@@ -431,10 +425,15 @@ class MainWindow(CIU):
             self.progress_requested.emit(fits)
 
     def update_train_progress(self, data):
+        if "error" in data:
+            self.show_error(data["error"])
+            self.ui.start_learning_btn.setEnabled(True)
+            return
+
         if "end" in data:
             self.ui.start_learning_btn.setEnabled(True)
             return
-        
+
         self.g_epochs.append(data["epoch"])
         self.g_val_losses.append(data["val_loss"])
         self.g_train_losses.append(data["train_loss"])
@@ -442,6 +441,32 @@ class MainWindow(CIU):
         self.ui.graphicsView.plot(self.g_epochs, self.g_val_losses, pen='r', name='Validation Loss')
         self.ui.graphicsView.plot(self.g_epochs, self.g_train_losses, pen='g', name='Train Loss')
         self.ui.learning_progressbar.setValue(data["epoch"])
+
+    def browse_weight_for_train(self):
+        file_name, _ = QFileDialog.getOpenFileName(self,
+                                                   "Select a weight file",
+                                                   "",
+                                                   "(*.pth);;(*.pt)",
+                                                   options=QFileDialog.Options())
+        if file_name:
+            self.ui.current_label_weight_for_train.setText(self.cut_path_with_deep(file_name, 2))
+            self.loaded_weight_for_train = file_name
+
+    def change_state_btn_cause_checkbox(self, btn):
+        if self.ui.need_load_weight_checkBox.isChecked():
+            btn.setEnabled(True)
+        else:
+            btn.setEnabled(False)
+
+    def browse_weight_for_inference(self):
+        file_name, _ = QFileDialog.getOpenFileName(self,
+                                                   "Select a weight file",
+                                                   "experiment",
+                                                   "(*.pth);;(*.pt)",
+                                                   options=QFileDialog.Options())
+        if file_name:
+            self.ui.current_loaded_weight_for_inference.setText(self.cut_path_with_deep(file_name, 2))
+            self.loaded_weight_for_inference = file_name
 
 
 if __name__ == '__main__':
