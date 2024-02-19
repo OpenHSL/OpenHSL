@@ -161,7 +161,7 @@ class TF2DCNN:
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
-                X: Union[HSImage],
+                X: Union[HSImage, np.ndarray],
                 y: Optional[HSMask] = None,
                 batch_size=128) -> np.ndarray:
 
