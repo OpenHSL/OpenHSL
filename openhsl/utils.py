@@ -106,6 +106,7 @@ def init_tensorboard(path_dir='tensorboard'):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+
 class EarlyStopping:
     """
     EarlyStopping class

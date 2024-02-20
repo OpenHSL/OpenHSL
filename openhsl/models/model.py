@@ -86,23 +86,9 @@ class Model(ABC):
 
         hyperparams['batch_size'] = fit_params['batch_size']
 
-        #sheduler = get_scheduler(scheduler_type=fit_params['scheduler_type'],
-        #                         optimizer=fit_params['optimizer'],
-        #                         scheduler_params=**fit_params['scheduler_params'])
-
-        if fit_params['scheduler_type'] == 'StepLR':
-            scheduler = optim.lr_scheduler.StepLR(optimizer=fit_params['optimizer'],
-                                                  **fit_params['scheduler_params'])
-        elif fit_params['scheduler_type'] == 'CosineAnnealingLR':
-            scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer=fit_params['optimizer'],
-                                                             **fit_params['scheduler_params'])
-        elif fit_params['scheduler_type'] == 'ReduceLROnPlateau':
-            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=fit_params['optimizer'],
-                                                             **fit_params['scheduler_params'])
-        elif fit_params['scheduler_type'] is None:
-            scheduler = None
-        else:
-            raise ValueError('Unsupported scheduler type')
+        scheduler = get_scheduler(scheduler_type=fit_params['scheduler_type'],
+                                  optimizer=fit_params['optimizer'],
+                                  scheduler_params=fit_params['scheduler_params'])
 
         fit_params.setdefault('wandb', None)
         fit_params.setdefault('tensorboard', None)
@@ -182,6 +168,7 @@ def get_optimizer(net: nn.Module,
         raise ValueError('Unsupported optimizer type')
 
     return optimizer
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def get_scheduler(scheduler_type: str,
@@ -203,6 +190,7 @@ def get_scheduler(scheduler_type: str,
         raise ValueError('Unsupported scheduler type')
 
     return scheduler
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def train_one_epoch(net: torch.nn.Module,
@@ -241,6 +229,7 @@ def train_one_epoch(net: torch.nn.Module,
     train_metrics["current_lr"] = optimizer.param_groups[0]['lr']
 
     return train_metrics
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def val_one_epoch(net: nn.Module,
@@ -267,6 +256,7 @@ def val_one_epoch(net: nn.Module,
                     total += 1
 
     return val_accuracy / total, avg_loss / len(data_loader)
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def train(net: nn.Module,
@@ -317,7 +307,6 @@ def train(net: nn.Module,
     t = trange(1, epoch + 1, desc='Train loop', leave=True, dynamic_ncols=True)
     for e in t:
         # Set the network to training mode
-
         train_metrics = train_one_epoch(net=net,
                                         criterion=criterion,
                                         data_loader=data_loader,
@@ -330,7 +319,11 @@ def train(net: nn.Module,
         val_metrics = dict()
 
         if val_loader:  # ToDo: not preferable to check if condition every iteration
-            val_metrics['val_acc'], val_metrics['avg_val_loss'] = val(net, criterion, val_loader, device=device)
+            # val_metrics['val_acc'], val_metrics['avg_val_loss'] = val(net, criterion, val_loader, device=device)
+            val_metrics['val_acc'], val_metrics['avg_val_loss'] = val_one_epoch(net,
+                                                                                criterion,
+                                                                                val_loader,
+                                                                                device=device)
 
             t.set_postfix({'train_acc': "{:.3f}".format(train_metrics["train_acc"]),
                            'val_acc': "{:.3f}".format(val_metrics['val_acc']),
@@ -404,7 +397,7 @@ def train(net: nn.Module,
     df = pd.DataFrame(history)
     df.to_csv('metrics.csv')
     return net, history
-    # ------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def val(net: nn.Module,
@@ -431,7 +424,7 @@ def val(net: nn.Module,
                     total += 1
 
     return val_accuracy / total, avg_loss / len(data_loader)
-    # ------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def test(net: nn.Module,
@@ -487,7 +480,7 @@ def test(net: nn.Module,
                 else:
                     probs[x: x + w, y: y + h] += out
     return probs
-    # ------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def save_train_mask(model_name, dataset_name, mask):
@@ -501,13 +494,13 @@ def save_train_mask(model_name, dataset_name, mask):
     #color = Image.fromarray(convert_to_color_(mask))
     np.save(gray_filename, mask)
     #color.save(color_filename)
-    # ------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def save_model(model,
-                model_name,
-                dataset_name,
-                **kwargs):
+               model_name,
+               dataset_name,
+               **kwargs):
     model_dir = "./checkpoints/" + model_name + "/" + dataset_name + "/"
     """
     Using strftime in case it triggers exceptions on windows 10 system
@@ -522,4 +515,4 @@ def save_model(model,
         torch.save(model.state_dict(), model_dir + filename + ".pth")
     else:
         print('Saving error')
-    # ------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
