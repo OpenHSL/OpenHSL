@@ -19,22 +19,22 @@ from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.models.model import train_one_epoch, val_one_epoch, get_optimizer, get_scheduler
 from openhsl.data.utils import get_palette, convert_to_color_, sample_gt
 
-# from openhsl.models.ssftt import SSFTT # why I need to use einops rearrange for this model
-# maybe we should use numpy rearrange for it
-
+from openhsl.models.ssftt import SSFTT
 from openhsl.models.m1dcnn import M1DCNN
 from openhsl.models.m3dcnn_li import M3DCNN as LI
 from openhsl.models.nm3dcnn import NM3DCNN
+from openhsl.models.tf2dcnn import TF2DCNN
 
 models_dict = {
     "M1DCNN": M1DCNN,
     "M3DCNN_li": LI,
     "NM3DCNN": NM3DCNN,
-    # "SSFTT": SSFTT,
-    # "TF2DCNN": TF2DCNN
+    "SSFTT": SSFTT,
+    "TF2DCNN": TF2DCNN
 }
 
 stop_train = False
+
 
 class TrainWorker(QObject):
     progress_signal = Signal(dict)
@@ -45,7 +45,7 @@ class TrainWorker(QObject):
         try:
             net = fits["model"](n_bands=fits["hsi"].data.shape[-1],
                                 n_classes=fits["mask"].n_classes,
-                                path_to_weights=False,
+                                path_to_weights=fits["weights"],
                                 device=fits["device"])
 
             net.hyperparams["batch_size"] = fits["fit_params"]["batch_size"]
@@ -401,6 +401,16 @@ class MainWindow(CIU):
             self.g_val_losses = []
             self.g_train_losses = []
 
+            if self.ui.need_load_weight_checkBox.isChecked():
+                if self.loaded_weight_for_train is None:
+                    self.show_error("Weight is not loaded")
+                    return
+
+                weights = self.loaded_weight_for_train
+
+            else:
+                weights = None
+
             optimizer_params = {
                 "lr": float(self.ui.lr_edit.text()),
                 "weight_decay": float(self.ui.weight_decay_edit.text())}
@@ -427,7 +437,8 @@ class MainWindow(CIU):
                     "device": self.devices_dict[str(self.ui.device_box2.currentText())],
                     "optimizer_params": optimizer_params,
                     "scheduler_params": scheduler_params,
-                    "fit_params": fit_params}
+                    "fit_params": fit_params,
+                    "weights": weights}
 
             self.ui.start_learning_btn.setEnabled(False)
             self.progress_requested.emit(fits)

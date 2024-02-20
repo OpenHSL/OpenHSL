@@ -110,12 +110,38 @@
        <item>
         <widget class="QStackedWidget" name="stackedWidget">
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="inference_widget">
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <item>
-            <widget class="QComboBox" name="comboBox_2"/>
+            <widget class="QComboBox" name="comboBox_2">
+             <item>
+              <property name="text">
+               <string>M1DCNN</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>M3DCNN_li</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>NM3DCNN</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>SSFTT</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>TF2DCNN</string>
+              </property>
+             </item>
+            </widget>
            </item>
            <item>
             <widget class="QFrame" name="frame_5">
@@ -455,6 +481,16 @@
                 <item>
                  <property name="text">
                   <string>StepLR</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>CosineAnnealingLR</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>ReduceLROnPlateau</string>
                  </property>
                 </item>
                 <item>
