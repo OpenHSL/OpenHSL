@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1172</width>
-    <height>781</height>
+    <height>843</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -393,7 +393,7 @@
              </item>
             </widget>
            </item>
-           <item>
+           <item alignment="Qt::AlignVCenter">
             <widget class="QFrame" name="frame_7">
              <property name="frameShape">
               <enum>QFrame::NoFrame</enum>
@@ -441,24 +441,17 @@
                 </property>
                </widget>
               </item>
-              <item row="6" column="0">
+              <item row="12" column="0">
                <widget class="QLabel" name="label_20">
                 <property name="text">
                  <string>Learning Rate</string>
                 </property>
                </widget>
               </item>
-              <item row="7" column="0">
+              <item row="13" column="0">
                <widget class="QLabel" name="label_21">
                 <property name="text">
                  <string>Weight Decay</string>
-                </property>
-               </widget>
-              </item>
-              <item row="8" column="0">
-               <widget class="QLabel" name="label_22">
-                <property name="text">
-                 <string>Step Size</string>
                 </property>
                </widget>
               </item>
@@ -486,28 +479,7 @@
                 </property>
                </widget>
               </item>
-              <item row="9" column="0">
-               <widget class="QLabel" name="label_24">
-                <property name="text">
-                 <string>Gamma</string>
-                </property>
-               </widget>
-              </item>
-              <item row="10" column="0">
-               <widget class="QLabel" name="label_25">
-                <property name="text">
-                 <string>Dataloader mode</string>
-                </property>
-               </widget>
-              </item>
-              <item row="11" column="0">
-               <widget class="QLabel" name="label_26">
-                <property name="text">
-                 <string>Batch Size</string>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="0">
+              <item row="8" column="0">
                <widget class="QLabel" name="label_27">
                 <property name="text">
                  <string>Sheduler Type</string>
@@ -528,14 +500,14 @@
                 </property>
                </widget>
               </item>
-              <item row="6" column="1">
+              <item row="12" column="1">
                <widget class="QLineEdit" name="lr_edit">
                 <property name="text">
                  <string>0.01</string>
                 </property>
                </widget>
               </item>
-              <item row="7" column="1">
+              <item row="13" column="1">
                <widget class="QLineEdit" name="weight_decay_edit">
                 <property name="text">
                  <string>0.0</string>
@@ -543,46 +515,6 @@
                </widget>
               </item>
               <item row="8" column="1">
-               <widget class="QLineEdit" name="step_size_edit">
-                <property name="text">
-                 <string>2</string>
-                </property>
-               </widget>
-              </item>
-              <item row="9" column="1">
-               <widget class="QLineEdit" name="gamma_edit">
-                <property name="text">
-                 <string>0.5</string>
-                </property>
-               </widget>
-              </item>
-              <item row="10" column="1">
-               <widget class="QComboBox" name="dataloader_mode_edit">
-                <item>
-                 <property name="text">
-                  <string>random</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>fixed</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>disjoint</string>
-                 </property>
-                </item>
-               </widget>
-              </item>
-              <item row="11" column="1">
-               <widget class="QLineEdit" name="batch_size_edit">
-                <property name="text">
-                 <string>64</string>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="1">
                <widget class="QComboBox" name="scheduler_type_edit">
                 <item>
                  <property name="text">
@@ -602,6 +534,100 @@
                 <item>
                  <property name="text">
                   <string>None</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="5" column="0">
+               <widget class="QLabel" name="label_26">
+                <property name="text">
+                 <string>Batch Size</string>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="1">
+               <widget class="QLineEdit" name="batch_size_edit">
+                <property name="text">
+                 <string>64</string>
+                </property>
+               </widget>
+              </item>
+              <item row="7" column="0">
+               <widget class="QLabel" name="label_3">
+                <property name="font">
+                 <font>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Sheduler Settings:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="9" column="0">
+               <widget class="QLabel" name="label_22">
+                <property name="text">
+                 <string>Step Size</string>
+                </property>
+               </widget>
+              </item>
+              <item row="9" column="1">
+               <widget class="QLineEdit" name="step_size_edit">
+                <property name="text">
+                 <string>2</string>
+                </property>
+               </widget>
+              </item>
+              <item row="10" column="0">
+               <widget class="QLabel" name="label_24">
+                <property name="text">
+                 <string>Gamma</string>
+                </property>
+               </widget>
+              </item>
+              <item row="10" column="1">
+               <widget class="QLineEdit" name="gamma_edit">
+                <property name="text">
+                 <string>0.5</string>
+                </property>
+               </widget>
+              </item>
+              <item row="11" column="0">
+               <widget class="QLabel" name="label_4">
+                <property name="font">
+                 <font>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Optimizer Settings:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="6" column="0">
+               <widget class="QLabel" name="label_25">
+                <property name="text">
+                 <string>Dataloader mode</string>
+                </property>
+               </widget>
+              </item>
+              <item row="6" column="1">
+               <widget class="QComboBox" name="dataloader_mode_edit">
+                <item>
+                 <property name="text">
+                  <string>random</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>fixed</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>disjoint</string>
                  </property>
                 </item>
                </widget>
@@ -729,7 +755,7 @@
             <x>0</x>
             <y>0</y>
             <width>472</width>
-            <height>750</height>
+            <height>812</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_9">
