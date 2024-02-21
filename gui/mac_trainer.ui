@@ -109,8 +109,11 @@
        </item>
        <item>
         <widget class="QStackedWidget" name="stackedWidget">
-         <property name="currentIndex">
+         <property name="lineWidth">
           <number>0</number>
+         </property>
+         <property name="currentIndex">
+          <number>1</number>
          </property>
          <widget class="QWidget" name="inference_widget">
           <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -256,7 +259,110 @@
          <widget class="QWidget" name="trainer_widget">
           <layout class="QVBoxLayout" name="verticalLayout_8">
            <item>
-            <widget class="PlotWidget" name="graphicsView"/>
+            <widget class="QStackedWidget" name="stacked_graphs">
+             <property name="lineWidth">
+              <number>0</number>
+             </property>
+             <property name="currentIndex">
+              <number>1</number>
+             </property>
+             <widget class="QWidget" name="loss_page">
+              <layout class="QVBoxLayout" name="verticalLayout_11">
+               <item>
+                <widget class="PlotWidget" name="graphics_loss_view"/>
+               </item>
+               <item>
+                <widget class="QFrame" name="frame_9">
+                 <property name="frameShape">
+                  <enum>QFrame::NoFrame</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Raised</enum>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_9">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QPushButton" name="show_loss_btn_unconnected">
+                    <property name="text">
+                     <string>Show Loss</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="show_accuracy_btn">
+                    <property name="text">
+                     <string>Show Accuracy</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="acc_page">
+              <layout class="QVBoxLayout" name="verticalLayout_12">
+               <item>
+                <widget class="PlotWidget" name="graphics_acc_view"/>
+               </item>
+               <item>
+                <widget class="QFrame" name="frame_10">
+                 <property name="frameShape">
+                  <enum>QFrame::NoFrame</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Raised</enum>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_10">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QPushButton" name="show_loss_btn">
+                    <property name="text">
+                     <string>Show Loss</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_3">
+                    <property name="text">
+                     <string>Show Accuracy</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </widget>
            </item>
            <item>
             <widget class="QComboBox" name="choose_model_for_inference">

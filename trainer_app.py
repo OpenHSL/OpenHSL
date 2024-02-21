@@ -23,14 +23,16 @@ from openhsl.models.ssftt import SSFTT
 from openhsl.models.m1dcnn import M1DCNN
 from openhsl.models.m3dcnn_li import M3DCNN as LI
 from openhsl.models.nm3dcnn import NM3DCNN
-from openhsl.models.tf2dcnn import TF2DCNN
+
+# from openhsl.models.tf2dcnn import TF2DCNN
+
 
 models_dict = {
     "M1DCNN": M1DCNN,
     "M3DCNN_li": LI,
     "NM3DCNN": NM3DCNN,
     "SSFTT": SSFTT,
-    "TF2DCNN": TF2DCNN
+    # "TF2DCNN": TF2DCNN
 }
 
 stop_train = False
@@ -69,7 +71,7 @@ class TrainWorker(QObject):
                                                   val_gt,
                                                   net.hyperparams)
 
-            criterion = nn.CrossEntropyLoss(weight=net.hyperparams["weights"])
+            criterion = nn.CrossEntropyLoss(weight=net.hyperparams.get("weights", None))
             optimizer = get_optimizer(net=net.model,
                                       optimizer_type='SGD',
                                       optimizer_params=fits["optimizer_params"])
@@ -94,16 +96,18 @@ class TrainWorker(QObject):
                                          data_loader=val_data_loader,
                                          device=device)
 
-                # temp_train и val_train можно дергать для графика!
                 self.progress_signal.emit({"epoch": e + 1,
                                            "val_loss": temp_val[1],
-                                           "train_loss": temp_train['avg_train_loss']})
+                                           "train_loss": temp_train['avg_train_loss'],
+                                           "val_acc": temp_val[0],
+                                           "train_acc": temp_train['train_acc']})
 
                 if stop_train:
                     stop_train = False
                     break
 
             self.progress_signal.emit({"end": True})
+
         except Exception as e:
             self.progress_signal.emit({"error": str(e)})
 
@@ -164,6 +168,12 @@ class MainWindow(CIU):
 
         self.ui.inference_mod_btn.clicked.connect(lambda:
                                                   self.ui.stackedWidget.setCurrentWidget(self.ui.inference_widget))
+
+        self.ui.show_loss_btn.clicked.connect(lambda:
+                                              self.ui.stacked_graphs.setCurrentWidget(self.ui.loss_page))
+
+        self.ui.show_accuracy_btn.clicked.connect(lambda:
+                                                  self.ui.stacked_graphs.setCurrentWidget(self.ui.acc_page))
 
         # BUTTON CONNECTIONS
         self.ui.import_data_btn.clicked.connect(self.extract_data)
@@ -393,10 +403,13 @@ class MainWindow(CIU):
 
     def start_learning(self):
         if self.current_train_hsi and self.current_train_mask:
-            self.ui.graphicsView.clear()
+            self.ui.graphics_loss_view.clear()
+            self.ui.graphics_acc_view.clear()
             self.ui.learning_progressbar.setValue(0)
             self.ui.learning_progressbar.setMaximum(int(self.ui.epochs_edit.text()))
 
+            self.g_val_accs = []
+            self.g_train_accs = []
             self.g_epochs = []
             self.g_val_losses = []
             self.g_train_losses = []
@@ -407,7 +420,6 @@ class MainWindow(CIU):
                     return
 
                 weights = self.loaded_weight_for_train
-
             else:
                 weights = None
 
@@ -456,9 +468,13 @@ class MainWindow(CIU):
         self.g_epochs.append(data["epoch"])
         self.g_val_losses.append(data["val_loss"])
         self.g_train_losses.append(data["train_loss"])
+        self.g_val_accs.append(data["val_acc"])
+        self.g_train_accs.append(data["train_acc"])
 
-        self.ui.graphicsView.plot(self.g_epochs, self.g_val_losses, pen='r', name='Validation Loss')
-        self.ui.graphicsView.plot(self.g_epochs, self.g_train_losses, pen='g', name='Train Loss')
+        self.ui.graphics_loss_view.plot(self.g_epochs, self.g_val_losses, pen='r', name='Validation Loss')
+        self.ui.graphics_loss_view.plot(self.g_epochs, self.g_train_losses, pen='g', name='Train Loss')
+        self.ui.graphics_acc_view.plot(self.g_epochs, self.g_val_accs, pen='r', name='Validation Accuracy')
+        self.ui.graphics_acc_view.plot(self.g_epochs, self.g_train_accs, pen='g', name='Train Accuracy')
         self.ui.learning_progressbar.setValue(data["epoch"])
 
     def browse_weight_for_train(self):
