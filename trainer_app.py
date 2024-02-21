@@ -1,6 +1,8 @@
 import sys
+import torch
 import torch.nn as nn
 from tqdm import trange
+import numpy as np
 
 from PyQt5.QtWidgets import (QApplication, QFileDialog)
 from PyQt5.QtGui import QFont
@@ -36,6 +38,32 @@ models_dict = {
 }
 
 stop_train = False
+
+
+class InferenceWorker(QObject):
+    progress_signal = Signal(dict)
+
+    @Slot(dict)
+    def do_inference(self, fits):
+        try:
+            hsi = fits["hsi"]
+            path_weights = fits["weights"]
+            device = fits["device"]
+
+            weights = torch.load(path_weights, map_location=device)
+            num_classes = len(weights[next(reversed(weights))])
+            del weights
+
+            net = fits["model"](n_classes=num_classes,
+                                device=device,
+                                n_bands=hsi.data.shape[-1],
+                                path_to_weights=path_weights)
+
+            predict = net.predict(hsi)
+            self.progress_signal.emit({"predict": predict})
+
+        except Exception as e:
+            self.progress_signal.emit({"error": str(e)})
 
 
 class TrainWorker(QObject):
@@ -114,6 +142,7 @@ class TrainWorker(QObject):
 
 class MainWindow(CIU):
     progress_requested = Signal(dict)
+    inference_requested = Signal(dict)
 
     def __init__(self):
         CIU.__init__(self)
@@ -126,6 +155,7 @@ class MainWindow(CIU):
         self.current_key = None
         self.loaded_weight_for_train = None
         self.loaded_weight_for_inference = None
+        self.show()
 
         devices = get_gpu_info()
         self.devices_dict = {"cpu": "cpu"}
@@ -149,7 +179,17 @@ class MainWindow(CIU):
         self.current_classification_report = None
         self.current_confusion_matrix = None
 
-        # THREAD SETUP
+        # THREAD INFERENCE SETUP
+        self.inference_worker = InferenceWorker()
+        self.inference_thread = QThread()
+
+        self.inference_worker.progress_signal.connect(self.update_inference_progress)
+        self.inference_requested.connect(self.inference_worker.do_inference)
+
+        self.inference_worker.moveToThread(self.inference_thread)
+        self.inference_thread.start()
+
+        # THREAD TRAIN SETUP
         self.train_worker = TrainWorker()
         self.train_thread = QThread()
 
@@ -157,10 +197,7 @@ class MainWindow(CIU):
         self.progress_requested.connect(self.train_worker.do_train)
 
         self.train_worker.moveToThread(self.train_thread)
-
         self.train_thread.start()
-
-        self.show()
 
         # NAVIGATION
         self.ui.trainer_mod_btn.clicked.connect(lambda:
@@ -185,6 +222,7 @@ class MainWindow(CIU):
         self.ui.browse_weight_for_train_btn.clicked.connect(self.browse_weight_for_train)
         self.ui.browse_weight_for_inference_btn.clicked.connect(self.browse_weight_for_inference)
         self.ui.stop_train_btn.clicked.connect(self.stop_train)
+        self.ui.start_inference_btn.clicked.connect(self.start_inference)
 
         # OTHER INTERACT
         self.ui.horizontalSlider.valueChanged.connect(
@@ -371,12 +409,20 @@ class MainWindow(CIU):
                                     scale_factor=20,
                                     high_contrast=True,
                                     channel=mid)
+
             if self.current_data[item]["mask"]:
                 self.current_test_mask = self.current_data[item]["mask"]
                 mask_array = self.current_test_mask.get_2d()
                 mask_array = convert_to_color_(mask_array, self.current_data[item]["palette"])
                 self.set_image_to_label(image=mask_array,
                                         image_label=self.ui.mask_test_icon,
+                                        scale_factor=20)
+
+            if isinstance(self.current_data[item]["predict"], np.ndarray):
+                self.current_test_predict = self.current_data[item]["predict"]
+                mask_array = convert_to_color_(self.current_test_predict, self.current_data[item]["palette"])
+                self.set_image_to_label(image=mask_array,
+                                        image_label=self.ui.predict_test_icon,
                                         scale_factor=20)
 
     def data_to_train(self):
@@ -395,6 +441,7 @@ class MainWindow(CIU):
                                         scale_factor=20,
                                         high_contrast=True,
                                         channel=mid)
+
                 self.set_image_to_label(image=mask_array,
                                         image_label=self.ui.mask_icon_label,
                                         scale_factor=20)
@@ -445,7 +492,7 @@ class MainWindow(CIU):
 
             fits = {"hsi": self.current_train_hsi,
                     "mask": self.current_train_mask,
-                    "model": models_dict[str(self.ui.choose_model_for_inference.currentText())],
+                    "model": models_dict[str(self.ui.choose_model_for_train.currentText())],
                     "device": self.devices_dict[str(self.ui.device_box2.currentText())],
                     "optimizer_params": optimizer_params,
                     "scheduler_params": scheduler_params,
@@ -507,6 +554,31 @@ class MainWindow(CIU):
         if not self.ui.start_learning_btn.isEnabled():
             global stop_train
             stop_train = True
+
+    def start_inference(self):
+        if self.current_test_hsi and self.loaded_weight_for_inference:
+            fits = {"hsi": self.current_test_hsi,
+                    "weights": self.loaded_weight_for_inference,
+                    "device": str(self.ui.device_box.currentText()),
+                    "model": models_dict[str(self.ui.choose_model_for_inference.currentText())]}
+
+            self.ui.start_inference_btn.setEnabled(False)
+            self.inference_requested.emit(fits)
+
+    def update_inference_progress(self, data):
+        if "error" in data:
+            self.show_error(data["error"])
+            self.ui.start_inference_btn.setEnabled(True)
+            return
+
+        if "predict" in data:
+            self.current_test_predict = data["predict"]
+            self.current_data[self.current_test_key]["predict"] = self.current_test_predict
+            mask_array = convert_to_color_(self.current_test_predict, self.current_data[self.current_test_key]["palette"])
+            self.set_image_to_label(image=mask_array,
+                                    image_label=self.ui.predict_test_icon,
+                                    scale_factor=20)
+        self.ui.start_inference_btn.setEnabled(True)
 
 
 if __name__ == '__main__':

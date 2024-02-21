@@ -113,12 +113,12 @@
           <number>0</number>
          </property>
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="inference_widget">
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <item>
-            <widget class="QComboBox" name="comboBox_2">
+            <widget class="QComboBox" name="choose_model_for_inference">
              <item>
               <property name="text">
                <string>M1DCNN</string>
@@ -248,7 +248,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="pushButton_7">
+            <widget class="QPushButton" name="start_inference_btn">
              <property name="text">
               <string>Inference</string>
              </property>
@@ -264,7 +264,7 @@
               <number>0</number>
              </property>
              <property name="currentIndex">
-              <number>1</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="loss_page">
               <layout class="QVBoxLayout" name="verticalLayout_11">
@@ -365,7 +365,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QComboBox" name="choose_model_for_inference">
+            <widget class="QComboBox" name="choose_model_for_train">
              <item>
               <property name="text">
                <string>M1DCNN</string>
