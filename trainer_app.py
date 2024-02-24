@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 from tqdm import trange
 import numpy as np
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
 
 from PyQt5.QtWidgets import (QApplication, QFileDialog)
 from PyQt5.QtGui import QFont
@@ -223,6 +225,7 @@ class MainWindow(CIU):
         self.ui.browse_weight_for_inference_btn.clicked.connect(self.browse_weight_for_inference)
         self.ui.stop_train_btn.clicked.connect(self.stop_train)
         self.ui.start_inference_btn.clicked.connect(self.start_inference)
+        self.ui.estimate_btn.clicked.connect(self.estimate)
 
         # OTHER INTERACT
         self.ui.horizontalSlider.valueChanged.connect(
@@ -244,6 +247,8 @@ class MainWindow(CIU):
         self.ui.image_view_box.currentIndexChanged.connect(self.view_changed)
         self.ui.need_load_weight_checkBox.stateChanged.connect(
             lambda: self.change_state_btn_cause_checkbox(self.ui.browse_weight_for_train_btn))
+
+        self.ui.cm_slider.valueChanged.connect(self.update_cm)
 
     def extract_data(self):
         file_name, _ = QFileDialog.getOpenFileName(self,
@@ -568,10 +573,8 @@ class MainWindow(CIU):
     def update_inference_progress(self, data):
         if "error" in data:
             self.show_error(data["error"])
-            self.ui.start_inference_btn.setEnabled(True)
-            return
 
-        if "predict" in data:
+        elif "predict" in data:
             self.current_test_predict = data["predict"]
             self.current_data[self.current_test_key]["predict"] = self.current_test_predict
             mask_array = convert_to_color_(self.current_test_predict, self.current_data[self.current_test_key]["palette"])
@@ -579,6 +582,56 @@ class MainWindow(CIU):
                                     image_label=self.ui.predict_test_icon,
                                     scale_factor=20)
         self.ui.start_inference_btn.setEnabled(True)
+
+    def estimate(self):
+        if self.current_test_predict is not None and self.current_test_mask is not None:
+            pred = self.current_test_predict.ravel()
+            gt = self.current_test_mask.get_2d().ravel()
+            current_classification_report = classification_report(gt, pred, output_dict=True)
+            ncm = confusion_matrix(gt, pred, normalize='true')
+            self.current_data[self.current_test_key]["classification_report"] = current_classification_report
+            self.current_data[self.current_test_key]["confusion_matrix"] = ncm
+
+            print(current_classification_report)
+
+            plt_ncm = draw_confusion_matrix(ncm)
+            # create numpy array from plt_ncm
+            plt_ncm.savefig('temp.png')
+            plt_ncm.close()
+            ncm_numpy_array = plt.imread('temp.png')
+            # convert rgba to rgb
+            ncm_numpy_array = ncm_numpy_array[:, :, :3]
+            self.current_confusion_matrix = ncm_numpy_array
+            self.update_cm()
+            self.update_metrics(current_classification_report)
+
+    def update_cm(self):
+        if self.current_confusion_matrix is not None:
+            self.set_image_to_label(self.current_confusion_matrix, self.ui.cm_matrix_label, int(self.ui.cm_slider.value()))
+
+    def update_metrics(self, report):
+        self.ui.accuracy_label.setText(str(report["accuracy"]))
+        self.ui.recall_macro_label.setText(str(report["macro avg"]["recall"]))
+        self.ui.recall_weighted_label.setText(str(report["weighted avg"]["recall"]))
+        self.ui.precis_macro_label.setText(str(report["macro avg"]["precision"]))
+        self.ui.precis_weighted_label.setText(str(report["weighted avg"]["precision"]))
+        self.ui.f1_macro_label.setText(str(report["macro avg"]["f1-score"]))
+        self.ui.f1_weighted_label.setText(str(report["weighted avg"]["f1-score"]))
+
+
+def draw_confusion_matrix(cm, cmap="Blues"):
+    plt.figure(figsize=(12, 12))
+    plt.imshow(cm, cmap=cmap)
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            if cm[i, j] > 0.0:
+                plt.text(j, i, format(cm[i, j], '.2f'), horizontalalignment="center", color="black")
+    plt.xticks(range(cm.shape[1]))
+    plt.yticks(range(cm.shape[0]))
+    plt.xlabel("Predicted label")
+    plt.ylabel("True label")
+    return plt
+
 
 
 if __name__ == '__main__':

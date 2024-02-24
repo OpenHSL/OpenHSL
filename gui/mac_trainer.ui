@@ -40,7 +40,7 @@
       </property>
       <property name="maximumSize">
        <size>
-        <width>350</width>
+        <width>400</width>
         <height>16777215</height>
        </size>
       </property>
@@ -215,6 +215,51 @@
             </widget>
            </item>
            <item>
+            <widget class="QScrollArea" name="scrollArea_2">
+             <property name="widgetResizable">
+              <bool>true</bool>
+             </property>
+             <widget class="QWidget" name="scrollAreaWidgetContents_2">
+              <property name="geometry">
+               <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>372</width>
+                <height>277</height>
+               </rect>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_13">
+               <item>
+                <widget class="QLabel" name="cm_matrix_label">
+                 <property name="text">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="cm_slider">
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>250</number>
+             </property>
+             <property name="singleStep">
+              <number>10</number>
+             </property>
+             <property name="value">
+              <number>50</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QFrame" name="frame_6">
              <property name="frameShape">
               <enum>QFrame::StyledPanel</enum>
@@ -230,17 +275,94 @@
                 </property>
                </widget>
               </item>
-              <item row="1" column="0">
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_5">
+                <property name="text">
+                 <string>Recall weighted</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
+               <widget class="QLabel" name="label_8">
+                <property name="text">
+                 <string>Precision macro</string>
+                </property>
+               </widget>
+              </item>
+              <item row="6" column="0">
                <widget class="QLabel" name="label_15">
                 <property name="text">
                  <string>F1-score macro</string>
                 </property>
                </widget>
               </item>
-              <item row="2" column="0">
+              <item row="7" column="0">
                <widget class="QLabel" name="label_16">
                 <property name="text">
                  <string>F1-score weighted</string>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="0">
+               <widget class="QLabel" name="label_6">
+                <property name="text">
+                 <string>Precision weighted</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_7">
+                <property name="text">
+                 <string>Recall macro</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QLabel" name="accuracy_label">
+                <property name="text">
+                 <string>0.00</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QLabel" name="recall_macro_label">
+                <property name="text">
+                 <string>0.00</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QLabel" name="recall_weighted_label">
+                <property name="text">
+                 <string>0.00</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="QLabel" name="precis_macro_label">
+                <property name="text">
+                 <string>0.00</string>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="1">
+               <widget class="QLabel" name="precis_weighted_label">
+                <property name="text">
+                 <string>0.00</string>
+                </property>
+               </widget>
+              </item>
+              <item row="6" column="1">
+               <widget class="QLabel" name="f1_macro_label">
+                <property name="text">
+                 <string>0.00</string>
+                </property>
+               </widget>
+              </item>
+              <item row="7" column="1">
+               <widget class="QLabel" name="f1_weighted_label">
+                <property name="text">
+                 <string>0.00</string>
                 </property>
                </widget>
               </item>
@@ -754,7 +876,7 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>472</width>
+            <width>422</width>
             <height>812</height>
            </rect>
           </property>
@@ -1096,10 +1218,44 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton">
-            <property name="text">
-             <string>Save Results</string>
+           <widget class="QFrame" name="frame_11">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
             </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_11">
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QPushButton" name="estimate_btn">
+               <property name="text">
+                <string>Estimate</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="pushButton">
+               <property name="text">
+                <string>Save Results</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
          </layout>
