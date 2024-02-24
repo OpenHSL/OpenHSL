@@ -113,7 +113,7 @@
           <number>0</number>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="inference_widget">
           <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -147,72 +147,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QFrame" name="frame_5">
-             <property name="frameShape">
-              <enum>QFrame::StyledPanel</enum>
-             </property>
-             <property name="frameShadow">
-              <enum>QFrame::Raised</enum>
-             </property>
-             <layout class="QFormLayout" name="formLayout">
-              <property name="horizontalSpacing">
-               <number>0</number>
-              </property>
-              <property name="verticalSpacing">
-               <number>-1</number>
-              </property>
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>5</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>5</number>
-              </property>
-              <item row="0" column="0">
-               <widget class="QLabel" name="label_10">
-                <property name="text">
-                 <string>Device</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_11">
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QPushButton" name="browse_weight_for_inference_btn">
-                <property name="text">
-                 <string>Load Weight</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QComboBox" name="device_box"/>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_12">
-                <property name="text">
-                 <string>Model: </string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLabel" name="current_loaded_weight_for_inference">
-                <property name="text">
-                 <string>No Loaded Weight</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
+            <widget class="QComboBox" name="device_box"/>
            </item>
            <item>
             <widget class="QScrollArea" name="scrollArea_2">
@@ -225,7 +160,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>372</width>
-                <height>277</height>
+                <height>319</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -487,6 +422,13 @@
             </widget>
            </item>
            <item>
+            <widget class="QCheckBox" name="need_load_weight_checkBox">
+             <property name="text">
+              <string>Use Imported Weights</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QComboBox" name="choose_model_for_train">
              <item>
               <property name="text">
@@ -539,104 +481,105 @@
               <property name="bottomMargin">
                <number>0</number>
               </property>
-              <item row="2" column="0">
+              <item row="1" column="0">
                <widget class="QLabel" name="label_17">
                 <property name="text">
                  <string>Device</string>
                 </property>
                </widget>
               </item>
-              <item row="2" column="1">
+              <item row="1" column="1">
                <widget class="QComboBox" name="device_box2"/>
               </item>
-              <item row="3" column="0">
+              <item row="2" column="0">
                <widget class="QLabel" name="label_18">
                 <property name="text">
                  <string>Epochs</string>
                 </property>
                </widget>
               </item>
-              <item row="4" column="0">
-               <widget class="QLabel" name="label_19">
-                <property name="text">
-                 <string>Train Split</string>
-                </property>
-               </widget>
-              </item>
-              <item row="12" column="0">
-               <widget class="QLabel" name="label_20">
-                <property name="text">
-                 <string>Learning Rate</string>
-                </property>
-               </widget>
-              </item>
-              <item row="13" column="0">
-               <widget class="QLabel" name="label_21">
-                <property name="text">
-                 <string>Weight Decay</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0">
-               <widget class="QCheckBox" name="need_load_weight_checkBox">
-                <property name="text">
-                 <string>Use Loaded Weights</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QPushButton" name="browse_weight_for_train_btn">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
-                <property name="text">
-                 <string>Browse Weights</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLabel" name="current_label_weight_for_train">
-                <property name="text">
-                 <string>NONE</string>
-                </property>
-               </widget>
-              </item>
-              <item row="8" column="0">
-               <widget class="QLabel" name="label_27">
-                <property name="text">
-                 <string>Sheduler Type</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
+              <item row="2" column="1">
                <widget class="QLineEdit" name="epochs_edit">
                 <property name="text">
                  <string>10</string>
                 </property>
                </widget>
               </item>
-              <item row="4" column="1">
+              <item row="3" column="0">
+               <widget class="QLabel" name="label_19">
+                <property name="text">
+                 <string>Train Split</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
                <widget class="QLineEdit" name="train_split_edit">
                 <property name="text">
                  <string>0.5</string>
                 </property>
                </widget>
               </item>
-              <item row="12" column="1">
-               <widget class="QLineEdit" name="lr_edit">
+              <item row="4" column="0">
+               <widget class="QLabel" name="label_26">
                 <property name="text">
-                 <string>0.01</string>
+                 <string>Batch Size</string>
                 </property>
                </widget>
               </item>
-              <item row="13" column="1">
-               <widget class="QLineEdit" name="weight_decay_edit">
+              <item row="4" column="1">
+               <widget class="QLineEdit" name="batch_size_edit">
                 <property name="text">
-                 <string>0.0</string>
+                 <string>64</string>
                 </property>
                </widget>
               </item>
-              <item row="8" column="1">
+              <item row="5" column="0">
+               <widget class="QLabel" name="label_25">
+                <property name="text">
+                 <string>Dataloader mode</string>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="1">
+               <widget class="QComboBox" name="dataloader_mode_edit">
+                <item>
+                 <property name="text">
+                  <string>random</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>fixed</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>disjoint</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="6" column="0">
+               <widget class="QLabel" name="label_3">
+                <property name="font">
+                 <font>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Sheduler Settings:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="7" column="0">
+               <widget class="QLabel" name="label_27">
+                <property name="text">
+                 <string>Sheduler Type</string>
+                </property>
+               </widget>
+              </item>
+              <item row="7" column="1">
                <widget class="QComboBox" name="scheduler_type_edit">
                 <item>
                  <property name="text">
@@ -660,62 +603,35 @@
                 </item>
                </widget>
               </item>
-              <item row="5" column="0">
-               <widget class="QLabel" name="label_26">
-                <property name="text">
-                 <string>Batch Size</string>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="1">
-               <widget class="QLineEdit" name="batch_size_edit">
-                <property name="text">
-                 <string>64</string>
-                </property>
-               </widget>
-              </item>
-              <item row="7" column="0">
-               <widget class="QLabel" name="label_3">
-                <property name="font">
-                 <font>
-                  <weight>75</weight>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Sheduler Settings:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="9" column="0">
+              <item row="8" column="0">
                <widget class="QLabel" name="label_22">
                 <property name="text">
                  <string>Step Size</string>
                 </property>
                </widget>
               </item>
-              <item row="9" column="1">
+              <item row="8" column="1">
                <widget class="QLineEdit" name="step_size_edit">
                 <property name="text">
                  <string>2</string>
                 </property>
                </widget>
               </item>
-              <item row="10" column="0">
+              <item row="9" column="0">
                <widget class="QLabel" name="label_24">
                 <property name="text">
                  <string>Gamma</string>
                 </property>
                </widget>
               </item>
-              <item row="10" column="1">
+              <item row="9" column="1">
                <widget class="QLineEdit" name="gamma_edit">
                 <property name="text">
                  <string>0.5</string>
                 </property>
                </widget>
               </item>
-              <item row="11" column="0">
+              <item row="10" column="0">
                <widget class="QLabel" name="label_4">
                 <property name="font">
                  <font>
@@ -728,30 +644,32 @@
                 </property>
                </widget>
               </item>
-              <item row="6" column="0">
-               <widget class="QLabel" name="label_25">
+              <item row="11" column="0">
+               <widget class="QLabel" name="label_20">
                 <property name="text">
-                 <string>Dataloader mode</string>
+                 <string>Learning Rate</string>
                 </property>
                </widget>
               </item>
-              <item row="6" column="1">
-               <widget class="QComboBox" name="dataloader_mode_edit">
-                <item>
-                 <property name="text">
-                  <string>random</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>fixed</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>disjoint</string>
-                 </property>
-                </item>
+              <item row="11" column="1">
+               <widget class="QLineEdit" name="lr_edit">
+                <property name="text">
+                 <string>0.01</string>
+                </property>
+               </widget>
+              </item>
+              <item row="12" column="0">
+               <widget class="QLabel" name="label_21">
+                <property name="text">
+                 <string>Weight Decay</string>
+                </property>
+               </widget>
+              </item>
+              <item row="12" column="1">
+               <widget class="QLineEdit" name="weight_decay_edit">
+                <property name="text">
+                 <string>0.0</string>
+                </property>
                </widget>
               </item>
              </layout>
@@ -1040,7 +958,59 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QListWidget" name="extracted_list"/>
+           <widget class="QListWidget" name="list_of_models">
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="frame_12">
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_12">
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QPushButton" name="browse_weight_for_inference_btn">
+               <property name="text">
+                <string>Import Weights</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="save_model_btn">
+               <property name="text">
+                <string>Save Weights As</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QListWidget" name="extracted_list">
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QFrame" name="frame">
@@ -1137,7 +1107,7 @@
        <item>
         <widget class="QFrame" name="val_data_frame">
          <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
+          <enum>QFrame::NoFrame</enum>
          </property>
          <property name="frameShadow">
           <enum>QFrame::Raised</enum>
@@ -1220,7 +1190,7 @@
           <item>
            <widget class="QFrame" name="frame_11">
             <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
+             <enum>QFrame::NoFrame</enum>
             </property>
             <property name="frameShadow">
              <enum>QFrame::Raised</enum>

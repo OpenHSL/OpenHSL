@@ -155,8 +155,7 @@ class MainWindow(CIU):
         self.current_mask = None
         self.current_predict = None
         self.current_key = None
-        self.loaded_weight_for_train = None
-        self.loaded_weight_for_inference = None
+        self.imported_weights = {}
         self.show()
 
         devices = get_gpu_info()
@@ -221,8 +220,7 @@ class MainWindow(CIU):
         self.ui.data_to_train_btn.clicked.connect(self.data_to_train)
         self.ui.data_to_test_btn.clicked.connect(self.data_to_test)
         self.ui.start_learning_btn.clicked.connect(self.start_learning)
-        self.ui.browse_weight_for_train_btn.clicked.connect(self.browse_weight_for_train)
-        self.ui.browse_weight_for_inference_btn.clicked.connect(self.browse_weight_for_inference)
+        self.ui.browse_weight_for_inference_btn.clicked.connect(self.import_weights)
         self.ui.stop_train_btn.clicked.connect(self.stop_train)
         self.ui.start_inference_btn.clicked.connect(self.start_inference)
         self.ui.estimate_btn.clicked.connect(self.estimate)
@@ -245,10 +243,18 @@ class MainWindow(CIU):
                                               self.ui.image_label))
 
         self.ui.image_view_box.currentIndexChanged.connect(self.view_changed)
-        self.ui.need_load_weight_checkBox.stateChanged.connect(
-            lambda: self.change_state_btn_cause_checkbox(self.ui.browse_weight_for_train_btn))
-
         self.ui.cm_slider.valueChanged.connect(self.update_cm)
+
+    def import_weights(self):
+        file_name, _ = QFileDialog.getOpenFileName(self,
+                                                    "Select a weight file",
+                                                    "",
+                                                    "(*.pth);;(*.pt)",
+                                                    options=QFileDialog.Options())
+        if file_name:
+            name = get_file_name(file_name)
+            self.stack_str_in_QListWidget(self.ui.list_of_models, name)
+            self.imported_weights[name] = file_name
 
     def extract_data(self):
         file_name, _ = QFileDialog.getOpenFileName(self,
@@ -467,11 +473,14 @@ class MainWindow(CIU):
             self.g_train_losses = []
 
             if self.ui.need_load_weight_checkBox.isChecked():
-                if self.loaded_weight_for_train is None:
-                    self.show_error("Weight is not loaded")
-                    return
-
-                weights = self.loaded_weight_for_train
+                print("is Checked")
+                item = self.ui.list_of_models.currentItem()
+                if item:
+                    weights = self.imported_weights[item.text()]
+                    print(weights)
+                else:
+                    self.show_info("You did not select a weight file. \nTraining will start from scratch")
+                    weights = None
             else:
                 weights = None
 
@@ -529,31 +538,11 @@ class MainWindow(CIU):
         self.ui.graphics_acc_view.plot(self.g_epochs, self.g_train_accs, pen='g', name='Train Accuracy')
         self.ui.learning_progressbar.setValue(data["epoch"])
 
-    def browse_weight_for_train(self):
-        file_name, _ = QFileDialog.getOpenFileName(self,
-                                                   "Select a weight file",
-                                                   "",
-                                                   "(*.pth);;(*.pt)",
-                                                   options=QFileDialog.Options())
-        if file_name:
-            self.ui.current_label_weight_for_train.setText(self.cut_path_with_deep(file_name, 2))
-            self.loaded_weight_for_train = file_name
-
     def change_state_btn_cause_checkbox(self, btn):
         if self.ui.need_load_weight_checkBox.isChecked():
             btn.setEnabled(True)
         else:
             btn.setEnabled(False)
-
-    def browse_weight_for_inference(self):
-        file_name, _ = QFileDialog.getOpenFileName(self,
-                                                   "Select a weight file",
-                                                   "experiment",
-                                                   "(*.pth);;(*.pt)",
-                                                   options=QFileDialog.Options())
-        if file_name:
-            self.ui.current_loaded_weight_for_inference.setText(self.cut_path_with_deep(file_name, 2))
-            self.loaded_weight_for_inference = file_name
 
     def stop_train(self):
         if not self.ui.start_learning_btn.isEnabled():
@@ -561,9 +550,11 @@ class MainWindow(CIU):
             stop_train = True
 
     def start_inference(self):
-        if self.current_test_hsi and self.loaded_weight_for_inference:
+        item = self.ui.list_of_models.currentItem()
+        if self.current_test_hsi and item:
+            weight_path = self.imported_weights[item.text()]
             fits = {"hsi": self.current_test_hsi,
-                    "weights": self.loaded_weight_for_inference,
+                    "weights": weight_path,
                     "device": str(self.ui.device_box.currentText()),
                     "model": models_dict[str(self.ui.choose_model_for_inference.currentText())]}
 
@@ -631,7 +622,6 @@ def draw_confusion_matrix(cm, cmap="Blues"):
     plt.xlabel("Predicted label")
     plt.ylabel("True label")
     return plt
-
 
 
 if __name__ == '__main__':

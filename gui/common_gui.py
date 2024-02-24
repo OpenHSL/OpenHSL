@@ -19,6 +19,14 @@ class CIU(QMainWindow):  # CIU = Common Interface Utilities
         msg.exec_()
 
     @staticmethod
+    def show_info(message):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText(message)
+        msg.setWindowTitle("Info")
+        msg.exec_()
+
+    @staticmethod
     def nparray_2_qimage(array):
         if array.dtype != np.uint8:
             array = (array / np.max(array) * 255).astype(np.uint8)
