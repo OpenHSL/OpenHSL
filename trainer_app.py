@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (QApplication, QFileDialog)
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import QThread, QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
-from gui.utils import (get_file_name, get_file_extension, get_file_directory,
+from gui.utils import (get_file_name, get_file_extension, get_date_time, create_dir_if_not_exist,
                        request_keys_from_h5_file, request_keys_from_mat_file,
                        get_gpu_info)
 from gui.common_gui import CIU
@@ -130,13 +130,17 @@ class TrainWorker(QObject):
                                            "val_loss": temp_val[1],
                                            "train_loss": temp_train['avg_train_loss'],
                                            "val_acc": temp_val[0],
-                                           "train_acc": temp_train['train_acc']})
+                                           "train_acc": temp_train['train_acc'],
+                                           "model": net,
+                                           "run_name": fits["run_name"]})
 
                 if stop_train:
                     stop_train = False
                     break
 
-            self.progress_signal.emit({"end": True})
+            self.progress_signal.emit({"end": True,
+                                       "model": net,
+                                       "run_name": fits["run_name"]})
 
         except Exception as e:
             self.progress_signal.emit({"error": str(e)})
@@ -473,11 +477,9 @@ class MainWindow(CIU):
             self.g_train_losses = []
 
             if self.ui.need_load_weight_checkBox.isChecked():
-                print("is Checked")
                 item = self.ui.list_of_models.currentItem()
                 if item:
                     weights = self.imported_weights[item.text()]
-                    print(weights)
                 else:
                     self.show_info("You did not select a weight file. \nTraining will start from scratch")
                     weights = None
@@ -504,6 +506,9 @@ class MainWindow(CIU):
                 "scheduler_type": scheduler_type,
                 "scheduler_params": scheduler_params}
 
+            start_time = get_date_time()
+            run_name = f"{self.ui.choose_model_for_train.currentText()}_{start_time[0]}_{start_time[1]}"
+
             fits = {"hsi": self.current_train_hsi,
                     "mask": self.current_train_mask,
                     "model": models_dict[str(self.ui.choose_model_for_train.currentText())],
@@ -511,7 +516,8 @@ class MainWindow(CIU):
                     "optimizer_params": optimizer_params,
                     "scheduler_params": scheduler_params,
                     "fit_params": fit_params,
-                    "weights": weights}
+                    "weights": weights,
+                    "run_name": run_name}
 
             self.ui.start_learning_btn.setEnabled(False)
             self.progress_requested.emit(fits)
@@ -522,21 +528,32 @@ class MainWindow(CIU):
             self.ui.start_learning_btn.setEnabled(True)
             return
 
+        if "epoch" in data:
+            self.g_epochs.append(data["epoch"])
+            self.g_val_losses.append(data["val_loss"])
+            self.g_train_losses.append(data["train_loss"])
+            self.g_val_accs.append(data["val_acc"])
+            self.g_train_accs.append(data["train_acc"])
+
+            self.ui.graphics_loss_view.plot(self.g_epochs, self.g_val_losses, pen='r', name='Validation Loss')
+            self.ui.graphics_loss_view.plot(self.g_epochs, self.g_train_losses, pen='g', name='Train Loss')
+            self.ui.graphics_acc_view.plot(self.g_epochs, self.g_val_accs, pen='r', name='Validation Accuracy')
+            self.ui.graphics_acc_view.plot(self.g_epochs, self.g_train_accs, pen='g', name='Train Accuracy')
+            self.ui.learning_progressbar.setValue(data["epoch"])
+
+            net = data["model"]
+            torch.save(net.model.state_dict(), f"checkpoints/{data['run_name']}.pth")
+
+            if data["run_name"] not in self.imported_weights:
+                self.stack_str_in_QListWidget(self.ui.list_of_models, data["run_name"])
+
+            self.imported_weights[data["run_name"]] = f"checkpoints/{data['run_name']}.pth"
+
+
+
         if "end" in data:
             self.ui.start_learning_btn.setEnabled(True)
             return
-
-        self.g_epochs.append(data["epoch"])
-        self.g_val_losses.append(data["val_loss"])
-        self.g_train_losses.append(data["train_loss"])
-        self.g_val_accs.append(data["val_acc"])
-        self.g_train_accs.append(data["train_acc"])
-
-        self.ui.graphics_loss_view.plot(self.g_epochs, self.g_val_losses, pen='r', name='Validation Loss')
-        self.ui.graphics_loss_view.plot(self.g_epochs, self.g_train_losses, pen='g', name='Train Loss')
-        self.ui.graphics_acc_view.plot(self.g_epochs, self.g_val_accs, pen='r', name='Validation Accuracy')
-        self.ui.graphics_acc_view.plot(self.g_epochs, self.g_train_accs, pen='g', name='Train Accuracy')
-        self.ui.learning_progressbar.setValue(data["epoch"])
 
     def change_state_btn_cause_checkbox(self, btn):
         if self.ui.need_load_weight_checkBox.isChecked():
@@ -583,8 +600,6 @@ class MainWindow(CIU):
             self.current_data[self.current_test_key]["classification_report"] = current_classification_report
             self.current_data[self.current_test_key]["confusion_matrix"] = ncm
 
-            print(current_classification_report)
-
             plt_ncm = draw_confusion_matrix(ncm)
             # create numpy array from plt_ncm
             plt_ncm.savefig('temp.png')
@@ -625,6 +640,7 @@ def draw_confusion_matrix(cm, cmap="Blues"):
 
 
 if __name__ == '__main__':
+    create_dir_if_not_exist("checkpoints")
     app = QApplication(sys.argv)
     window = MainWindow()
     sys.exit(app.exec_())
