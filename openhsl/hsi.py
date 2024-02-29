@@ -321,23 +321,6 @@ class HSImage:
         self.data = np.array(hsi).transpose((1, 2, 0))
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save(self,
-             path_to_data: str,
-             key=None,
-             img_format=None):
-        if os.path.isdir(path_to_data):
-            self.save_to_images(path_to_dir=path_to_data, img_format=img_format)
-        elif path_to_data.endswith('.mat'):
-            self.save_to_mat(path_to_file=path_to_data, mat_key=key)
-        elif path_to_data.endswith('.h5'):
-            self.save_to_h5(path_to_file=path_to_data, h5_key=key)
-        elif path_to_data.endswith('.npy'):
-            self.save_to_npy(path_to_file=path_to_data)
-        elif path_to_data.endswith('.tiff') or path_to_data.endswith('.tif'):
-            self.save_to_tiff(path_to_file=path_to_data)
-        else:
-            raise Exception('Unsupported file extension')
-
     def save_to_mat(self,
                     path_to_file: str,
                     mat_key: str):
@@ -374,13 +357,13 @@ class HSImage:
         if not path_to_file.endswith('.tif') and not path_to_file.endswith('.tiff'):
             raise Exception('Incorrect file format')
 
-        dt = 'uint8'
+        dt = 'int8'
         if self.data.dtype.name == 'uint8' or self.data.dtype.name == 'int8':
-            dt = 'uint8'
+            dt = 'int8'
         elif self.data.dtype.name == 'uint16' or self.data.dtype.name == 'int16':
-            dt = 'uint16'
+            dt = 'int16'
         elif self.data.dtype.name == 'uint32' or self.data.dtype.name == 'int32':
-            dt = 'uint32'
+            dt = 'int32'
 
         d = {'driver': 'GTiff',
              'dtype': dt,
@@ -392,7 +375,7 @@ class HSImage:
              # 'transform': Affine(10.0, 0.0, 653847.1979372115, 0.0, -10.0, 7807064.5603836905),
              # 'tiled': False,
              'interleave': 'band'}
-        print(dt)
+
         with rasterio.open(path_to_file, 'w', **d) as dst:
             dst.write(self.data.transpose((2, 0, 1)))
         self.save_metadata(path_to_file)
@@ -437,7 +420,7 @@ class HSImage:
 
     def save_to_images(self,
                        path_to_dir: str,
-                       img_format: str = 'png'):
+                       format: str = 'png'):
         """
         save_to_images(path_to_dir, format)
 
@@ -447,14 +430,14 @@ class HSImage:
             ----------
             path_to_dir: str
                 Path to saving file
-            img_format: str
+            format: str
                 Format of images (png, jpg, jpeg, bmp)
         """
         if not isdir(path_to_dir):
             mkdir(path_to_dir)
         for i in range(self.data.shape[-1]):
-            if img_format in ('png', 'jpg', 'jpeg', 'bmp'):
-                Image.fromarray(self.data[:, :, i]).convert("L").save(f'{path_to_dir}/{i}.{img_format}')
+            if format in ('png', 'jpg', 'jpeg', 'bmp'):
+                Image.fromarray(self.data[:, :, i]).convert("L").save(f'{path_to_dir}/{i}.{format}')
             else:
                 raise Exception('Unexpected format')
     # ------------------------------------------------------------------------------------------------------------------
