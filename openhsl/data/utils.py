@@ -9,6 +9,72 @@ from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 
 
+class HyperStandardScaler:
+
+    def __init__(self, per='band'):
+        """
+
+        Parameters
+        ----------
+        per: str
+            "band" or "pixel"
+        """
+        self.mu = 0
+        self.s = 1
+        self.per = per
+
+    def transform(self, X: np.ndarray) -> np.ndarray:
+        if self.per == 'band':
+            return (X - self.mu[None, None, :]) / self.s[None, None, :]
+        if self.per == 'pixel':
+            return (X - self.mu[:, :, None]) / self.s[:, :, None]
+
+    def fit(self, X: np.ndarray):
+        if self.per == 'band':
+            self.mu = np.mean(X, axis=(0, 1))
+            self.s = np.std(X, axis=(0, 1))
+        elif self.per == 'pixel':
+            self.mu = np.mean(X, axis=2)
+            self.s = np.std(X, axis=2)
+
+    def fit_transform(self, X: np.ndarray):
+        self.fit(X)
+        return self.transform(X)
+
+
+class HyperMinMaxScaler:
+
+    def __init__(self, per='band'):
+        """
+
+        Parameters
+        ----------
+        per: str
+            "band" or "pixel"
+        """
+        self.min_ = 0
+        self.max_ = 1
+        self.per = per
+
+    def transform(self, X: np.ndarray) -> np.ndarray:
+        if self.per == 'band':
+            return (X - self.min_[None, None, :]) / (self.max_[None, None, :] - self.min_[None, None, :])
+        if self.per == 'pixel':
+            return (X - self.min_[:, :, None]) / (self.max_[:, :, None] - self.min_[:, :, None])
+
+    def fit(self, X: np.ndarray):
+        if self.per == 'band':
+            self.min_ = np.min(X, axis=(0, 1))
+            self.max_ = np.max(X, axis=(0, 1))
+        elif self.per == 'pixel':
+            self.min_ = np.min(X, axis=2)
+            self.max_ = np.max(X, axis=2)
+
+    def fit_transform(self, X: np.ndarray):
+        self.fit(X)
+        return self.transform(X)
+
+
 def split_train_test_set(X: np.ndarray,
                          y: np.ndarray,
                          test_ratio: float):
