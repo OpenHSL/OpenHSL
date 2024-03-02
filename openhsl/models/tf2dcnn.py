@@ -146,8 +146,7 @@ class TF2DCNN:
                                  epochs=fit_params['epochs'],
                                  steps_per_epoch=steps,
                                  verbose=1,
-                                 callbacks=callbacks
-                                 )
+                                 callbacks=callbacks)
 
         self.train_loss = history.history.get('loss', [])
         self.val_loss = history.history.get('val_loss', [])
@@ -162,7 +161,7 @@ class TF2DCNN:
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
-                X: Union[HSImage],
+                X: Union[HSImage, np.ndarray],
                 y: Optional[HSMask] = None,
                 batch_size=128) -> np.ndarray:
 

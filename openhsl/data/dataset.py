@@ -24,22 +24,29 @@ def get_dataset(hsi: HSImage, mask: Optional[HSMask] = None) -> Tuple[np.ndarray
 
     """
     ignored_labels = [0]
+    if isinstance(hsi, HSImage):
+        for n, ch in enumerate(hsi):
+            if np.all(np.unique(ch) == [0]):
+                print(f"WARNING! {n}-CHANNEL HAS NO VALID DATA! ONLY ZEROS IN DATA!")
+            else:
+                continue
 
-    for n, ch in enumerate(hsi):
-        if np.all(np.unique(ch) == [0]):
-            print(f"WARNING! {n}-CHANNEL HAS NO VALID DATA! ONLY ZEROS IN DATA!")
+        img = hsi.data
+    elif isinstance(hsi, np.ndarray):
+        img = copy.deepcopy(hsi)
+    else:
+        raise Exception(f"Wrong type of hsi, {type(hsi)}")
+
+    if np.any(mask):
+        if isinstance(mask, HSMask):
+            gt = mask.get_2d()
+        elif isinstance(mask, np.ndarray):
+            gt = copy.deepcopy(mask)
         else:
-            continue
-
-    img = hsi.data
-
-    if mask:
-        gt = mask.get_2d()
+            raise Exception(f"Wrong type of mask, {type(mask)}")
         gt = gt.astype("int32")
-        label_values = np.unique(gt)
     else:
         gt = None
-        label_values = [0]
 
-    img = standardize_input_data(img).astype('float32')
+    #img = standardize_input_data(img).astype('float32')
     return img, gt

@@ -304,8 +304,8 @@ class SSFTT(Model):
         self.model.eval()
 
         probabilities = test(net=self.model,
-                                   img=img,
-                                   hyperparams=self.hyperparams)
+                             img=img,
+                             hyperparams=self.hyperparams)
         prediction = np.argmax(probabilities, axis=-1)
 
         return prediction

@@ -128,7 +128,7 @@ def interpolate(cube: np.ndarray,
     model = knn_for_interpolate(x, y, z)
     test, n_target, m_target = generate_test_points(x, y)
     prediction = model.predict(test)
-    nearest_dit, _ = model.kneighbors(test, n_neighbors=3, return_distance=True)
+    nearest_dit, _ = model.kneighbors(test, n_neighbors=1, return_distance=True)
 
     # check if the nearest distance is greater than the limit
     prediction[nearest_dit[:, 0] > DISTANCE_LIMIT, :] = np.zeros(k)
