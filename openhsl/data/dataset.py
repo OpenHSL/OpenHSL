@@ -48,5 +48,5 @@ def get_dataset(hsi: HSImage, mask: Optional[HSMask] = None) -> Tuple[np.ndarray
     else:
         gt = None
 
-    img = standardize_input_data(img).astype('float32')
+    #img = standardize_input_data(img).astype('float32')
     return img, gt
