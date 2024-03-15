@@ -5,10 +5,14 @@ from PyQt5.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit
 from gui.utils import (get_date_time, save_json_dict, create_dir_if_not_exist,
                        get_file_directory, get_file_extension, get_file_name)
 from gui.common_gui import CIU
+from gui.utils import request_keys_from_mat_file, request_keys_from_h5_file
 from gui.mac_builder_gui import Ui_MainWindow
 from PyQt5.QtCore import QThread, QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
 from openhsl.build.builder import HSBuilder
+from openhsl.hsi import HSImage
+
+from pprint import pprint
 
 
 # ic.disable()
@@ -66,6 +70,7 @@ class MainWindow(CIU):
         self.ui.show_btn.clicked.connect(self.show_local_hsi)
         self.ui.save_as_btn.clicked.connect(self.save_hsi)
         self.ui.delete_hsi.clicked.connect(self.delete_hsi_from_hsi_Qlist)
+        self.ui.import_hsi.clicked.connect(self.import_hsi)
 
         # OHTER INTERACT
         self.ui.horizontalSlider.valueChanged.connect(
@@ -95,6 +100,35 @@ class MainWindow(CIU):
 
         self.show()
 
+    def import_hsi(self):
+        file_name, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+                                                     "(*.npy);;(*.mat);;(*.h5);;(*.tiff)",
+                                                     options=QFileDialog.Options())
+        if file_name:
+            hsi = HSImage()
+            name = self.cut_path_with_deep(file_name, 1)
+            ext = get_file_extension(file_name)
+            if ext == ".mat":
+                keys = request_keys_from_mat_file(file_name)
+                key = self.show_dialog_with_choice(keys, "Choose key", "Choose key from list")
+                if not key: return
+                hsi.load_from_mat(file_name, key)
+
+            elif ext == ".h5":
+                keys = request_keys_from_h5_file(file_name)
+                key = self.show_dialog_with_choice(keys, "Choose key", "Choose key from list")
+                if not key: return
+                hsi.load_from_h5(file_name, key)
+
+            elif ext == ".npy":
+                hsi.load_from_npy(file_name)
+
+            elif ext == ".tiff":
+                hsi.load_from_tiff(file_name)
+
+            self.hsis[name] = {"hsi": hsi}
+            self.stack_str_in_QListWidget(self.ui.hsi_Qlist, name)
+
     def start_build_from_file(self, dir=False):
         if dir:
             file_name = QFileDialog.getExistingDirectory(self, "Select Directory")
@@ -122,7 +156,8 @@ class MainWindow(CIU):
                                                            options=QFileDialog.Options())
                 if file_name:
                     meta["metadata"] = file_name
-                else: return
+                else:
+                    return
 
             if self.ui.telemetry_requiared.isChecked():
                 file_name, _ = QFileDialog.getOpenFileName(self,
@@ -132,7 +167,8 @@ class MainWindow(CIU):
                                                            options=QFileDialog.Options())
                 if file_name:
                     meta["telemetry"] = file_name
-                else: return
+                else:
+                    return
 
             self.ui.build_file_btn.setEnabled(False)
             self.ui.build_dir_btn.setEnabled(False)
@@ -155,6 +191,7 @@ class MainWindow(CIU):
         if item:
             item = item.text()
             hsi = self.hsis[item]["hsi"]
+            pprint(self.hsis)
             self.current_image = hsi.data
             self.ui.spinBox.setValue(0)
             self.ui.spinBox.setMaximum(self.current_image.shape[2] - 1)
@@ -180,7 +217,6 @@ class MainWindow(CIU):
         if self.pixel_color is not None:
             self.ui.histogramm.clear()
             self.ui.histogramm.plot(self.pixel_color, pen=(255, 255, 255))
-
 
     def save_hsi(self):
         item = self.ui.hsi_Qlist.currentItem()
