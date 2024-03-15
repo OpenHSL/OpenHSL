@@ -46,6 +46,8 @@ class MainWindow(CIU):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.hsis = {}
+        self.pixel_color = None
+        self.current_pixel = None
 
         # THREAD SETUP
         self.worker = Worker()
@@ -59,14 +61,8 @@ class MainWindow(CIU):
         self.worker_thread.start()
 
         # BUTTONS CONNECTIONS
-        self.ui.import_data_btn.clicked.connect(
-            lambda: self.import_file(formats="(*.avi);;(*.mp4)",
-                                     destination_widget=self.ui.imported_Qlist))
-        self.ui.import_dir_btn.clicked.connect(
-            lambda: self.import_dir(destination_widget=self.ui.imported_Qlist))
-        self.ui.delete_data_btn.clicked.connect(
-            lambda: self.delete_from_QListWidget(self.ui.imported_Qlist))
-        self.ui.build_btn.clicked.connect(self.start_build)
+        self.ui.build_file_btn.clicked.connect(self.start_build_from_file)
+        self.ui.build_dir_btn.clicked.connect(lambda: self.start_build_from_file(dir=True))
         self.ui.show_btn.clicked.connect(self.show_local_hsi)
         self.ui.save_as_btn.clicked.connect(self.save_hsi)
         self.ui.delete_hsi.clicked.connect(self.delete_hsi_from_hsi_Qlist)
@@ -99,9 +95,15 @@ class MainWindow(CIU):
 
         self.show()
 
-    def start_build(self):
-        if self.ui.imported_Qlist.currentItem():
-            meta = {"data": self.ui.imported_Qlist.currentItem().text(),
+    def start_build_from_file(self, dir=False):
+        if dir:
+            file_name = QFileDialog.getExistingDirectory(self, "Select Directory")
+        else:
+            file_name, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+                                                       "(*.avi)",
+                                                       options=QFileDialog.Options())
+        if file_name:
+            meta = {"data": file_name,
                     "norm_rotation": self.ui.check_norm_rotation.isChecked(),
                     "barrel_distortion_normalize": self.ui.check_barrel_dist_norm.isChecked(),
                     "light_normalize": self.ui.check_light_norm.isChecked(),
@@ -132,18 +134,21 @@ class MainWindow(CIU):
                     meta["telemetry"] = file_name
                 else: return
 
-            self.ui.build_btn.setEnabled(False)
+            self.ui.build_file_btn.setEnabled(False)
+            self.ui.build_dir_btn.setEnabled(False)
             self.meta_requested.emit(meta)
 
     def write_meta(self, meta):
         if "error" in meta:
-            self.ui.build_btn.setEnabled(True)
+            self.ui.build_file_btn.setEnabled(True)
+            self.ui.build_dir_btn.setEnabled(True)
             self.show_error(meta["error"])
             return
 
         self.hsis[meta["time"]] = meta
         self.stack_str_in_QListWidget(self.ui.hsi_Qlist, meta["time"])
-        self.ui.build_btn.setEnabled(True)
+        self.ui.build_file_btn.setEnabled(True)
+        self.ui.build_dir_btn.setEnabled(True)
 
     def show_local_hsi(self):
         item = self.ui.hsi_Qlist.currentItem()
@@ -157,6 +162,25 @@ class MainWindow(CIU):
                                       self.ui.check_high_contast.isChecked(),
                                       0,
                                       self.ui.image_label)
+            self.ui.image_label.mousePressEvent = self.get_pixel_index
+
+    def get_pixel_index(self, event):
+        x = event.pos().x()
+        y = event.pos().y()
+        pixmap = self.ui.image_label.pixmap()
+        if pixmap:
+            if 0 <= x < pixmap.width() and 0 <= y < pixmap.height():
+                x = int(x / pixmap.width() * self.current_image.shape[1])
+                y = int(y / pixmap.height() * self.current_image.shape[0])
+                self.pixel_color = self.current_image[y, x, :]
+                self.current_pixel = (x, y)
+                self.update_histogram()
+
+    def update_histogram(self):
+        if self.pixel_color is not None:
+            self.ui.histogramm.clear()
+            self.ui.histogramm.plot(self.pixel_color, pen=(255, 255, 255))
+
 
     def save_hsi(self):
         item = self.ui.hsi_Qlist.currentItem()
