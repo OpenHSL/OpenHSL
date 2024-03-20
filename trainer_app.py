@@ -2,11 +2,12 @@ import sys
 import torch
 import torch.nn as nn
 from tqdm import trange
+from copy import deepcopy
 import numpy as np
 from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 
-from PyQt5.QtWidgets import (QApplication, QFileDialog)
+from PyQt5.QtWidgets import (QApplication, QFileDialog, QAbstractItemView)
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import QThread, QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -22,6 +23,7 @@ from openhsl.data.dataset import get_dataset
 from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.models.model import train_one_epoch, val_one_epoch, get_optimizer, get_scheduler
 from openhsl.data.utils import get_palette, convert_to_color_, sample_gt
+import openhsl.data.utils as hsl_utils
 
 from openhsl.models.ssftt import SSFTT
 from openhsl.models.m1dcnn import M1DCNN
@@ -161,6 +163,10 @@ class MainWindow(CIU):
         self.current_key = None
         self.imported_weights = {}
         self.show()
+
+        self.ui.list_of_models.setSelectionMode(
+            QAbstractItemView.ExtendedSelection
+        )
 
         devices = get_gpu_info()
         self.devices_dict = {"cpu": "cpu"}
@@ -488,11 +494,13 @@ class MainWindow(CIU):
 
             optimizer_params = {
                 "lr": float(self.ui.lr_edit.text()),
-                "weight_decay": float(self.ui.weight_decay_edit.text())}
+                "weight_decay": float(self.ui.weight_decay_edit.text())
+            }
 
             scheduler_params = {
                 "step_size": float(self.ui.step_size_edit.text()),
-                "gamma": float(self.ui.gamma_edit.text())}
+                "gamma": float(self.ui.gamma_edit.text())
+            }
 
             scheduler_type = str(self.ui.scheduler_type_edit.currentText()
                                  ) if self.ui.scheduler_type_edit.currentText() != "None" else None
@@ -509,7 +517,12 @@ class MainWindow(CIU):
             start_time = get_date_time()
             run_name = f"{self.ui.choose_model_for_train.currentText()}_{start_time[0]}_{start_time[1]}"
 
-            fits = {"hsi": self.current_train_hsi,
+            hsi = deepcopy(self.current_train_hsi)
+            scaler = getattr(hsl_utils, self.ui.scaler_edit.currentText())
+            scaler = scaler(per=self.ui.per_edit.currentText())
+            hsi.data = scaler.fit_transform(hsi.data)
+
+            fits = {"hsi": hsi,
                     "mask": self.current_train_mask,
                     "model": models_dict[str(self.ui.choose_model_for_train.currentText())],
                     "device": self.devices_dict[str(self.ui.device_box2.currentText())],
@@ -570,7 +583,13 @@ class MainWindow(CIU):
         item = self.ui.list_of_models.currentItem()
         if self.current_test_hsi and item:
             weight_path = self.imported_weights[item.text()]
-            fits = {"hsi": self.current_test_hsi,
+
+            hsi = deepcopy(self.current_test_hsi)
+            scaler = getattr(hsl_utils, self.ui.scaler_inf_edit.currentText())
+            scaler = scaler(per=self.ui.per_inf_edit.currentText())
+            hsi.data = scaler.fit_transform(hsi.data)
+
+            fits = {"hsi": hsi,
                     "weights": weight_path,
                     "device": str(self.ui.device_box.currentText()),
                     "model": models_dict[str(self.ui.choose_model_for_inference.currentText())]}

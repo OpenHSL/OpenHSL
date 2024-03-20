@@ -113,7 +113,7 @@
           <number>0</number>
          </property>
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="inference_widget">
           <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -150,6 +150,75 @@
             <widget class="QComboBox" name="device_box"/>
            </item>
            <item>
+            <widget class="QFrame" name="frame_13">
+             <property name="frameShape">
+              <enum>QFrame::NoFrame</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+             <layout class="QFormLayout" name="formLayout">
+              <property name="horizontalSpacing">
+               <number>-1</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_12">
+                <property name="text">
+                 <string>Scaler</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QComboBox" name="per_inf_edit">
+                <item>
+                 <property name="text">
+                  <string>pixel</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>band</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_13">
+                <property name="text">
+                 <string>per</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QComboBox" name="scaler_inf_edit">
+                <item>
+                 <property name="text">
+                  <string>HyperStandardScaler</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>HyperMinMaxScaler</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
             <widget class="QScrollArea" name="scrollArea_2">
              <property name="widgetResizable">
               <bool>true</bool>
@@ -160,7 +229,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>372</width>
-                <height>319</height>
+                <height>283</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -489,7 +558,14 @@
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QComboBox" name="device_box2"/>
+               <widget class="QComboBox" name="device_box2">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+               </widget>
               </item>
               <item row="2" column="0">
                <widget class="QLabel" name="label_18">
@@ -542,6 +618,12 @@
               </item>
               <item row="5" column="1">
                <widget class="QComboBox" name="dataloader_mode_edit">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <item>
                  <property name="text">
                   <string>random</string>
@@ -581,6 +663,12 @@
               </item>
               <item row="7" column="1">
                <widget class="QComboBox" name="scheduler_type_edit">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <item>
                  <property name="text">
                   <string>StepLR</string>
@@ -670,6 +758,67 @@
                 <property name="text">
                  <string>0.0</string>
                 </property>
+               </widget>
+              </item>
+              <item row="13" column="0">
+               <widget class="QLabel" name="label_9">
+                <property name="font">
+                 <font>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Scaler Settings:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="14" column="0">
+               <widget class="QLabel" name="label_10">
+                <property name="text">
+                 <string>Scaler</string>
+                </property>
+               </widget>
+              </item>
+              <item row="15" column="0">
+               <widget class="QLabel" name="label_11">
+                <property name="text">
+                 <string>per</string>
+                </property>
+               </widget>
+              </item>
+              <item row="14" column="1">
+               <widget class="QComboBox" name="scaler_edit">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>HyperStandardScaler</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>HyperMinMaxScaler</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="15" column="1">
+               <widget class="QComboBox" name="per_edit">
+                <item>
+                 <property name="text">
+                  <string>pixel</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>band</string>
+                 </property>
+                </item>
                </widget>
               </item>
              </layout>
@@ -958,10 +1107,44 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QListWidget" name="list_of_models">
+           <widget class="QFrame" name="frame_5">
             <property name="frameShape">
              <enum>QFrame::NoFrame</enum>
             </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_14">
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QListWidget" name="list_of_models">
+               <property name="frameShape">
+                <enum>QFrame::NoFrame</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="browse_weight_for_inference_btn">
+               <property name="text">
+                <string>Import Weights</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
           <item>
@@ -989,9 +1172,9 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QPushButton" name="browse_weight_for_inference_btn">
+              <widget class="QPushButton" name="get_average_btn">
                <property name="text">
-                <string>Import Weights</string>
+                <string>Get Average</string>
                </property>
               </widget>
              </item>
@@ -1039,7 +1222,7 @@
              <item>
               <widget class="QPushButton" name="import_data_btn">
                <property name="text">
-                <string>Import</string>
+                <string>Import Data</string>
                </property>
               </widget>
              </item>
