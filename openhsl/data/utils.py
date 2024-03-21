@@ -4,14 +4,18 @@ import itertools
 import numpy as np
 import sklearn.model_selection
 import seaborn as sns
-from typing import Tuple
+from typing import Tuple, Literal
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 
 
+ScaleType = Literal['band', 'pixel']
+SamplerMod = Literal['random', 'fixed', 'disjoint']
+
+
 class HyperStandardScaler:
 
-    def __init__(self, per='band'):
+    def __init__(self, per: ScaleType = 'band'):
         """
 
         Parameters
@@ -44,7 +48,7 @@ class HyperStandardScaler:
 
 class HyperMinMaxScaler:
 
-    def __init__(self, per='band'):
+    def __init__(self, per: ScaleType = 'band'):
         """
 
         Parameters
@@ -293,7 +297,7 @@ def grouper(n, iterable):
 
 def sample_gt(gt: np.ndarray,
               train_size: float,
-              mode: str = 'random',
+              mode: SamplerMod = 'random',
               msg: str = 'train/test'):
     """Extract a fixed percentage of samples from an array of labels.
 

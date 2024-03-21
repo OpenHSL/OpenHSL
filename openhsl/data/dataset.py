@@ -2,7 +2,6 @@ import numpy as np
 from typing import Optional
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
-from openhsl.data.utils import standardize_input_data
 from typing import Tuple
 import copy
 
@@ -48,5 +47,4 @@ def get_dataset(hsi: HSImage, mask: Optional[HSMask] = None) -> Tuple[np.ndarray
     else:
         gt = None
 
-    #img = standardize_input_data(img).astype('float32')
     return img, gt
