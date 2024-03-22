@@ -27,7 +27,7 @@ def dir_exists(path: str) -> bool:
 
 
 def load_data(path: str,
-              exts: list) -> list:
+              exts: list) -> List:
     return [str(p) for p in Path(path).glob("*") if p.suffix[1:] in exts]
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -35,17 +35,42 @@ def load_data(path: str,
 def gaussian(length: int,
              mean: float,
              std: float) -> np.ndarray:
+    """
+    gaussian(length, mean, std)
+
+        Returns gaussian 1D-kernel
+
+        Parameters
+        ----------
+        length: int
+            gaussian 1D-Kernel length
+        mean: float
+            "height" of gaussian
+        std:
+            "slope" of gaussian
+        Returns
+        -------
+            np.ndarray
+
+    """
     return np.exp(-((np.arange(0, length) - mean) ** 2) / 2.0 / (std ** 2)) / math.sqrt(2.0 * math.pi) / std
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 def init_wandb(path: str):
     """
-    Initialize wandb from yaml file
+    init_wandb(path)
 
-    Returns
-    -------
-    wandb: wandb
+        Initialize wandb from yaml file
+
+        Parameters
+        ----------
+        path: str
+            path to config-file wandb.yaml
+
+        Returns
+        -------
+        wandb: wandb
     """
 
     if os.path.exists(path):
@@ -98,11 +123,17 @@ def init_wandb(path: str):
 
 def init_tensorboard(path_dir='tensorboard'):
     """
-    Initialize Tensorboard SummaryWriter for logging
+    init_tensorboard(path_dir)
 
-    Returns
-    -------
-    writer: torch.utils.tensorboard.SummaryWriter
+        Initialize Tensorboard SummaryWriter for logging
+
+        Parameters
+        ----------
+        path_dir: str
+
+        Returns
+        -------
+        writer: torch.utils.tensorboard.SummaryWriter
     """
 
     writer = SummaryWriter(log_dir=path_dir)
@@ -114,23 +145,23 @@ def init_tensorboard(path_dir='tensorboard'):
 
 class EarlyStopping:
     """
-    EarlyStopping class
+        EarlyStopping class
 
-    Attributes
-    ----------
-    tolerance: int
-        number of epochs to wait after min has been hit
-    min_delta: float
-        minimum change in the monitored quantity to qualify as an improvement
-    counter: int
-        number of epochs since min has been hit
-    early_stop: bool
-        True if the training process has to be stopped
+        Attributes
+        ----------
+        tolerance: int
+            number of epochs to wait after min has been hit
+        min_delta: float
+            minimum change in the monitored quantity to qualify as an improvement
+        counter: int
+            number of epochs since min has been hit
+        early_stop: bool
+            True if the training process has to be stopped
 
-    Methods
-    -------
-    __call__(train_loss, validation_loss)
-        call method to check if the training process has to be stopped
+        Methods
+        -------
+        __call__(train_loss, validation_loss)
+            call method to check if the training process has to be stopped
     """
 
     def __init__(self, tolerance=5, min_delta=0):
@@ -145,6 +176,7 @@ class EarlyStopping:
             self.counter += 1
             if self.counter >= self.tolerance:
                 self.early_stop = True
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def draw_fit_plots(model):
@@ -152,9 +184,11 @@ def draw_fit_plots(model):
     draw_fit_plots(model)
 
         Draws plot of train/val loss and plot of train/val accuracy after model fitting
-        Args:
-            model:
-                model of neural network
+
+        Parameters
+        ----------
+        model:
+            model of neural network
 
     """
     x = [int(i) for i in range(1, len(model.train_loss) + 1)]
@@ -180,6 +214,7 @@ def draw_fit_plots(model):
     plt.legend()
     plt.savefig('TrainVal_accs.png')
     plt.show()
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def draw_colored_mask(mask: HSMask,
@@ -219,6 +254,7 @@ def draw_colored_mask(mask: HSMask,
     plt.show()
 
     return color_gt
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def get_cluster(cl_type):
@@ -226,6 +262,7 @@ def get_cluster(cl_type):
         return KMeans
     elif cl_type == 'SpectralClustering':
         return SpectralClustering
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def cluster_hsi(hsi: HSImage, n_clusters: int = 2, cl_type='Kmeans') -> np.ndarray:
@@ -233,6 +270,7 @@ def cluster_hsi(hsi: HSImage, n_clusters: int = 2, cl_type='Kmeans') -> np.ndarr
     h, w, _ = hsi.data.shape
     pred = km.fit_predict(hsi.to_spectral_list())
     return pred.reshape((h, w))
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def ANDVI(hsi):
@@ -260,6 +298,7 @@ def ANDVI(hsi):
     res_red_right = int(np.argmin(np.log(p_v)))
     print(f'right border of red is {res_red_right + 97}\'s band')
     return ndi(hsi, 97, res_red_right + 97, 148, 250)
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def norm_diff_index(channel_1: np.ndarray,
@@ -270,6 +309,7 @@ def norm_diff_index(channel_1: np.ndarray,
     mask[mask < magic_threshold] = 0
     mask[mask >= magic_threshold] = 1
     return mask
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def ANDI(hsi: np.ndarray,
@@ -312,6 +352,7 @@ def ANDI(hsi: np.ndarray,
                           channel_2=hsi[:, :, best_idx[1]])
 
     return ndi
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def neighbor_el(elements_list: list, element: float) -> float:
@@ -331,6 +372,7 @@ def neighbor_el(elements_list: list, element: float) -> float:
             float
     """
     return min(elements_list, key=lambda x: abs(x - element))
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def get_band_numbers(w_l: int, w_data: Union[list, np.ndarray]) -> int:
@@ -362,6 +404,7 @@ def get_band_numbers(w_l: int, w_data: Union[list, np.ndarray]) -> int:
         index_new_wl = abs_delta.index(min(abs_delta))
 
         return index_new_wl
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def get_hypercube_and_wavelength(cube: Union[HSImage, np.ndarray],
@@ -406,6 +449,7 @@ def get_hypercube_and_wavelength(cube: Union[HSImage, np.ndarray],
         w_data = list(w_data)
 
     return cube_data, w_data
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def minmax_normalization(mask: np.ndarray) -> np.ndarray:
@@ -424,6 +468,7 @@ def minmax_normalization(mask: np.ndarray) -> np.ndarray:
     """
 
     return (mask - np.min(mask)) / (np.max(mask) - np.min(mask))
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def contrast_correction(rgb, gamma_thresh):
@@ -438,6 +483,7 @@ def contrast_correction(rgb, gamma_thresh):
     rgb = rgb / np.max(rgb)
 
     return rgb
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def simple_hsi_to_rgb(hsi: HSImage,
@@ -479,6 +525,7 @@ def simple_hsi_to_rgb(hsi: HSImage,
     simple_rgb = contrast_correction(simple_rgb, gamma_thresh)
 
     return simple_rgb
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def xyz2srgb_exgamma(xyz: np.ndarray) -> np.ndarray:
@@ -509,6 +556,7 @@ def xyz2srgb_exgamma(xyz: np.ndarray) -> np.ndarray:
     s_rgb = np.reshape(s_rgb, d)
 
     return s_rgb
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def get_bounds_vlr(w_data: List):
@@ -516,9 +564,24 @@ def get_bounds_vlr(w_data: List):
     right_bound = w_data.index(neighbor_el(w_data, 720))
     left_bound = w_data.index(neighbor_el(w_data, 400))
     return left_bound, right_bound
+# ----------------------------------------------------------------------------------------------------------------------
 
 
-def convert_hsi_to_xyz(xyz_bar_path, hsi, rgb_waves):
+def convert_hsi_to_xyz(xyz_bar_path,
+                       hsi,
+                       rgb_waves):
+    """
+    Converting HSI to XYZ
+    Parameters
+    ----------
+    xyz_bar_path
+    hsi
+    rgb_waves
+
+    Returns
+    -------
+
+    """
     xyz_bar = loadmat(xyz_bar_path)['xyzbar']
 
     xyz_bar_0 = xyz_bar[:, 0]
@@ -544,6 +607,7 @@ def convert_hsi_to_xyz(xyz_bar_path, hsi, rgb_waves):
     xyz = np.reshape(xyz, (r, c, 3))
     xyz = (xyz - np.min(xyz)) / (np.max(xyz) - np.min(xyz))
     return xyz
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def hsi_to_rgb(hsi: HSImage,
@@ -563,6 +627,7 @@ def hsi_to_rgb(hsi: HSImage,
             path to mat file with CMF CIE 1931
 
         gamma_thresh: float
+            coefficient for contrast correction
 
         Returns
         ------
@@ -589,4 +654,3 @@ def hsi_to_rgb(hsi: HSImage,
     rgb = contrast_correction(rgb, gamma_thresh)
 
     return rgb
-

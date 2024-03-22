@@ -1,6 +1,9 @@
+import os
 import sys
 import torch
 import torch.nn as nn
+import tensorflow as tf
+from keras.callbacks import Callback
 from tqdm import trange
 import numpy as np
 from sklearn.metrics import classification_report, confusion_matrix
@@ -27,8 +30,8 @@ from openhsl.models.ssftt import SSFTT
 from openhsl.models.m1dcnn import M1DCNN
 from openhsl.models.m3dcnn_li import M3DCNN as LI
 from openhsl.models.nm3dcnn import NM3DCNN
-
-# from openhsl.models.tf2dcnn import TF2DCNN
+from openhsl.data.tf_dataloader import get_test_generator, get_train_val_gens
+from openhsl.models.tf2dcnn import TF2DCNN
 
 
 models_dict = {
@@ -36,10 +39,36 @@ models_dict = {
     "M3DCNN_li": LI,
     "NM3DCNN": NM3DCNN,
     "SSFTT": SSFTT,
-    # "TF2DCNN": TF2DCNN
+    "TF2DCNN": TF2DCNN
 }
 
 stop_train = False
+
+
+tf_train_params = {}
+
+
+class SendStatsCallback(Callback):
+
+    def __init__(self, signal):
+        super().__init__()
+        self.signal = signal
+
+    def on_epoch_end(self, epoch, logs=None):
+        global tf_train_params
+        tf_train_params['loss'] = logs['loss']
+        tf_train_params['val_loss'] = logs['val_loss']
+
+        tf_train_params['accuracy'] = logs['accuracy']
+        tf_train_params['val_accuracy'] = logs['val_accuracy']
+
+        self.signal.emit({"epoch": epoch + 1,
+                          "val_loss": logs['val_loss'],
+                          "train_loss": logs['loss'],
+                          "val_acc": logs['val_accuracy'],
+                          "train_acc": logs['accuracy'],
+                          "model": "TF2DCNN",
+                          "run_name": "TF2DCNN"})
 
 
 class InferenceWorker(QObject):
@@ -75,72 +104,126 @@ class TrainWorker(QObject):
     def do_train(self, fits):
         global stop_train
         try:
-            net = fits["model"](n_bands=fits["hsi"].data.shape[-1],
-                                n_classes=fits["mask"].n_classes,
-                                path_to_weights=fits["weights"],
-                                device=fits["device"])
+            if fits["model"].__name__ != 'TF2DCNN':
+                net = fits["model"](n_bands=fits["hsi"].data.shape[-1],
+                                    n_classes=fits["mask"].n_classes,
+                                    path_to_weights=fits["weights"],
+                                    device=fits["device"])
 
-            net.hyperparams["batch_size"] = fits["fit_params"]["batch_size"]
-            img, gt = get_dataset(fits["hsi"], fits["mask"])
-            train_gt, _ = sample_gt(gt=gt,
-                                    train_size=fits["fit_params"]['train_sample_percentage'],
-                                    mode=fits["fit_params"]['dataloader_mode'],
-                                    msg='train_val/test')
+                net.hyperparams["batch_size"] = fits["fit_params"]["batch_size"]
+                img, gt = get_dataset(fits["hsi"], fits["mask"])
+                train_gt, _ = sample_gt(gt=gt,
+                                        train_size=fits["fit_params"]['train_sample_percentage'],
+                                        mode=fits["fit_params"]['dataloader_mode'],
+                                        msg='train_val/test')
 
-            train_gt, val_gt = sample_gt(gt=train_gt,
-                                         train_size=0.9,
-                                         mode=fits["fit_params"]['dataloader_mode'],
-                                         msg='train/val')
+                train_gt, val_gt = sample_gt(gt=train_gt,
+                                             train_size=0.9,
+                                             mode=fits["fit_params"]['dataloader_mode'],
+                                             msg='train/val')
 
-            train_data_loader = create_torch_loader(img,
-                                                    train_gt,
-                                                    net.hyperparams,
-                                                    shuffle=True)
+                train_data_loader = create_torch_loader(img,
+                                                        train_gt,
+                                                        net.hyperparams,
+                                                        shuffle=True)
 
-            val_data_loader = create_torch_loader(img,
-                                                  val_gt,
-                                                  net.hyperparams)
+                val_data_loader = create_torch_loader(img,
+                                                      val_gt,
+                                                      net.hyperparams)
 
-            criterion = nn.CrossEntropyLoss(weight=net.hyperparams.get("weights", None))
-            optimizer = get_optimizer(net=net.model,
-                                      optimizer_type='SGD',
-                                      optimizer_params=fits["optimizer_params"])
+                criterion = nn.CrossEntropyLoss(weight=net.hyperparams.get("weights", None))
+                optimizer = get_optimizer(net=net.model,
+                                          optimizer_type='SGD',
+                                          optimizer_params=fits["optimizer_params"])
 
-            scheduler = get_scheduler(scheduler_type=fits["fit_params"]['scheduler_type'],
-                                      optimizer=optimizer,
-                                      scheduler_params=fits["scheduler_params"])
+                scheduler = get_scheduler(scheduler_type=fits["fit_params"]['scheduler_type'],
+                                          optimizer=optimizer,
+                                          scheduler_params=fits["scheduler_params"])
 
-            device = net.hyperparams['device']
-            net.model.to(device)
-            for e in trange(fits["fit_params"]['epochs']):
-                temp_train = train_one_epoch(net=net.model,
+                device = net.hyperparams['device']
+                net.model.to(device)
+                for e in trange(fits["fit_params"]['epochs']):
+                    temp_train = train_one_epoch(net=net.model,
+                                                 criterion=criterion,
+                                                 data_loader=train_data_loader,
+                                                 optimizer=optimizer,
+                                                 device=device)
+                    if scheduler is not None:
+                        scheduler.step()
+
+                    temp_val = val_one_epoch(net=net.model,
                                              criterion=criterion,
-                                             data_loader=train_data_loader,
-                                             optimizer=optimizer,
+                                             data_loader=val_data_loader,
                                              device=device)
-                if scheduler is not None:
-                    scheduler.step()
 
-                temp_val = val_one_epoch(net=net.model,
-                                         criterion=criterion,
-                                         data_loader=val_data_loader,
-                                         device=device)
+                    self.progress_signal.emit({"epoch": e + 1,
+                                               "val_loss": temp_val[1],
+                                               "train_loss": temp_train['avg_train_loss'],
+                                               "val_acc": temp_val[0],
+                                               "train_acc": temp_train['train_acc'],
+                                               "model": net,
+                                               "run_name": fits["run_name"]})
 
-                self.progress_signal.emit({"epoch": e + 1,
-                                           "val_loss": temp_val[1],
-                                           "train_loss": temp_train['avg_train_loss'],
-                                           "val_acc": temp_val[0],
-                                           "train_acc": temp_train['train_acc'],
+                    if stop_train:
+                        stop_train = False
+                        break
+
+                self.progress_signal.emit({"end": True,
                                            "model": net,
                                            "run_name": fits["run_name"]})
 
-                if stop_train:
-                    stop_train = False
-                    break
+            else:
+                net = fits["model"](n_bands=fits["hsi"].data.shape[-1],
+                                    n_classes=fits["mask"].n_classes,
+                                    path_to_weights=fits["weights"],
+                                    device=fits["device"])
+                img, gt = get_dataset(fits["hsi"], fits["mask"])
 
-            self.progress_signal.emit({"end": True,
-                                       "model": net,
-                                       "run_name": fits["run_name"]})
+                train_generator, val_generator = get_train_val_gens(X=img,
+                                                                    y=gt,
+                                                                    train_sample_percentage=fits["fit_params"]['train_sample_percentage'],
+                                                                    patch_size=5)
+
+                types = (tf.float32, tf.int32)
+                shapes = ((net.hyperparams['n_bands'],
+                           net.hyperparams['patch_size'],
+                           net.hyperparams['patch_size']),
+                          (net.hyperparams['n_classes'],))
+
+                ds_train = tf.data.Dataset.from_generator(lambda: train_generator, types, shapes)
+                ds_train = ds_train.batch(fits["fit_params"]["batch_size"]).repeat()
+                ds_val = tf.data.Dataset.from_generator(lambda: val_generator, types, shapes)
+                ds_val = ds_val.batch(fits["fit_params"]["batch_size"]).repeat()
+
+                steps = len(train_generator) / fits["fit_params"]["batch_size"]
+                val_steps = len(val_generator) / fits["fit_params"]["batch_size"]
+
+                checkpoint_filepath = './checkpoints/tf2dcnn/'
+
+                if not os.path.exists(checkpoint_filepath):
+                    os.makedirs(checkpoint_filepath)
+
+                # add visualisations via callbacks
+                callbacks = []
+
+                callbacks.append(SendStatsCallback(self.progress_signal))
+
+                history = net.model.fit(ds_train,
+                                        validation_data=ds_val,
+                                        validation_steps=val_steps,
+                                        validation_batch_size=fits["fit_params"]['batch_size'],
+                                        batch_size=fits["fit_params"]['batch_size'],
+                                        epochs=fits["fit_params"]['epochs'],
+                                        steps_per_epoch=steps,
+                                        verbose=1,
+                                        callbacks=callbacks)
+
+                #self.train_loss = history.history.get('loss', [])
+                #self.val_loss = history.history.get('val_loss', [])
+                #self.train_accs = history.history.get('accuracy', [])
+                #self.val_accs = history.history.get('val_accuracy', [])
+
+                net.model.save(f'{checkpoint_filepath}/weights.h5')
 
         except Exception as e:
             self.progress_signal.emit({"error": str(e)})
@@ -253,7 +336,7 @@ class MainWindow(CIU):
         file_name, _ = QFileDialog.getOpenFileName(self,
                                                     "Select a weight file",
                                                     "",
-                                                    "(*.pth);;(*.pt)",
+                                                    "(*.pth);;(*.pt);;(*.h5)",
                                                     options=QFileDialog.Options())
         if file_name:
             name = get_file_name(file_name)
@@ -264,7 +347,7 @@ class MainWindow(CIU):
         file_name, _ = QFileDialog.getOpenFileName(self,
                                                    "Select a video file",
                                                    "",
-                                                   "(*.npy);;(*.mat);;(*.tiff);;(*.h5)",
+                                                   "(*.mat);;(*.npy);;(*.tiff);;(*.h5)",
                                                    options=QFileDialog.Options())
         if file_name:
             ext = get_file_extension(file_name)
@@ -275,13 +358,11 @@ class MainWindow(CIU):
                 key = self.show_dialog_with_choice(keys, "Select a key", "Keys:")
                 if not key: return
                 hsi.load_from_mat(file_name, key)
-
             elif ext == ".h5":
                 keys = request_keys_from_h5_file(file_name)
                 key = self.show_dialog_with_choice(keys, "Select a key", "Keys:")
                 if not key: return
                 hsi.load_from_h5(file_name, key)
-
             elif ext == ".npy":
                 hsi.load_from_npy(file_name)
             elif ext == ".tiff":
@@ -541,14 +622,14 @@ class MainWindow(CIU):
             self.ui.graphics_acc_view.plot(self.g_epochs, self.g_train_accs, pen='g', name='Train Accuracy')
             self.ui.learning_progressbar.setValue(data["epoch"])
 
-            net = data["model"]
-            torch.save(net.model.state_dict(), f"checkpoints/{data['run_name']}.pth")
+            if data["model"] != "TF2DCNN":
+                net = data["model"]
+                torch.save(net.model.state_dict(), f"checkpoints/{data['run_name']}.pth")
 
-            if data["run_name"] not in self.imported_weights:
-                self.stack_str_in_QListWidget(self.ui.list_of_models, data["run_name"])
+                if data["run_name"] not in self.imported_weights:
+                    self.stack_str_in_QListWidget(self.ui.list_of_models, data["run_name"])
 
-            self.imported_weights[data["run_name"]] = f"checkpoints/{data['run_name']}.pth"
-
+                self.imported_weights[data["run_name"]] = f"checkpoints/{data['run_name']}.pth"
 
 
         if "end" in data:
