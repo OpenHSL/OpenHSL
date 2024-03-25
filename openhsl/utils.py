@@ -1,19 +1,24 @@
 import os
 import yaml
-from pathlib import Path
 import math
+import wandb
 import numpy as np
+import matplotlib.patches as mpatches
+
+from pathlib import Path
+from sklearn.cluster import KMeans, SpectralClustering
+from scipy.io import loadmat
+from scipy.interpolate import interp1d
+from scipy.stats import ttest_ind
 from itertools import product
 from matplotlib import pyplot as plt
-import matplotlib.patches as mpatches
-from sklearn.cluster import KMeans, SpectralClustering
-from scipy.stats import ttest_ind
+from typing import Union, List, Tuple, Literal
+from tqdm import trange
+from torch.utils.tensorboard import SummaryWriter
 
 from openhsl.hsi import HSImage
 from openhsl.data.utils import convert_to_color_, get_palette
 from openhsl.hs_mask import HSMask
-import wandb
-from torch.utils.tensorboard import SummaryWriter
 
 
 def dir_exists(path: str) -> bool:
@@ -22,7 +27,7 @@ def dir_exists(path: str) -> bool:
 
 
 def load_data(path: str,
-              exts: list) -> list:
+              exts: list) -> List:
     return [str(p) for p in Path(path).glob("*") if p.suffix[1:] in exts]
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -30,17 +35,42 @@ def load_data(path: str,
 def gaussian(length: int,
              mean: float,
              std: float) -> np.ndarray:
+    """
+    gaussian(length, mean, std)
+
+        Returns gaussian 1D-kernel
+
+        Parameters
+        ----------
+        length: int
+            gaussian 1D-Kernel length
+        mean: float
+            "height" of gaussian
+        std:
+            "slope" of gaussian
+        Returns
+        -------
+            np.ndarray
+
+    """
     return np.exp(-((np.arange(0, length) - mean) ** 2) / 2.0 / (std ** 2)) / math.sqrt(2.0 * math.pi) / std
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def init_wandb(path: 'wandb.yaml'):
+def init_wandb(path: str):
     """
-    Initialize wandb from yaml file
+    init_wandb(path)
 
-    Returns
-    -------
-    wandb: wandb
+        Initialize wandb from yaml file
+
+        Parameters
+        ----------
+        path: str
+            path to config-file wandb.yaml
+
+        Returns
+        -------
+        wandb: wandb
     """
 
     if os.path.exists(path):
@@ -93,11 +123,17 @@ def init_wandb(path: 'wandb.yaml'):
 
 def init_tensorboard(path_dir='tensorboard'):
     """
-    Initialize Tensorboard SummaryWriter for logging
+    init_tensorboard(path_dir)
 
-    Returns
-    -------
-    writer: torch.utils.tensorboard.SummaryWriter
+        Initialize Tensorboard SummaryWriter for logging
+
+        Parameters
+        ----------
+        path_dir: str
+
+        Returns
+        -------
+        writer: torch.utils.tensorboard.SummaryWriter
     """
 
     writer = SummaryWriter(log_dir=path_dir)
@@ -109,23 +145,23 @@ def init_tensorboard(path_dir='tensorboard'):
 
 class EarlyStopping:
     """
-    EarlyStopping class
+        EarlyStopping class
 
-    Attributes
-    ----------
-    tolerance: int
-        number of epochs to wait after min has been hit
-    min_delta: float
-        minimum change in the monitored quantity to qualify as an improvement
-    counter: int
-        number of epochs since min has been hit
-    early_stop: bool
-        True if the training process has to be stopped
+        Attributes
+        ----------
+        tolerance: int
+            number of epochs to wait after min has been hit
+        min_delta: float
+            minimum change in the monitored quantity to qualify as an improvement
+        counter: int
+            number of epochs since min has been hit
+        early_stop: bool
+            True if the training process has to be stopped
 
-    Methods
-    -------
-    __call__(train_loss, validation_loss)
-        call method to check if the training process has to be stopped
+        Methods
+        -------
+        __call__(train_loss, validation_loss)
+            call method to check if the training process has to be stopped
     """
 
     def __init__(self, tolerance=5, min_delta=0):
@@ -137,9 +173,10 @@ class EarlyStopping:
 
     def __call__(self, train_loss, validation_loss):
         if (validation_loss - train_loss) > self.min_delta:
-            self.counter +=1
+            self.counter += 1
             if self.counter >= self.tolerance:
                 self.early_stop = True
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def draw_fit_plots(model):
@@ -147,9 +184,11 @@ def draw_fit_plots(model):
     draw_fit_plots(model)
 
         Draws plot of train/val loss and plot of train/val accuracy after model fitting
-        Args:
-            model:
-                model of neural network
+
+        Parameters
+        ----------
+        model:
+            model of neural network
 
     """
     x = [int(i) for i in range(1, len(model.train_loss) + 1)]
@@ -175,12 +214,13 @@ def draw_fit_plots(model):
     plt.legend()
     plt.savefig('TrainVal_accs.png')
     plt.show()
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def draw_colored_mask(mask: HSMask,
                       predicted_mask: np.array = None,
                       mask_labels: dict = None,
-                      stack_type='v'):
+                      stack_type: Literal['v', 'h'] = 'v'):
 
     tmp = lambda x: [i / 255 for i in x]
 
@@ -202,15 +242,19 @@ def draw_colored_mask(mask: HSMask,
         color_pred = convert_to_color_(predicted_mask, palette=palette)
         if stack_type == 'v':
             combined = np.vstack((color_gt, color_pred))
-        if stack_type == 'h':
+        elif stack_type == 'h':
             combined = np.hstack((color_gt, color_pred))
+        else:
+            raise Exception(f'{stack_type} is unresolved mode')
         plt.imshow(combined, label='Colored ground truth and predicted masks')
     else:
         plt.imshow(color_gt, label='Colored ground truth mask')
     if labels:
         plt.legend(handles=patches, loc=4, borderaxespad=0.)
     plt.show()
+
     return color_gt
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def get_cluster(cl_type):
@@ -218,6 +262,7 @@ def get_cluster(cl_type):
         return KMeans
     elif cl_type == 'SpectralClustering':
         return SpectralClustering
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def cluster_hsi(hsi: HSImage, n_clusters: int = 2, cl_type='Kmeans') -> np.ndarray:
@@ -225,32 +270,35 @@ def cluster_hsi(hsi: HSImage, n_clusters: int = 2, cl_type='Kmeans') -> np.ndarr
     h, w, _ = hsi.data.shape
     pred = km.fit_predict(hsi.to_spectral_list())
     return pred.reshape((h, w))
-
-
-def NDVI(hsi, red, nir) -> np.ndarray:
-    pass
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def ANDVI(hsi):
-    def ndi(img, l_red, r_red, l_nir, r_nir):
+    def ndi(img: np.ndarray,
+            l_red: int,
+            r_red: int,
+            l_nir: int,
+            r_nir: int):
         red = np.mean(img[:, :, l_red: r_red], axis=2)
         nir = np.mean(img[:, :, l_nir: r_nir], axis=2)
-        mask = (nir - red) / (nir + red)
-        mask[nir + red == 0] = 0
-        return mask > 0.1
+        ndi_mask = (nir - red) / (nir + red)
+        ndi_mask[nir + red == 0] = 0
+        return ndi_mask > 0.1
 
-    def get_ttest(img, mask):
-        green = img[mask == 1]
-        soil = img[mask == 0]
-        return ttest_ind(green[:2000], soil[:2000])
+    def get_ttest(img: np.ndarray,
+                  plant_mask: np.ndarray):
+        plant = img[plant_mask == 1]
+        soil = img[plant_mask == 0]
+        return ttest_ind(plant[: 1000], soil[: 1000])
 
     p_v = []
-    for i in range(98, 148):
+    for i in trange(98, 148):
         mask = ndi(hsi, 97, i, 148, 250)
         p_v.append(np.mean(get_ttest(hsi, mask)[1]))
-    res_red_right = np.argmin(np.log(p_v))
-    print(f'right border of red is {res_red_right}\'s band')
-    return ndi(hsi, 97, res_red_right, 148, 250)
+    res_red_right = int(np.argmin(np.log(p_v)))
+    print(f'right border of red is {res_red_right + 97}\'s band')
+    return ndi(hsi, 97, res_red_right + 97, 148, 250)
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def norm_diff_index(channel_1: np.ndarray,
@@ -261,11 +309,12 @@ def norm_diff_index(channel_1: np.ndarray,
     mask[mask < magic_threshold] = 0
     mask[mask >= magic_threshold] = 1
     return mask
+# ----------------------------------------------------------------------------------------------------------------------
 
 
-def ANDI(cube: np.ndarray,
-                             example_1: np.ndarray,
-                             example_2: np.ndarray) -> np.ndarray:
+def ANDI(hsi: np.ndarray,
+         example_1: np.ndarray,
+         example_2: np.ndarray) -> np.ndarray:
     example_1_size = example_1[:, :, 0].size
     example_2_size = example_2[:, :, 0].size
 
@@ -299,8 +348,309 @@ def ANDI(cube: np.ndarray,
 
     print(best_idx)
 
-    ndi = norm_diff_index(channel_1=cube[:, :, best_idx[0]],
-                          channel_2=cube[:, :, best_idx[1]])
+    ndi = norm_diff_index(channel_1=hsi[:, :, best_idx[0]],
+                          channel_2=hsi[:, :, best_idx[1]])
 
     return ndi
+# ----------------------------------------------------------------------------------------------------------------------
 
+
+def neighbor_el(elements_list: list, element: float) -> float:
+    """
+    neighbor_el(elements_list, element)
+
+        Return the closest element from list to given element
+
+        Parameters
+        ----------
+        elements_list: list
+
+        element: float
+
+        Returns
+        -------
+            float
+    """
+    return min(elements_list, key=lambda x: abs(x - element))
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def get_band_numbers(w_l: int, w_data: Union[list, np.ndarray]) -> int:
+    """
+    get_band_numbers(w_l, w_data)
+
+        Returns the required channel value in the hyperspectral image
+
+        Parameters
+        ----------
+        w_l: int
+           the desired wavelength (nm)
+
+        w_data: list or np.ndarray
+            list of wavelengths
+
+        Returns
+        ------
+            int
+    """
+
+    if w_l in w_data:
+        w_data = list(w_data)
+        return w_data.index(w_l)
+    else:
+        w_data = np.array(w_data)
+        delta = w_data - w_l
+        abs_delta = list(map(abs, delta))
+        index_new_wl = abs_delta.index(min(abs_delta))
+
+        return index_new_wl
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def get_hypercube_and_wavelength(cube: Union[HSImage, np.ndarray],
+                                 wave_data: Union[list, np.ndarray] = None) -> Tuple[np.ndarray, list]:
+    """
+    get_hypercube_and_wavelength(cube, wave_data)
+
+        Returns hypercube and wavelengths, determines priority
+
+        Parameters
+        ----------
+        cube: HSImage or np.ndarray
+           hyperspectral image
+
+        wave_data: list or np.ndarray
+            list of hyperspectral images wavelengths
+
+        Returns
+        ------
+            np.ndarray, list
+    """
+
+    w_data = None
+
+    if isinstance(cube, HSImage):
+        cube_data = cube.data
+        if any(cube.wavelengths):
+            w_data = cube.wavelengths
+
+    elif isinstance(cube, np.ndarray):
+        cube_data = cube
+    else:
+        raise ValueError("Unvailable type of HSI")
+
+    if np.any(wave_data):
+        w_data = list(wave_data)
+
+    if not any(w_data):
+        raise ValueError("Not info about wavelengths")
+
+    if type(w_data) != list:
+        w_data = list(w_data)
+
+    return cube_data, w_data
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def minmax_normalization(mask: np.ndarray) -> np.ndarray:
+    """
+    normalization(mask)
+
+        Returns a normalized mask from 0 to 1
+
+        Parameters
+        ----------
+        mask: np.ndarray
+            Denormalized array
+        Return
+        ------
+            np.ndarray
+    """
+
+    return (mask - np.min(mask)) / (np.max(mask) - np.min(mask))
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def contrast_correction(rgb, gamma_thresh):
+    gray_mean = np.mean(rgb, axis=2)
+    un = np.unique(gray_mean)
+
+    coord = np.where(gray_mean == un[int(len(un) * gamma_thresh - 1)])
+    x, y = coord
+    m = np.max(rgb[int(x[0]), int(y[0]), :])
+
+    rgb[rgb > m] = m
+    rgb = rgb / np.max(rgb)
+
+    return rgb
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def simple_hsi_to_rgb(hsi: HSImage,
+                      gamma_thresh: float = 0.98) -> np.ndarray:
+    """
+    simple_hsi_to_rgb(cube, wave_data)
+
+        Return rgb-image from hyperspectral image
+
+        Parameters
+        ----------
+        hsi: HSImage or np.ndarray
+           hyperspectral image
+
+        gamma_thresh
+
+        Returns
+        ------
+            np.ndarray
+    """
+
+    cube_data = hsi.data
+    w_data = hsi.wavelengths
+
+    wl_440 = 440
+    wl_550 = 550
+    wl_640 = 640
+
+    blue_band_numbers = get_band_numbers(wl_440, w_data)
+    green_band_numbers = get_band_numbers(wl_550, w_data)
+    red_band_numbers = get_band_numbers(wl_640, w_data)
+
+    blue = cube_data[:, :, blue_band_numbers].astype(float)
+    green = cube_data[:, :, green_band_numbers].astype(float)
+    red = cube_data[:, :, red_band_numbers].astype(float)
+
+    simple_rgb = np.dstack((red.astype(np.uint8), green.astype(np.uint8), blue.astype(np.uint8)))
+
+    simple_rgb = contrast_correction(simple_rgb, gamma_thresh)
+
+    return simple_rgb
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def xyz2srgb_exgamma(xyz: np.ndarray) -> np.ndarray:
+    """
+    See IEC_61966-2-1.pdf
+    No gamma correction has been incorporated here, nor any clipping, so this
+    transformation remains strictly linear.  Nor is there any data-checking.
+    DHF 9-Feb-11
+    """
+    # Image dimensions
+    d = xyz.shape
+    r = d[0] * d[1]
+    w = d[2]
+
+    # Reshape for calculation, converting to w columns with r rows.
+    xyz = np.reshape(xyz, (r, w))
+
+    # Forward transformation from 1931 CIE XYZ values to sRGB values (Eqn 6 in
+    # IEC_61966-2-1.pdf).
+
+    m = np.array([[3.2406, -1.5372, -0.4986],
+                  [-0.9689, 1.8758, 0.0414],
+                  [0.0557, -0.2040, 1.0570]])
+
+    s_rgb = np.dot(xyz, m.T)
+
+    # Reshape to recover shape of original input.
+    s_rgb = np.reshape(s_rgb, d)
+
+    return s_rgb
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def get_bounds_vlr(w_data: List):
+
+    right_bound = w_data.index(neighbor_el(w_data, 720))
+    left_bound = w_data.index(neighbor_el(w_data, 400))
+    return left_bound, right_bound
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def convert_hsi_to_xyz(xyz_bar_path,
+                       hsi,
+                       rgb_waves):
+    """
+    Converting HSI to XYZ
+    Parameters
+    ----------
+    xyz_bar_path
+    hsi
+    rgb_waves
+
+    Returns
+    -------
+
+    """
+    xyz_bar = loadmat(xyz_bar_path)['xyzbar']
+
+    xyz_bar_0 = xyz_bar[:, 0]
+    xyz_bar_1 = xyz_bar[:, 1]
+    xyz_bar_2 = xyz_bar[:, 2]
+
+    wl_vlr = np.linspace(400, 720, 33)
+
+    f_0 = interp1d(wl_vlr, xyz_bar_0)
+    f_1 = interp1d(wl_vlr, xyz_bar_1)
+    f_2 = interp1d(wl_vlr, xyz_bar_2)
+
+    xyz_0 = [f_0(i) for i in rgb_waves]
+    xyz_1 = [f_1(i) for i in rgb_waves]
+    xyz_2 = [f_2(i) for i in rgb_waves]
+
+    xyz_bar_new = (np.array([xyz_0, xyz_1, xyz_2])).T
+
+    r, c, w = hsi.shape
+    radiances = np.reshape(hsi, (r * c, w))
+
+    xyz = np.dot(radiances, xyz_bar_new)
+    xyz = np.reshape(xyz, (r, c, 3))
+    xyz = (xyz - np.min(xyz)) / (np.max(xyz) - np.min(xyz))
+    return xyz
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def hsi_to_rgb(hsi: HSImage,
+               xyz_bar_path: str = './xyzbar.mat',
+               gamma_thresh: float = 0.98) -> np.ndarray:
+    """
+    hsi_to_rgb(cube, w_data, illumination_coef, xyzbar)
+
+        Extracts an RGB image from an HSI image
+
+        Parameters
+        ----------
+        hsi: HSImage or np.ndarray
+            hyperspectral image
+
+        xyz_bar_path: str
+            path to mat file with CMF CIE 1931
+
+        gamma_thresh: float
+            coefficient for contrast correction
+
+        Returns
+        ------
+            np.ndarray
+
+    """
+
+    hsi_data = hsi.data
+    w_data = list(hsi.wavelengths)
+
+    left_bound, right_bound = get_bounds_vlr(w_data)
+
+    rgb_waves = w_data[left_bound: right_bound]
+
+    new_cube = hsi_data[:, :, left_bound: right_bound]
+
+    xyz = convert_hsi_to_xyz(xyz_bar_path=xyz_bar_path,
+                             hsi=new_cube,
+                             rgb_waves=rgb_waves)
+
+    rgb = xyz2srgb_exgamma(xyz)
+    rgb = minmax_normalization(rgb)
+
+    rgb = contrast_correction(rgb, gamma_thresh)
+
+    return rgb

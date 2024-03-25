@@ -9,13 +9,16 @@ import torch.utils.data as udata
 import numpy as np
 import datetime
 from tqdm import trange, tqdm
-from typing import Iterable, Dict
+from typing import Iterable, Dict, Literal
 
 from openhsl.data.dataset import get_dataset
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
                                         sliding_window, sample_gt, convert_to_color_
 from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.utils import init_wandb, init_tensorboard, EarlyStopping
+
+SchedulerTypes = Literal['StepLR', 'CosineAnnealingLR', 'ReduceLROnPlateau']
+OptimizerTypes = Literal['SGD', 'Adam', 'Adagrad']
 
 
 class Model(ABC):
@@ -153,7 +156,7 @@ class Model(ABC):
 
 
 def get_optimizer(net: nn.Module,
-                  optimizer_type: str,
+                  optimizer_type: OptimizerTypes,
                   optimizer_params: Dict):
     if optimizer_type == 'SGD':
         optimizer = optim.SGD(net.parameters(),
@@ -171,9 +174,9 @@ def get_optimizer(net: nn.Module,
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def get_scheduler(scheduler_type: str,
-                  optimizer,
-                  scheduler_params):
+def get_scheduler(scheduler_type: SchedulerTypes,
+                  optimizer: optim.lr_scheduler,
+                  scheduler_params: dict):
 
     if scheduler_type == 'StepLR':
         scheduler = optim.lr_scheduler.StepLR(optimizer=optimizer,
@@ -491,9 +494,7 @@ def save_train_mask(model_name, dataset_name, mask):
         os.makedirs(mask_dir, exist_ok=True)
     gray_filename = f"{mask_dir}/{time_str}_gray_mask.npy"
     color_filename = f"{mask_dir}/{time_str}_color_mask.png"
-    #color = Image.fromarray(convert_to_color_(mask))
     np.save(gray_filename, mask)
-    #color.save(color_filename)
 # ----------------------------------------------------------------------------------------------------------------------
 
 

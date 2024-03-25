@@ -5,9 +5,7 @@ import scipy.ndimage
 
 from sklearn import preprocessing
 from typing import Optional, Dict
-from openhsl.data.utils import  pad_with_zeros, split_train_test_set, create_patches
-
-#from keras.utils import np_utils
+from openhsl.data.utils import pad_with_zeros, split_train_test_set, create_patches
 
 
 def standartize_data(X: np.ndarray):
@@ -30,7 +28,8 @@ def augment_data(X_train: np.ndarray):
         if num == 2:
             no = random.randrange(-180, 180, 30)
             flipped_patch = scipy.ndimage.interpolation.rotate(patch, no, axes=(1, 0),
-                                                               reshape=False, output=None, order=3, mode='constant',
+                                                               reshape=False, output=None,
+                                                               order=3, mode='constant',
                                                                cval=0.0, prefilter=False)
         patch2 = flipped_patch
         X_train[i, :, :, :] = patch2
