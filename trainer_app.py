@@ -5,6 +5,7 @@ import torch.nn as nn
 import tensorflow as tf
 from keras.callbacks import Callback
 from tqdm import trange
+from copy import deepcopy
 import numpy as np
 from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
@@ -25,6 +26,7 @@ from openhsl.data.dataset import get_dataset
 from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.models.model import train_one_epoch, val_one_epoch, get_optimizer, get_scheduler
 from openhsl.data.utils import get_palette, convert_to_color_, sample_gt
+import openhsl.data.utils as hsl_utils
 
 from openhsl.models.ssftt import SSFTT
 from openhsl.models.m1dcnn import M1DCNN
@@ -590,7 +592,12 @@ class MainWindow(CIU):
             start_time = get_date_time()
             run_name = f"{self.ui.choose_model_for_train.currentText()}_{start_time[0]}_{start_time[1]}"
 
-            fits = {"hsi": self.current_train_hsi,
+            hsi = deepcopy(self.current_train_hsi)
+            scaler = getattr(hsl_utils, self.ui.scaler_edit.currentText())
+            scaler = scaler(per=self.ui.per_edit.currentText())
+            hsi.data = scaler.fit_transform(hsi.data)
+
+            fits = {"hsi": hsi,
                     "mask": self.current_train_mask,
                     "model": models_dict[str(self.ui.choose_model_for_train.currentText())],
                     "device": self.devices_dict[str(self.ui.device_box2.currentText())],
