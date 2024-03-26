@@ -239,7 +239,6 @@ def val_one_epoch(net: nn.Module,
                   criterion: torch.nn.Module,
                   data_loader: udata.DataLoader,
                   device: torch.device):
-    # TODO : fix me using metrics()
     val_accuracy, total = 0.0, 0.0
     avg_loss = 0
     ignored_labels = data_loader.dataset.ignored_labels
@@ -301,7 +300,6 @@ def train(net: nn.Module,
 
     early_stopping = EarlyStopping(tolerance=5, min_delta=10)
 
-    losses = []
     train_accuracies = []
     val_accuracies = []
     train_loss = []
@@ -309,7 +307,6 @@ def train(net: nn.Module,
     lrs = []
     t = trange(1, epoch + 1, desc='Train loop', leave=True, dynamic_ncols=True)
     for e in t:
-        # Set the network to training mode
         train_metrics = train_one_epoch(net=net,
                                         criterion=criterion,
                                         data_loader=data_loader,
@@ -378,11 +375,6 @@ def train(net: nn.Module,
         if early_stopping.early_stop:
             print("Early stopping")
             break
-
-        if gui_:
-            # update_params in gui
-            # train_metrics
-            pass
 
     if wandb_run:
         wandb_run.finish()
