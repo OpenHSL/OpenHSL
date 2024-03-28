@@ -231,7 +231,7 @@ class HSImage:
             self.save_to_tiff(path_to_file=path_to_data)
         else:
             raise Exception('Unsupported file extension')
-
+    # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_mat(self,
                       path_to_file: str,

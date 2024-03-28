@@ -363,6 +363,11 @@ class HSMask:
         self.load_class_info(path_to_data)
     # ------------------------------------------------------------------------------------------------------------------
 
+    def save(self):
+        pass
+        # TODO release method for all save methods
+    # ------------------------------------------------------------------------------------------------------------------
+
     def save_to_mat(self,
                     path_to_file: str,
                     mat_key: str):
