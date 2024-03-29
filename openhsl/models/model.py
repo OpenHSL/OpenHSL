@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 import os
-import pandas
 import pandas as pd
 import torch
 import torch.optim as optim
 import torch.nn as nn
 import torch.utils.data as udata
+from torcheval.metrics import MulticlassAccuracy
+
 import numpy as np
 import datetime
 from tqdm import trange, tqdm
@@ -16,6 +17,7 @@ from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
                                         sliding_window, sample_gt, convert_to_color_
 from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.utils import init_wandb, init_tensorboard, EarlyStopping
+
 
 SchedulerTypes = Literal['StepLR', 'CosineAnnealingLR', 'ReduceLROnPlateau']
 OptimizerTypes = Literal['SGD', 'Adam', 'Adagrad']
@@ -196,15 +198,30 @@ def get_scheduler(scheduler_type: SchedulerTypes,
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def train_one_epoch(net: torch.nn.Module,
-                    criterion: torch.nn.Module,
+def __calc_acc(output,
+               target,
+               device):
+    metric = MulticlassAccuracy(device=device)
+    _, output = torch.max(output, dim=1)
+
+    indices = torch.nonzero(output)
+    output = output[indices]
+    target = target[indices]
+    metric.update(output.view(-1), target.view(-1))
+    acc = metric.compute()
+
+    return acc
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def train_one_epoch(net: nn.Module,
+                    criterion: nn.Module,
                     data_loader: Iterable,
                     optimizer: torch.optim.Optimizer,
                     device: torch.device):
     net.train()
     avg_train_loss = 0.0
-    train_accuracy = 0.0
-    total = 0
+    train_accuracy = []
     # Run the training loop for one epoch
     losses = []
     for batch_idx, (data, target) in (enumerate(data_loader)):
@@ -218,17 +235,17 @@ def train_one_epoch(net: torch.nn.Module,
         optimizer.step()
         avg_train_loss += loss.item()
         losses.append(loss.item())
-        _, output = torch.max(output, dim=1)
-        for out, pred in zip(output.view(-1), target.view(-1)):
-            if out.item() in [0]:
-                continue
-            else:
-                train_accuracy += out.item() == pred.item()
-                total += 1
+
+        acc = __calc_acc(output=output,
+                         target=target,
+                         device=device)
+
+        train_accuracy.append(acc.to('cpu'))
+
     train_metrics = dict()
 
     train_metrics["avg_train_loss"] = avg_train_loss / len(data_loader)
-    train_metrics["train_acc"] = train_accuracy / total
+    train_metrics["train_acc"] = np.mean(train_accuracy)
     train_metrics["current_lr"] = optimizer.param_groups[0]['lr']
 
     return train_metrics
@@ -236,12 +253,27 @@ def train_one_epoch(net: torch.nn.Module,
 
 
 def val_one_epoch(net: nn.Module,
-                  criterion: torch.nn.Module,
+                  criterion: nn.Module,
                   data_loader: udata.DataLoader,
                   device: torch.device):
-    val_accuracy, total = 0.0, 0.0
+    """
+
+    Parameters
+    ----------
+    net: nn.Module
+        neural network model
+    criterion: nn.Module
+    data_loader
+    device
+
+    Returns
+    -------
+
+    """
+
+    val_accs = []
     avg_loss = 0
-    ignored_labels = data_loader.dataset.ignored_labels
+
     for batch_idx, (data, target) in enumerate(data_loader):
         with torch.no_grad():
             # Load the data into the GPU if required
@@ -249,15 +281,13 @@ def val_one_epoch(net: nn.Module,
             output = net(data)
             loss = criterion(output, target)
             avg_loss += loss.item()
-            _, output = torch.max(output, dim=1)
-            for out, pred in zip(output.view(-1), target.view(-1)):
-                if out.item() in ignored_labels:
-                    continue
-                else:
-                    val_accuracy += out.item() == pred.item()
-                    total += 1
+            acc = __calc_acc(output=output,
+                             target=target,
+                             device=device)
 
-    return val_accuracy / total, avg_loss / len(data_loader)
+            val_accs.append(acc.to('cpu'))
+
+    return np.mean(val_accs), avg_loss / len(data_loader)
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -270,8 +300,7 @@ def train(net: nn.Module,
           device=None,
           val_loader=None,
           wandb_run=None,
-          writer=None,
-          gui_=None
+          writer=None
           ):
     """
     Training loop to optimize a network for several epochs and a specified loss
@@ -318,8 +347,7 @@ def train(net: nn.Module,
         lrs.append(train_metrics["current_lr"])
         val_metrics = dict()
 
-        if val_loader:  # ToDo: not preferable to check if condition every iteration
-            # val_metrics['val_acc'], val_metrics['avg_val_loss'] = val(net, criterion, val_loader, device=device)
+        if val_loader:
             val_metrics['val_acc'], val_metrics['avg_val_loss'] = val_one_epoch(net,
                                                                                 criterion,
                                                                                 val_loader,
@@ -335,11 +363,11 @@ def train(net: nn.Module,
 
             val_loss.append(val_metrics['avg_val_loss'])
             val_accuracies.append(val_metrics['val_acc'])
-            metric = -val_metrics['val_acc']  # ToDo WTF
+            metric = val_metrics['val_acc']
         else:
             metric = train_metrics["avg_train_loss"]
 
-        # Update the scheduler (ToDo: not preferable to check if condition every iteration)
+        # Update the scheduler
         if scheduler is not None:
             scheduler.step()
 
@@ -395,35 +423,8 @@ def train(net: nn.Module,
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def val(net: nn.Module,
-        criterion,
-        data_loader: udata.DataLoader,
-        device: torch.device):
-    # TODO : fix me using metrics()
-    val_accuracy, total = 0.0, 0.0
-    avg_loss = 0
-    ignored_labels = data_loader.dataset.ignored_labels
-    for batch_idx, (data, target) in enumerate(data_loader):
-        with torch.no_grad():
-            # Load the data into the GPU if required
-            data, target = data.to(device), target.to(device)
-            output = net(data)
-            loss = criterion(output, target)
-            avg_loss += loss.item()
-            _, output = torch.max(output, dim=1)
-            for out, pred in zip(output.view(-1), target.view(-1)):
-                if out.item() in ignored_labels:
-                    continue
-                else:
-                    val_accuracy += out.item() == pred.item()
-                    total += 1
-
-    return val_accuracy / total, avg_loss / len(data_loader)
-# ----------------------------------------------------------------------------------------------------------------------
-
-
 def test(net: nn.Module,
-         img: np.array,
+         img: np.ndarray,
          hyperparams):
     """
     Test a model on a specific image
@@ -443,9 +444,12 @@ def test(net: nn.Module,
     probs = np.zeros(img.shape[:2] + (n_classes,))
     net.to(device)
     iterations = count_sliding_window(img, **kwargs) // batch_size
-    for batch in tqdm(grouper(batch_size, sliding_window(img, **kwargs)),
-                      total=iterations,
-                      desc="Inference on the image"):
+
+    t = tqdm(grouper(batch_size, sliding_window(img, **kwargs)),
+             total=iterations,
+             desc="Inference on the image")
+
+    for batch in t:
         with torch.no_grad():
             if patch_size == 1:
                 data = [b[0][0, 0] for b in batch]
@@ -461,19 +465,21 @@ def test(net: nn.Module,
             indices = [b[1:] for b in batch]
             data = data.to(device, dtype=torch.float)
             output = net(data)
+
             if isinstance(output, tuple):
                 output = output[0]
             output = output.to("cpu")
 
-            if patch_size == 1 or center_pixel:
-                output = output.numpy()
-            else:
-                output = np.transpose(output.numpy(), (0, 2, 3, 1))
+            output = output.numpy()
+            if patch_size != 1 and not center_pixel:
+                output = np.transpose(output, (0, 2, 3, 1))
+
             for (x, y, w, h), out in zip(indices, output):
                 if center_pixel:
                     probs[x + w // 2, y + h // 2] += out
                 else:
                     probs[x: x + w, y: y + h] += out
+
     return probs
 # ----------------------------------------------------------------------------------------------------------------------
 
