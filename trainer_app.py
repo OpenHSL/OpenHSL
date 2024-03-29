@@ -27,6 +27,7 @@ from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.models.model import train_one_epoch, val_one_epoch, get_optimizer, get_scheduler
 from openhsl.data.utils import get_palette, convert_to_color_, sample_gt
 import openhsl.data.utils as hsl_utils
+from openhsl.models.utils import get_mean_weights
 
 from openhsl.models.ssftt import SSFTT
 from openhsl.models.m1dcnn import M1DCNN
@@ -247,6 +248,9 @@ class MainWindow(CIU):
         self.imported_weights = {}
         self.show()
 
+        # set list of models as multiple selection
+        self.ui.list_of_models.setSelectionMode(self.ui.list_of_models.MultiSelection)
+
         devices = get_gpu_info()
         self.devices_dict = {"cpu": "cpu"}
         devices.remove("cpu")
@@ -313,6 +317,7 @@ class MainWindow(CIU):
         self.ui.stop_train_btn.clicked.connect(self.stop_train)
         self.ui.start_inference_btn.clicked.connect(self.start_inference)
         self.ui.estimate_btn.clicked.connect(self.estimate)
+        self.ui.get_average_btn.clicked.connect(self.get_average)
 
         # OTHER INTERACT
         self.ui.horizontalSlider.valueChanged.connect(
@@ -333,6 +338,21 @@ class MainWindow(CIU):
 
         self.ui.image_view_box.currentIndexChanged.connect(self.view_changed)
         self.ui.cm_slider.valueChanged.connect(self.update_cm)
+
+    def get_average(self):
+        items = self.ui.list_of_models.selectedItems()
+        if len(items) > 1:
+            try:
+                weights = [self.imported_weights[item.text()] for item in items]
+                weights = [torch.load(weight, map_location="cpu") for weight in weights]
+                mean_weights = get_mean_weights(weights)
+                time = get_date_time()
+                name = f"mean_weights_{time[0]}_{time[1]}"
+                torch.save(mean_weights, f"checkpoints/{name}.pth")
+                self.imported_weights[name] = f"checkpoints/{name}.pth"
+                self.stack_str_in_QListWidget(self.ui.list_of_models, name)
+            except Exception as e:
+                self.show_error(str(e))
 
     def import_weights(self):
         file_name, _ = QFileDialog.getOpenFileName(self,
