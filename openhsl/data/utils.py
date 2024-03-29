@@ -4,13 +4,56 @@ import itertools
 import numpy as np
 import sklearn.model_selection
 import seaborn as sns
-from typing import Tuple, Literal
+from openhsl.hs_mask import HSMask
+from typing import Tuple, Literal, Union
 from sklearn.decomposition import PCA
+from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
 
 
 ScaleType = Literal['band', 'pixel']
 SamplerMod = Literal['random', 'fixed', 'disjoint']
+
+
+def __prepare_pred_target(prediction, target):
+    prediction = prediction.flatten()
+
+    if isinstance(target, HSMask):
+        target = target.get_2d()
+    target = target.flatten()
+
+    # remove all pixels with zero-value mask
+    indices = np.nonzero(target)
+    prediction = prediction[indices]
+    target = target[indices]
+
+    return prediction, target
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def get_accuracy(prediction: np.ndarray,
+                 target: Union[np.ndarray, HSMask],
+                 *args,
+                 **kwargs):
+    prediction, target = __prepare_pred_target(prediction, target)
+
+    return accuracy_score(target, prediction, *args, **kwargs)
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def get_f1(prediction: np.ndarray,
+           target: Union[np.ndarray, HSMask],
+           *args,
+           **kwargs):
+    prediction, target = __prepare_pred_target(prediction, target)
+
+    return f1_score(prediction, target, *args, **kwargs)
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def get_confusion_matrix():
+    pass
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class HyperStandardScaler:
