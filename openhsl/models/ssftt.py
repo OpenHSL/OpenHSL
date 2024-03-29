@@ -6,7 +6,7 @@ from torch import nn
 import torch.nn.init as init
 from typing import Any, Dict, Optional, Union
 import numpy as np
-from openhsl.models.model import train, val, test, save_model, save_train_mask
+from openhsl.models.model import train, save_train_mask
 
 from openhsl.models.model import Model
 from openhsl.hsi import HSImage
@@ -229,6 +229,7 @@ class SSFTT(Model):
         self.hyperparams['batch_size'] = fit_params['batch_size']
 
         img, gt = get_dataset(hsi=X, mask=y)
+
         train_gt, _ = sample_gt(gt=gt,
                                 train_size=fit_params['train_sample_percentage'],
                                 mode=fit_params['dataloader_mode'],
@@ -246,7 +247,6 @@ class SSFTT(Model):
         fit_params.setdefault('train_sample_percentage', 0.5)
         fit_params.setdefault('dataloader_mode', 'random')
         fit_params.setdefault('loss', nn.CrossEntropyLoss())
-        #fit_params.setdefault('batch_size', 32)
         fit_params.setdefault('optimizer_params', {'learning_rate': 0.001, 'weight_decay': 0})
         fit_params.setdefault('optimizer',
                               optim.Adam(self.model.parameters(),
@@ -295,18 +295,15 @@ class SSFTT(Model):
     def predict(self,
                 X: HSImage,
                 y: Optional[HSMask] = None,
-                batch_size=64) -> np.ndarray:
+                batch_size=32) -> np.ndarray:
 
         self.hyperparams["test_stride"] = 1
         self.hyperparams["batch_size"] = batch_size
-        img, gt = get_dataset(X, mask=None)
 
-        self.model.eval()
-
-        probabilities = test(net=self.model,
-                             img=img,
-                             hyperparams=self.hyperparams)
-        prediction = np.argmax(probabilities, axis=-1)
+        prediction = super().predict_nn(X=X,
+                                        y=y,
+                                        model=self.model,
+                                        hyperparams=self.hyperparams)
 
         return prediction
 
