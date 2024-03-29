@@ -363,9 +363,21 @@ class HSMask:
         self.load_class_info(path_to_data)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save(self):
-        pass
-        # TODO release method for all save methods
+    def save(self,
+             path_to_file: str,
+             key: str = 'img'):
+        if path_to_file.endswith('.mat'):
+            self.save_to_mat(path_to_file=path_to_file, mat_key=key)
+        elif path_to_file.endswith('.h5'):
+            self.save_to_h5(path_to_file=path_to_file, h5_key=key)
+        elif path_to_file.endswith('.tiff'):
+            self.save_to_tiff(path_to_file=path_to_file)
+        elif path_to_file.endswith('.npy'):
+            self.save_to_npy(path_to_file=path_to_file)
+        elif path_to_file.endswith('.png') or path_to_file.endswith('.bmp'):
+            self.save_image(path_to_save_file=path_to_file)
+        else:
+            raise Exception('Unsupported extension')
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_mat(self,
