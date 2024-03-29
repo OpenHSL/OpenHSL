@@ -510,7 +510,7 @@
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <property name="spacing">
-           <number>0</number>
+           <number>-1</number>
           </property>
           <property name="leftMargin">
            <number>0</number>
@@ -538,6 +538,15 @@
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="view_box">
+            <item>
+             <property name="text">
+              <string>layers</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item>

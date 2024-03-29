@@ -11,6 +11,7 @@ from PyQt5.QtCore import QThread, QObject, pyqtSignal as Signal, pyqtSlot as Slo
 
 from openhsl.build.builder import HSBuilder
 from openhsl.hsi import HSImage
+from openhsl.utils import hsi_to_rgb
 
 from pprint import pprint
 
@@ -52,6 +53,7 @@ class MainWindow(CIU):
         self.hsis = {}
         self.pixel_color = None
         self.current_pixel = None
+        self.current_hsi = None
 
         # THREAD SETUP
         self.worker = Worker()
@@ -98,12 +100,30 @@ class MainWindow(CIU):
         self.ui.metadata_checkbox.stateChanged.connect(
             lambda: self.change_state_btn_cause_checkbox(self.ui.check_light_norm))
 
+        self.ui.view_box.currentIndexChanged.connect(self.view_changed)
+
         self.show()
+
+    def view_changed(self):
+        if self.current_image is None: return
+        state = self.ui.view_box.currentText()
+        if state == "layers":
+            self.current_image = self.current_hsi.data
+            self.update_current_image(self.ui.horizontalSlider.value(),
+                                      self.ui.check_high_contast.isChecked(),
+                                      self.ui.spinBox.value(),
+                                      self.ui.image_label)
+        elif state == "RGB":
+            self.current_image = hsi_to_rgb(self.current_hsi)
+            self.update_current_image(self.ui.horizontalSlider.value(),
+                                      False,
+                                      0,
+                                      self.ui.image_label)
 
     def import_hsi(self):
         file_name, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
-                                                     "(*.npy);;(*.mat);;(*.h5);;(*.tiff)",
-                                                     options=QFileDialog.Options())
+                                                   "(*.npy);;(*.mat);;(*.h5);;(*.tiff)",
+                                                   options=QFileDialog.Options())
         if file_name:
             hsi = HSImage()
             name = self.cut_path_with_deep(file_name, 1)
@@ -191,7 +211,18 @@ class MainWindow(CIU):
         if item:
             item = item.text()
             hsi = self.hsis[item]["hsi"]
-            pprint(self.hsis)
+            ### IT's a HARDCODE SHIT!!!!!!!!!!!!!
+            import numpy as np
+            hsi.wavelengths = np.linspace(320, 920, 103)
+            ### IT"S A HARDCODE SHIT END!!!!!!!!!!!
+            self.current_hsi = hsi
+
+            if len(hsi.wavelengths) == hsi.data.shape[2]:
+                self.ui.view_box.addItem("RGB")
+
+            else:
+                self.ui.view_box.removeItem(1)
+
             self.current_image = hsi.data
             self.ui.spinBox.setValue(0)
             self.ui.spinBox.setMaximum(self.current_image.shape[2] - 1)
