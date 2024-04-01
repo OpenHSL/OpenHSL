@@ -1,14 +1,13 @@
-import os.path
-
+import json
 import h5py
-import rasterio
 import numpy as np
+import os.path
+import rasterio
+
 from os import listdir, mkdir
-from os.path import isdir, splitext
 from PIL import Image
 from scipy.io import loadmat, savemat
 from typing import Optional, List
-import json
 
 
 class HSImage:
@@ -57,6 +56,7 @@ class HSImage:
         if hsi is None:
             print('Created void HSI data')
         self.data = hsi
+
         if wavelengths is None:
             print('Wavelengths data is empty')
         self.wavelengths = wavelengths
@@ -64,6 +64,17 @@ class HSImage:
     # ------------------------------------------------------------------------------------------------------------------
 
     def __getitem__(self, item):
+        """
+        Returns i-channel of HSI
+
+        Parameters
+        ----------
+        item
+
+        Returns
+        -------
+
+        """
         if item < len(self):
             return self.data[:, :, item]
         else:
@@ -84,8 +95,8 @@ class HSImage:
 
         ^ y
         | [0][1][2]
-        | [2][3][4] --> [1][2][3][4][5][6][7][8][9]
-        | [5][6][7]
+        | [3][4][5] --> [0][1][2][3][4][5][6][7][8]
+        | [6][7][8]
         --------> x
 
         Returns
@@ -102,8 +113,8 @@ class HSImage:
 
                                           ^ y
                                           | [0][1][2]
-        [1][2][3][4][5][6][7][8][9] -->   | [2][3][4] -> [1][2][3][4][5][6][7][8][9]
-                                          | [5][6][7]
+        [0][1][2][3][4][5][6][7][8] -->   | [3][4][5]
+                                          | [6][7][8]
                                           --------> x
 
         Parameters
@@ -389,9 +400,6 @@ class HSImage:
              'width': self.data.shape[1],
              'height': self.data.shape[0],
              'count': self.data.shape[2],
-             # 'crs': CRS.from_epsg(32736),
-             # 'transform': Affine(10.0, 0.0, 653847.1979372115, 0.0, -10.0, 7807064.5603836905),
-             # 'tiled': False,
              'interleave': 'band'}
 
         with rasterio.open(path_to_file, 'w', **d) as dst:
@@ -451,11 +459,14 @@ class HSImage:
             img_format: str
                 Format of images (png, jpg, jpeg, bmp)
         """
-        if not isdir(path_to_dir):
+        if not os.path.isdir(path_to_dir):
             mkdir(path_to_dir)
-        for i in range(self.data.shape[-1]):
-            if format in ('png', 'jpg', 'jpeg', 'bmp'):
+
+        supported_formats = tuple(['png', 'jpg', 'jpeg', 'bmp'])
+
+        if img_format in supported_formats:
+            for i in range(self.data.shape[-1]):
                 Image.fromarray(self.data[:, :, i]).convert("L").save(f'{path_to_dir}/{i}.{img_format}')
-            else:
-                raise Exception('Unexpected format')
+        else:
+            raise Exception('Unexpected format')
     # ------------------------------------------------------------------------------------------------------------------
