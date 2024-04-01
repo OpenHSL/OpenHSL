@@ -1,15 +1,16 @@
-import numpy as np
-from openhsl.hsi import HSImage
-from openhsl.build.raw_pb_data import RawData
-from openhsl.build.uav_builder import build_hypercube_by_videos
-from typing import Optional, Dict
-from openhsl.utils import gaussian
-
 import cv2
 import json
 import math
-from tqdm import tqdm
+import numpy as np
+
+from openhsl.utils import gaussian
 from sklearn.linear_model import LinearRegression
+from tqdm import tqdm
+from typing import Optional, Dict
+
+from openhsl.hsi import HSImage
+from openhsl.build.raw_pb_data import RawData
+from openhsl.build.uav_builder import build_hypercube_by_videos
 
 
 class HSBuilder:
@@ -81,7 +82,6 @@ class HSBuilder:
         self.light_coeff = np.array(d.get('light_norm', None))
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO move?
     @staticmethod
     def __norm_frame_camera_illumination(frame: np.ndarray,
                                          light_coeff: np.ndarray) -> np.ndarray:
@@ -108,10 +108,8 @@ class HSBuilder:
                             f'light shape is: {light_coeff.shape}\n')
 
         return np.multiply(frame.astype("uint8"), light_coeff).astype("uint8")
-        #return np.multiply(frame, light_coeff) * np.tile(frame[frame.shape[0] // 2, :], (np.shape(frame)[0], 1))
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO move?
     @staticmethod
     def __get_slit_angle(frame: np.ndarray) -> float:
         """
@@ -136,7 +134,6 @@ class HSBuilder:
         return ang
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO move?
     @staticmethod
     def __norm_rotation_frame(frame: np.ndarray) -> np.ndarray:
         """
@@ -165,7 +162,6 @@ class HSBuilder:
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO implementation will move into device
     @staticmethod
     def __norm_barrel_distortion(frame: np.ndarray) -> np.ndarray:
         """
@@ -236,7 +232,6 @@ class HSBuilder:
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO implementation will move into device
     @staticmethod
     def get_roi(frame: np.ndarray, roi_coords: Dict) -> np.ndarray:
         """
@@ -261,7 +256,6 @@ class HSBuilder:
         return frame[up_bound: down_bound, left_bound_spectrum: right_bound_spectrum]
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO rename
     @staticmethod
     def __principal_slices(frame: np.ndarray,
                            nums_bands: int) -> np.ndarray:
@@ -298,16 +292,6 @@ class HSBuilder:
         return ans
     # ------------------------------------------------------------------------------------------------------------------
 
-    @staticmethod
-    def load_light_coeff(path_to_file):
-        light_coeff = cv2.imread(path_to_file, 0)
-        #light_coeff = HSBuilder.__norm_frame_camera_geometry(light_coeff,
-        #                                                     norm_rotation=norm_rotation,
-        #                                                     barrel_dist_norm=barrel_dist_norm)
-        light_coeff = HSBuilder.get_roi(frame=light_coeff)
-        return 1.0 / (light_coeff / np.max(light_coeff))
-    # ------------------------------------------------------------------------------------------------------------------
-
     def build(self,
               principal_slices=False,
               norm_rotation=False,
@@ -318,12 +302,6 @@ class HSBuilder:
         """
             Creates HSI from device-data
         """
-
-        #if light_norm:
-        #    light_coeff = HSBuilder.load_light_coeff(path_to_file='./test_data/builder/micro_light_source.png')
-        #else:
-        #    light_coeff = None
-
         preproc_frames = []
         for frame in tqdm(self.frame_iterator,
                           total=len(self.frame_iterator),
