@@ -1,21 +1,21 @@
-from abc import ABC, abstractmethod
+import datetime
+import numpy as np
 import os
 import pandas as pd
 import torch
 import torch.optim as optim
 import torch.nn as nn
 import torch.utils.data as udata
-from torcheval.metrics import MulticlassAccuracy
 
-import numpy as np
-import datetime
+from abc import ABC, abstractmethod
 from tqdm import trange, tqdm
+from torcheval.metrics import MulticlassAccuracy
 from typing import Iterable, Dict, Literal
 
 from openhsl.data.dataset import get_dataset
+from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
                                         sliding_window, sample_gt, convert_to_color_
-from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.utils import init_wandb, init_tensorboard, EarlyStopping
 
 
@@ -86,7 +86,6 @@ class Model(ABC):
         -------
 
         """
-        # TODO ignored_labels and label_values for what?
         img, gt = get_dataset(hsi=X, mask=y)
 
         hyperparams['batch_size'] = fit_params['batch_size']

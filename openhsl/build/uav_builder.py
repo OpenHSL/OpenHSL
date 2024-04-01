@@ -1,11 +1,12 @@
 import cv2
+import itertools
 import math
 import numpy as np
 import pandas as pd
-import itertools
 
 from sklearn import neighbors
 from typing import List, Tuple
+
 
 CSV_DELIMITER = ';'
 GPS_HYPERCAM_FRAME = "Hypercam frame"

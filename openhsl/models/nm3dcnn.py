@@ -1,16 +1,15 @@
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-
-from openhsl.models.model import Model
-
 import numpy as np
-from typing import Any, Optional, Dict, Union
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
+
 from torch.nn import init
+from typing import Any, Optional, Dict, Union
+
+from openhsl.hsi import HSImage
+from openhsl.hs_mask import HSMask
+from openhsl.models.model import Model
 
 
 class ParallelConvBlock(nn.Module):

@@ -1,9 +1,10 @@
+import copy
 import numpy as np
-from typing import Optional
+
+from typing import Optional, Tuple
+
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
-from typing import Tuple
-import copy
 
 
 def get_dataset(hsi: HSImage, mask: Optional[HSMask] = None) -> Tuple[np.ndarray, np.ndarray]:

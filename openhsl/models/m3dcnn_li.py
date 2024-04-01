@@ -1,15 +1,15 @@
-from openhsl.models.model import Model
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-
 import numpy as np
-from typing import Any, Optional, Dict, Union
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.nn import init
 import torch.nn.functional as F
+
+from torch.nn import init
+from typing import Any, Optional, Dict, Union
+
+from openhsl.models.model import Model
+from openhsl.hsi import HSImage
+from openhsl.hs_mask import HSMask
 
 
 class Li3DCNN_Net(nn.Module):

@@ -1,15 +1,15 @@
-from openhsl.models.model import Model
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-
-import numpy as np
 import math
-from typing import Any, Optional, Dict, Union
-
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
 from torch.nn import init
+from typing import Any, Optional, Dict, Union
+
+from openhsl.hsi import HSImage
+from openhsl.hs_mask import HSMask
+from openhsl.models.model import Model
 
 
 class M1DCNN_Net(nn.Module):
