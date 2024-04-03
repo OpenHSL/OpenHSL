@@ -1,5 +1,6 @@
 import sys
 import json
+from copy import deepcopy
 from PyQt5.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit
 
 from gui.utils import (get_date_time, save_json_dict, create_dir_if_not_exist,
@@ -73,6 +74,7 @@ class MainWindow(CIU):
         self.ui.save_as_btn.clicked.connect(self.save_hsi)
         self.ui.delete_hsi.clicked.connect(self.delete_hsi_from_hsi_Qlist)
         self.ui.import_hsi.clicked.connect(self.import_hsi)
+        self.ui.white_point_btn.clicked.connect(self.set_white_point)
 
         # OHTER INTERACT
         self.ui.horizontalSlider.valueChanged.connect(
@@ -103,6 +105,16 @@ class MainWindow(CIU):
         self.ui.view_box.currentIndexChanged.connect(self.view_changed)
 
         self.show()
+
+    def set_white_point(self):
+        if self.current_hsi is None: return
+        if self.current_pixel is None: return
+        new_hsi = deepcopy(self.current_hsi)
+        hyperpixel = new_hsi.data[self.current_pixel[1], self.current_pixel[0], :]
+        new_hsi.calibrate_white_reference(hyperpixel)
+        time = get_date_time()[1]
+        self.hsis[f"{time}_white_point"] = {"hsi": new_hsi}
+        self.stack_str_in_QListWidget(self.ui.hsi_Qlist, f"{time}_white_point")
 
     def view_changed(self):
         if self.current_image is None: return
