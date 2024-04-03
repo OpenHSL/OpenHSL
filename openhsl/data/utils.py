@@ -4,13 +4,56 @@ import itertools
 import numpy as np
 import sklearn.model_selection
 import seaborn as sns
-from typing import Tuple, Literal
+from openhsl.hs_mask import HSMask
+from typing import Tuple, Literal, Union
 from sklearn.decomposition import PCA
+from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
 
 
 ScaleType = Literal['band', 'pixel']
 SamplerMod = Literal['random', 'fixed', 'disjoint']
+
+
+def __prepare_pred_target(prediction, target):
+    prediction = prediction.flatten()
+
+    if isinstance(target, HSMask):
+        target = target.get_2d()
+    target = target.flatten()
+
+    # remove all pixels with zero-value mask
+    indices = np.nonzero(target)
+    prediction = prediction[indices]
+    target = target[indices]
+
+    return prediction, target
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def get_accuracy(prediction: np.ndarray,
+                 target: Union[np.ndarray, HSMask],
+                 *args,
+                 **kwargs):
+    prediction, target = __prepare_pred_target(prediction, target)
+
+    return accuracy_score(target, prediction, *args, **kwargs)
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def get_f1(prediction: np.ndarray,
+           target: Union[np.ndarray, HSMask],
+           *args,
+           **kwargs):
+    prediction, target = __prepare_pred_target(prediction, target)
+
+    return f1_score(prediction, target, *args, **kwargs)
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def get_confusion_matrix():
+    pass
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class HyperStandardScaler:
@@ -44,6 +87,7 @@ class HyperStandardScaler:
     def fit_transform(self, X: np.ndarray):
         self.fit(X)
         return self.transform(X)
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class HyperMinMaxScaler:
@@ -77,6 +121,7 @@ class HyperMinMaxScaler:
     def fit_transform(self, X: np.ndarray):
         self.fit(X)
         return self.transform(X)
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def split_train_test_set(X: np.ndarray,
@@ -88,6 +133,7 @@ def split_train_test_set(X: np.ndarray,
                                                         random_state=345,
                                                         stratify=y)
     return X_train, X_test, y_train, y_test
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def create_patches(X: np.ndarray,
@@ -114,6 +160,7 @@ def create_patches(X: np.ndarray,
         patches_labels = patches_labels[patches_labels > 0]
 
     return patches_data, patches_labels
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def is_coordinate_in_padded_area(coordinates: Tuple,
@@ -144,6 +191,7 @@ def apply_pca(X: np.ndarray,
     Args:
         X:
         num_components:
+        pca:
 
     Returns:
 
@@ -214,6 +262,7 @@ def get_device(ordinal: int):
         print("/!\\ CUDA was requested but is not available! Computation will go on CPU. /!\\")
         device = torch.device('cpu')
     return device
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def sliding_window(image, step=10, window_size=(20, 20), with_data=True):
@@ -261,9 +310,12 @@ def sliding_window(image, step=10, window_size=(20, 20), with_data=True):
                 yield image[x:x + w, y:y + h], x, y, w, h
             else:
                 yield x, y, w, h
+# ----------------------------------------------------------------------------------------------------------------------
 
 
-def count_sliding_window(top, step=10, window_size=(20, 20)):
+def count_sliding_window(top,
+                         step=10,
+                         window_size=(20, 20)):
     """ Count the number of windows in an image.
 
     Args:
@@ -275,6 +327,7 @@ def count_sliding_window(top, step=10, window_size=(20, 20)):
     """
     sw = sliding_window(top, step, window_size, with_data=False)
     return sum(1 for _ in sw)
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def grouper(n, iterable):
@@ -293,6 +346,7 @@ def grouper(n, iterable):
         if not chunk:
             return
         yield chunk
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def sample_gt(gt: np.ndarray,
@@ -367,11 +421,13 @@ def sample_gt(gt: np.ndarray,
     else:
         raise ValueError(f"{mode} sampling is not implemented yet.")
     return train_gt, test_gt
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def camel_to_snake(name):
     s = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s).lower()
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def get_palette(num_classes):
@@ -380,6 +436,7 @@ def get_palette(num_classes):
         palette[k + 1] = tuple(np.asarray(255 * np.array(color), dtype="uint8"))
 
     return palette
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def convert_to_color_(arr_2d, palette=None):
@@ -402,3 +459,4 @@ def convert_to_color_(arr_2d, palette=None):
         arr_3d[m] = i
 
     return arr_3d
+# ----------------------------------------------------------------------------------------------------------------------

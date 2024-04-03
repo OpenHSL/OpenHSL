@@ -1,16 +1,15 @@
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-
-from openhsl.models.model import Model
-
 import numpy as np
-from typing import Any, Optional, Dict, Union
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
+
 from torch.nn import init
+from typing import Any, Optional, Dict, Union
+
+from openhsl.hsi import HSImage
+from openhsl.hs_mask import HSMask
+from openhsl.models.model import Model
 
 
 class ParallelConvBlock(nn.Module):
@@ -183,6 +182,7 @@ class NM3DCNN(Model):
         self.val_loss = history["val_loss"]
         self.train_accs = history["train_accuracy"]
         self.val_accs = history["val_accuracy"]
+        self.lrs = history["lr"]
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,

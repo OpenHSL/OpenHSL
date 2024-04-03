@@ -1,15 +1,15 @@
-from openhsl.models.model import Model
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-
 import numpy as np
-from typing import Any, Optional, Dict, Union
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.nn import init
 import torch.nn.functional as F
+
+from torch.nn import init
+from typing import Any, Optional, Dict, Union
+
+from openhsl.models.model import Model
+from openhsl.hsi import HSImage
+from openhsl.hs_mask import HSMask
 
 
 class Li3DCNN_Net(nn.Module):
@@ -134,6 +134,7 @@ class M3DCNN(Model):
         self.val_loss = history["val_loss"]
         self.train_accs = history["train_accuracy"]
         self.val_accs = history["val_accuracy"]
+        self.lrs = history["lr"]
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,

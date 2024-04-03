@@ -1,10 +1,10 @@
+import numpy as np
 import random
 import scipy
-import numpy as np
 import scipy.ndimage
 
 from sklearn import preprocessing
-from typing import Optional, Dict
+
 from openhsl.data.utils import pad_with_zeros, split_train_test_set, create_patches
 
 

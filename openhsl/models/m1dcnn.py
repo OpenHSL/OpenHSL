@@ -1,15 +1,15 @@
-from openhsl.models.model import Model
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-
-import numpy as np
 import math
-from typing import Any, Optional, Dict, Union
-
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
 from torch.nn import init
+from typing import Any, Optional, Dict, Union
+
+from openhsl.hsi import HSImage
+from openhsl.hs_mask import HSMask
+from openhsl.models.model import Model
 
 
 class M1DCNN_Net(nn.Module):
@@ -141,6 +141,7 @@ class M1DCNN(Model):
         self.val_loss = history["val_loss"]
         self.train_accs = history["train_accuracy"]
         self.val_accs = history["val_accuracy"]
+        self.lrs = history["lr"]
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,

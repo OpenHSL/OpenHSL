@@ -1,14 +1,13 @@
-import os
 import numpy as np
+import os
+import tensorflow as tf
 import wandb
 
-from typing import Optional, Dict, Any, Union
-
-import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten, Conv2D, BatchNormalization
 from keras.optimizers import SGD
 from keras.callbacks import Callback
+from typing import Optional, Dict, Any, Union
 
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask

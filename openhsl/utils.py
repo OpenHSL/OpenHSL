@@ -1,23 +1,23 @@
-import os
-import yaml
 import math
-import wandb
-import numpy as np
 import matplotlib.patches as mpatches
+import numpy as np
+import os
+import wandb
+import yaml
 
+from itertools import product
 from pathlib import Path
 from sklearn.cluster import KMeans, SpectralClustering
-from scipy.io import loadmat
 from scipy.interpolate import interp1d
+from scipy.io import loadmat
 from scipy.stats import ttest_ind
-from itertools import product
 from matplotlib import pyplot as plt
-from typing import Union, List, Tuple, Literal
-from tqdm import trange
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import trange
+from typing import Union, List, Tuple, Literal
 
-from openhsl.hsi import HSImage
 from openhsl.data.utils import convert_to_color_, get_palette
+from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 
 
@@ -27,7 +27,7 @@ def dir_exists(path: str) -> bool:
 
 
 def load_data(path: str,
-              exts: list) -> List:
+              exts: List) -> List:
     return [str(p) for p in Path(path).glob("*") if p.suffix[1:] in exts]
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -265,7 +265,9 @@ def get_cluster(cl_type):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def cluster_hsi(hsi: HSImage, n_clusters: int = 2, cl_type='Kmeans') -> np.ndarray:
+def cluster_hsi(hsi: HSImage,
+                n_clusters: int = 2,
+                cl_type='Kmeans') -> np.ndarray:
     km = get_cluster(cl_type=cl_type)(n_clusters=n_clusters)
     h, w, _ = hsi.data.shape
     pred = km.fit_predict(hsi.to_spectral_list())
@@ -273,7 +275,7 @@ def cluster_hsi(hsi: HSImage, n_clusters: int = 2, cl_type='Kmeans') -> np.ndarr
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def ANDVI(hsi):
+def ANDVI(hsi: HSImage):
     def ndi(img: np.ndarray,
             l_red: int,
             r_red: int,
@@ -293,11 +295,11 @@ def ANDVI(hsi):
 
     p_v = []
     for i in trange(98, 148):
-        mask = ndi(hsi, 97, i, 148, 250)
-        p_v.append(np.mean(get_ttest(hsi, mask)[1]))
+        mask = ndi(hsi.data, 97, i, 148, 250)
+        p_v.append(np.mean(get_ttest(hsi.data, mask)[1]))
     res_red_right = int(np.argmin(np.log(p_v)))
     print(f'right border of red is {res_red_right + 97}\'s band')
-    return ndi(hsi, 97, res_red_right + 97, 148, 250)
+    return ndi(hsi.data, 97, res_red_right + 97, 148, 250)
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -312,7 +314,7 @@ def norm_diff_index(channel_1: np.ndarray,
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def ANDI(hsi: np.ndarray,
+def ANDI(hsi: HSImage,
          example_1: np.ndarray,
          example_2: np.ndarray) -> np.ndarray:
     example_1_size = example_1[:, :, 0].size
@@ -348,8 +350,8 @@ def ANDI(hsi: np.ndarray,
 
     print(best_idx)
 
-    ndi = norm_diff_index(channel_1=hsi[:, :, best_idx[0]],
-                          channel_2=hsi[:, :, best_idx[1]])
+    ndi = norm_diff_index(channel_1=hsi.data[:, :, best_idx[0]],
+                          channel_2=hsi.data[:, :, best_idx[1]])
 
     return ndi
 # ----------------------------------------------------------------------------------------------------------------------

@@ -658,7 +658,6 @@ class MainWindow(CIU):
 
                 self.imported_weights[data["run_name"]] = f"checkpoints/{data['run_name']}.pth"
 
-
         if "end" in data:
             self.ui.start_learning_btn.setEnabled(True)
             return
@@ -678,7 +677,13 @@ class MainWindow(CIU):
         item = self.ui.list_of_models.currentItem()
         if self.current_test_hsi and item:
             weight_path = self.imported_weights[item.text()]
-            fits = {"hsi": self.current_test_hsi,
+
+            hsi = deepcopy(self.current_test_hsi)
+            scaler = getattr(hsl_utils, self.ui.scaler_inf_edit.currentText())
+            scaler = scaler(per=self.ui.per_inf_edit.currentText())
+            hsi.data = scaler.fit_transform(hsi.data)
+
+            fits = {"hsi": hsi,
                     "weights": weight_path,
                     "device": str(self.ui.device_box.currentText()),
                     "model": models_dict[str(self.ui.choose_model_for_inference.currentText())]}

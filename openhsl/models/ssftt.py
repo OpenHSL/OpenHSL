@@ -1,19 +1,20 @@
+import numpy as np
 import torch
 import torch.nn.functional as F
+import torch.nn.init as init
 import torch.optim as optim
+
 from einops import rearrange
 from torch import nn
-import torch.nn.init as init
 from typing import Any, Dict, Optional, Union
-import numpy as np
-from openhsl.models.model import train, val, test, save_model, save_train_mask
 
-from openhsl.models.model import Model
+from openhsl.data.dataset import get_dataset
+from openhsl.data.torch_dataloader import create_torch_loader
+from openhsl.data.utils import sample_gt, camel_to_snake
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
-from openhsl.data.dataset import get_dataset
-from openhsl.data.utils import sample_gt, camel_to_snake
-from openhsl.data.torch_dataloader import create_torch_loader
+from openhsl.models.model import train, save_train_mask
+from openhsl.models.model import Model
 
 
 def _weights_init(m):
@@ -229,6 +230,7 @@ class SSFTT(Model):
         self.hyperparams['batch_size'] = fit_params['batch_size']
 
         img, gt = get_dataset(hsi=X, mask=y)
+
         train_gt, _ = sample_gt(gt=gt,
                                 train_size=fit_params['train_sample_percentage'],
                                 mode=fit_params['dataloader_mode'],
@@ -246,7 +248,6 @@ class SSFTT(Model):
         fit_params.setdefault('train_sample_percentage', 0.5)
         fit_params.setdefault('dataloader_mode', 'random')
         fit_params.setdefault('loss', nn.CrossEntropyLoss())
-        #fit_params.setdefault('batch_size', 32)
         fit_params.setdefault('optimizer_params', {'learning_rate': 0.001, 'weight_decay': 0})
         fit_params.setdefault('optimizer',
                               optim.Adam(self.model.parameters(),
@@ -290,23 +291,21 @@ class SSFTT(Model):
         self.val_loss = history["val_loss"]
         self.train_accs = history["train_accuracy"]
         self.val_accs = history["val_accuracy"]
+        self.lrs = history["lr"]
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
                 X: HSImage,
                 y: Optional[HSMask] = None,
-                batch_size=64) -> np.ndarray:
+                batch_size=32) -> np.ndarray:
 
         self.hyperparams["test_stride"] = 1
         self.hyperparams["batch_size"] = batch_size
-        img, gt = get_dataset(X, mask=None)
 
-        self.model.eval()
-
-        probabilities = test(net=self.model,
-                             img=img,
-                             hyperparams=self.hyperparams)
-        prediction = np.argmax(probabilities, axis=-1)
+        prediction = super().predict_nn(X=X,
+                                        y=y,
+                                        model=self.model,
+                                        hyperparams=self.hyperparams)
 
         return prediction
 

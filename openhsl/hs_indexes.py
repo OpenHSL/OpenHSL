@@ -1,9 +1,11 @@
 import numpy as np
+
 from itertools import product
 from typing import Union, Tuple
-from openhsl.utils import get_hypercube_and_wavelength, get_band_numbers
-from openhsl.hs_mask import HSMask
+
 from openhsl.hsi import HSImage
+from openhsl.hs_mask import HSMask
+from openhsl.utils import get_hypercube_and_wavelength, get_band_numbers
 
 
 def ndvi_mask(cube: Union[HSImage, np.ndarray],

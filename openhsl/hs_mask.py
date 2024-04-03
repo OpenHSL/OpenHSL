@@ -1,11 +1,12 @@
+import json
 import h5py
-import rasterio
 import numpy as np
+import os.path
+import rasterio
+
 from PIL import Image
 from scipy.io import loadmat, savemat
 from typing import Optional, Dict
-import os.path
-import json
 
 
 class HSMask:
@@ -278,89 +279,107 @@ class HSMask:
 
             Parameters
             ----------
-            path_to_file: str
+            path_to_data: str
                 Path to file
             key: str
                 Key for field in .mat and .h5 file as dict object
                 file['image']
         """
 
-        def load_img(path_to_image: str) -> np.ndarray:
-            """
-            ____________
-            necessary for reading 3-dimensional images
-            ____________
-
-            Parameters
-            ----------
-            path_to_image: str
-                Path to file
-            """
-            img = Image.open(path_to_image).convert("L")
-            img = np.array(img)
-            if HSMask.__is_correct_2d_mask(img):
-                return HSMask.convert_2d_to_3d_mask(img)
-            else:
-                raise ValueError("Not supported image type")
-
         _, file_extension = os.path.splitext(path_to_data)
 
         if file_extension in ['.jpg', '.jpeg', '.bmp', '.png']:
-            '''
-            loading a mask from images
-            '''
-            self.data = load_img(path_to_data)
+            self.data = self.load_from_image(path_to_data=path_to_data)
 
         elif file_extension == '.npy':
-            '''
-            loading a mask from numpy file
-            '''
-            tmp_data = np.load(path_to_data)
-            if HSMask.__is_correct_2d_mask(tmp_data):
-                self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
-            elif HSMask.__is_correct_3d_mask(tmp_data):
-                self.data = tmp_data
-            else:
-                raise ValueError("Unsupported type of mask")
+            self.load_from_npy(path_to_data=path_to_data)
 
         elif file_extension == '.mat':
-            '''
-            loading a mask from mat file
-            '''
-            tmp_data = loadmat(path_to_data)[key]
-            if HSMask.__is_correct_2d_mask(tmp_data):
-                self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
-            elif HSMask.__is_correct_3d_mask(tmp_data):
-                self.data = tmp_data
-            else:
-                raise ValueError("Unsupported type of mask")
+            self.load_from_mat(path_to_data=path_to_data,
+                               key=key)
 
         elif file_extension == '.h5':
-            '''
-            loading a mask from h5 file
-            '''
-            tmp_data = h5py.File(path_to_data, 'r')[key]
-            if HSMask.__is_correct_2d_mask(tmp_data):
-                self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
-            elif HSMask.__is_correct_3d_mask(tmp_data):
-                self.data = tmp_data
-            else:
-                raise ValueError("Unsupported type of mask")
+            self.load_from_h5(path_to_data=path_to_data,
+                              key=key)
 
         elif file_extension == '.tiff' or file_extension == '.tif':
-            with rasterio.open(path_to_data) as raster:
-                tmp_data = raster.read()
-                tmp_data = tmp_data.transpose((1, 2, 0))
-            if HSMask.__is_correct_2d_mask(tmp_data):
-                self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
-            elif HSMask.__is_correct_3d_mask(tmp_data):
-                self.data = tmp_data
-            else:
-                raise ValueError("Unsupported type of mask")
+            self.load_from_tiff(path_to_data=path_to_data)
 
         # updates number of classes after loading mask
         self.n_classes = self.data.shape[-1]
         self.load_class_info(path_to_data)
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load_from_mat(self, path_to_data, key):
+        tmp_data = loadmat(path_to_data)[key]
+        if HSMask.__is_correct_2d_mask(tmp_data):
+            self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
+        elif HSMask.__is_correct_3d_mask(tmp_data):
+            self.data = tmp_data
+        else:
+            raise ValueError("Unsupported type of mask")
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load_from_image(self, path_to_data):
+        img = Image.open(path_to_data).convert("L")
+        img = np.array(img)
+        if HSMask.__is_correct_2d_mask(img):
+            self.data = HSMask.convert_2d_to_3d_mask(img)
+        else:
+            raise ValueError("Not supported image type")
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load_from_h5(self,
+                     path_to_data,
+                     key='img'):
+        tmp_data = h5py.File(path_to_data, 'r')[key]
+        if HSMask.__is_correct_2d_mask(tmp_data):
+            self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
+        elif HSMask.__is_correct_3d_mask(tmp_data):
+            self.data = tmp_data
+        else:
+            raise ValueError("Unsupported type of mask")
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load_from_tiff(self,
+                       path_to_data):
+        with rasterio.open(path_to_data) as raster:
+            tmp_data = raster.read()
+            tmp_data = tmp_data.transpose((1, 2, 0))
+        if HSMask.__is_correct_2d_mask(tmp_data):
+            self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
+        elif HSMask.__is_correct_3d_mask(tmp_data):
+            self.data = tmp_data
+        else:
+            raise ValueError("Unsupported type of mask")
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load_from_npy(self,
+                      path_to_data):
+        tmp_data = np.load(path_to_data)
+        if HSMask.__is_correct_2d_mask(tmp_data):
+            self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
+        elif HSMask.__is_correct_3d_mask(tmp_data):
+            self.data = tmp_data
+        else:
+            raise ValueError("Unsupported type of mask")
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def save(self,
+             path_to_file: str,
+             key: str = 'img'):
+        if path_to_file.endswith('.mat'):
+            self.save_to_mat(path_to_file=path_to_file, mat_key=key)
+        elif path_to_file.endswith('.h5'):
+            self.save_to_h5(path_to_file=path_to_file, h5_key=key)
+        elif path_to_file.endswith('.tiff'):
+            self.save_to_tiff(path_to_file=path_to_file)
+        elif path_to_file.endswith('.npy'):
+            self.save_to_npy(path_to_file=path_to_file)
+        elif path_to_file.endswith('.png') or path_to_file.endswith('.bmp'):
+            self.save_to_images(path_to_save_file=path_to_file)
+        else:
+            raise Exception('Unsupported extension')
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_mat(self,
@@ -449,17 +468,14 @@ class HSMask:
              'width': self.data.shape[1],
              'height': self.data.shape[0],
              'count': self.data.shape[2],
-             # 'crs': CRS.from_epsg(32736),
-             # 'transform': Affine(10.0, 0.0, 653847.1979372115, 0.0, -10.0, 7807064.5603836905),
-             # 'tiled': False,
              'interleave': 'band'}
 
         with rasterio.open(path_to_file, 'w', **d) as dst:
             dst.write(self.data.transpose((2, 0, 1)))
         self.save_class_info(path_to_file)
 
-    def save_image(self,
-                   path_to_save_file: str):
+    def save_to_images(self,
+                       path_to_save_file: str):
         """
         save_image(path_to_save_file)
 
