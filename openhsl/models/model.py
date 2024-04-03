@@ -37,6 +37,7 @@ class Model(ABC):
         self.val_loss = []
         self.train_accs = []
         self.val_accs = []
+        self.lrs = []
         self.model = None
         self.wandb_run = None
         self.writer = None

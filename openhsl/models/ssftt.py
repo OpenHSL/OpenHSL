@@ -291,6 +291,7 @@ class SSFTT(Model):
         self.val_loss = history["val_loss"]
         self.train_accs = history["train_accuracy"]
         self.val_accs = history["val_accuracy"]
+        self.lrs = history["lr"]
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
