@@ -31,7 +31,9 @@ def blur_band(band):
     return blur_image(band) if BLUR_AUTO else band
 
 
-def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str, files: List) -> np.ndarray:
+def build_hypercube_by_videos(cube: np.ndarray,
+                              gps_filename: str,
+                              files: List) -> np.ndarray:
     """
         build_hypercube_by_videos(cube, gps_filename)
 
@@ -46,6 +48,8 @@ def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str, files: List) 
             gps_filename: str
                 Contain telemetry information about UAV flight session where
                 each line correlates to each frame from cube
+
+            files : list
 
             Returns
             --------
@@ -83,7 +87,6 @@ def build_hypercube_by_videos(cube: np.ndarray, gps_filename: str, files: List) 
 # -------------------------------------------------------------------------------------------------------------------------------
 
 
-# TODO interpolate doesn't use gps data, but inner computation. Define this more clearly
 def interpolate(cube: np.ndarray,
                 latitude: List,
                 longitude: List,
@@ -283,7 +286,8 @@ def knn_for_interpolate(x: np.ndarray,
 
 
 # TODO: Maybe we should separate calculating test points and search m/n_targets?
-def generate_test_points(x: List, y: List) -> Tuple:
+def generate_test_points(x: np.ndarray,
+                         y: np.ndarray) -> Tuple:
     """
         generate_test_points(x, y)
 
