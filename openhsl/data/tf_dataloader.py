@@ -1,63 +1,6 @@
 import numpy as np
-import random
-import scipy
-import scipy.ndimage
 
-from sklearn import preprocessing
-
-from openhsl.data.utils import pad_with_zeros, split_train_test_set, create_patches
-
-
-def standartize_data(X: np.ndarray):
-    new_X = np.reshape(X, (-1, X.shape[2]))
-    scaler = preprocessing.StandardScaler().fit(new_X)
-    new_X = scaler.transform(new_X)
-    new_X = np.reshape(new_X, (X.shape[0], X.shape[1], X.shape[2]))
-    return new_X, scaler
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def augment_data(X_train: np.ndarray):
-    for i in range(int(X_train.shape[0] / 2)):
-        patch = X_train[i, :, :, :]
-        num = random.randint(0, 2)
-        if num == 0:
-            flipped_patch = np.flipud(patch)
-        if num == 1:
-            flipped_patch = np.fliplr(patch)
-        if num == 2:
-            no = random.randrange(-180, 180, 30)
-            flipped_patch = scipy.ndimage.interpolation.rotate(patch, no, axes=(1, 0),
-                                                               reshape=False, output=None,
-                                                               order=3, mode='constant',
-                                                               cval=0.0, prefilter=False)
-        patch2 = flipped_patch
-        X_train[i, :, :, :] = patch2
-
-    return X_train
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def preprocess_data(X: np.ndarray,
-                    y: np.ndarray,
-                    train_sample_percentage: float,
-                    patch_size=5):
-
-    X_patches, y_patches = create_patches(X, y, patch_size=patch_size)
-
-    test_ratio = 1.0 - train_sample_percentage
-
-    X_train, X_test, y_train, y_test = split_train_test_set(X_patches, y_patches, test_ratio)
-    X_train, X_val, y_train, y_val = split_train_test_set(X_train, y_train, 0.1)
-
-    X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[3], X_train.shape[1], X_train.shape[2]))
-    #y_train = np_utils.to_categorical(y_train)
-
-    X_val = np.reshape(X_val, (X_val.shape[0], X_val.shape[3], X_val.shape[1], X_val.shape[2]))
-    #y_val = np_utils.to_categorical(y_val)
-
-    return X_train, X_val, y_train, y_val
-# ----------------------------------------------------------------------------------------------------------------------
+from openhsl.data.utils import pad_with_zeros, split_train_test_set
 
 
 def get_data_generator(X: np.ndarray,
@@ -124,6 +67,7 @@ class Gen:
         label = np.zeros(self.num_classes)
         label[self.labels[i]] = 1  # one-hot encoding
         return data, label
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def get_train_val_gens(X: np.array,

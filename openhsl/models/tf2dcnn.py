@@ -18,16 +18,6 @@ from openhsl.utils import init_wandb
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
-class SendStatsCallback(Callback):
-
-    def on_epoch_end(self, epoch, logs=None):
-        train_loss = logs['loss']
-        val_loss = logs['val_loss']
-
-        train_acc = logs['accuracy']
-        val_acc = logs['val_accuracy']
-
-
 class TF2DCNN:
 
     def __init__(self,
@@ -49,6 +39,7 @@ class TF2DCNN:
         self.val_loss = []
         self.train_accs = []
         self.val_accs = []
+        self.lrs = None
 
         input_shape = (self.hyperparams['n_bands'], self.hyperparams['patch_size'], self.hyperparams['patch_size'])
 
@@ -133,9 +124,6 @@ class TF2DCNN:
         if fit_params['tensorboard_vis']:
             tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./tensorboard")
             callbacks.append(tensorboard_callback)
-
-        # TODO add it to GUI
-        callbacks.append(SendStatsCallback())
 
         history = self.model.fit(ds_train,
                                  validation_data=ds_val,
