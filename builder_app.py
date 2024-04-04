@@ -229,11 +229,11 @@ class MainWindow(CIU):
             ### IT"S A HARDCODE SHIT END!!!!!!!!!!!
             self.current_hsi = hsi
 
+            self.ui.view_box.removeItem(1)
+
             if len(hsi.wavelengths) == hsi.data.shape[2]:
                 self.ui.view_box.addItem("RGB")
 
-            else:
-                self.ui.view_box.removeItem(1)
 
             self.current_image = hsi.data
             self.ui.spinBox.setValue(0)
@@ -252,7 +252,7 @@ class MainWindow(CIU):
             if 0 <= x < pixmap.width() and 0 <= y < pixmap.height():
                 x = int(x / pixmap.width() * self.current_image.shape[1])
                 y = int(y / pixmap.height() * self.current_image.shape[0])
-                self.pixel_color = self.current_image[y, x, :]
+                self.pixel_color = self.current_hsi.data[y, x, :]
                 self.current_pixel = (x, y)
                 self.update_histogram()
 
