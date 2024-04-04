@@ -21,7 +21,7 @@ from gui.mac_trainer_gui import Ui_MainWindow
 
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
-from openhsl.data.dataset import get_dataset
+from openhsl.data.utils import get_dataset
 from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.models.model import train_one_epoch, val_one_epoch, get_optimizer, get_scheduler
 from openhsl.data.utils import get_palette, convert_to_color_, sample_gt

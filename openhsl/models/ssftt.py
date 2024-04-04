@@ -8,7 +8,7 @@ from einops import rearrange
 from torch import nn
 from typing import Any, Dict, Optional, Union
 
-from openhsl.data.dataset import get_dataset
+from openhsl.data.utils import get_dataset
 from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.data.utils import sample_gt, camel_to_snake
 from openhsl.hsi import HSImage

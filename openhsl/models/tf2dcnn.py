@@ -11,7 +11,7 @@ from typing import Optional, Dict, Any, Union
 
 from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
-from openhsl.data.dataset import get_dataset
+from openhsl.data.utils import get_dataset
 from openhsl.data.tf_dataloader import get_test_generator, get_train_val_gens
 from openhsl.utils import init_wandb
 

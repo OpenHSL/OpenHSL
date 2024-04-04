@@ -12,7 +12,7 @@ from tqdm import trange, tqdm
 from torcheval.metrics import MulticlassAccuracy
 from typing import Iterable, Dict, Literal
 
-from openhsl.data.dataset import get_dataset
+from openhsl.data.utils import get_dataset
 from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
                                         sliding_window, sample_gt, convert_to_color_
