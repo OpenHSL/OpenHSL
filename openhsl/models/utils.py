@@ -18,3 +18,4 @@ def get_mean_weights(weights_list: List[OrderedDict]) -> OrderedDict:
         mean_weight[key] = sum([w[key] for w in weights_list]) / len(weights_list)
 
     return OrderedDict(mean_weight)
+# ----------------------------------------------------------------------------------------------------------------------
