@@ -214,6 +214,16 @@ def draw_fit_plots(model):
     plt.legend()
     plt.savefig('TrainVal_accs.png')
     plt.show()
+
+    plt.figure(figsize=(12, 8))
+    plt.plot(x, model.lrs, c='blue', label='Learning rate')
+    plt.xlabel("Epochs")
+    plt.ylabel("Learning rate")
+    plt.xticks(x)
+    plt.grid()
+    plt.legend()
+    plt.savefig('Learning_rate.png')
+    plt.show()
 # ----------------------------------------------------------------------------------------------------------------------
 
 
