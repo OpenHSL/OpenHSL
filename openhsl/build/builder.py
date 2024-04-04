@@ -88,12 +88,15 @@ class HSBuilder:
         self.path_to_gps = path_to_gps
         self.path_to_metadata = path_to_metadata
 
-        if self.path_to_metadata:
-            self.__get_metainfo()
-
         self.hsi: Optional[HSImage] = None
+
+        self.roi_coords = None
+        self.light_coeff = None
         self.wavelengths = None
         self.barrel_distortion_coefficients = None
+
+        if self.path_to_metadata:
+            self.__get_metainfo()
 
         self.frame_iterator = RawData(path_to_data=path_to_data, 
                                       type_data=data_type,
@@ -105,6 +108,7 @@ class HSBuilder:
     def __get_metainfo(self):
         with open(self.path_to_metadata) as f:
             d = json.load(f)
+
         self.roi_coords = d.get('roi', None)
         self.light_coeff = np.array(d.get('light_norm', None))
         self.wavelengths = d.get('wavelengths', None)
