@@ -1,9 +1,12 @@
+import json
 import h5py
 import numpy as np
+import os.path
+import rasterio
+
 from PIL import Image
 from scipy.io import loadmat, savemat
 from typing import Optional, Dict
-import os.path
 
 
 class HSMask:
@@ -14,6 +17,7 @@ class HSMask:
                 Each pixel has value from [0, class_counts - 1]
             3D-Array
                 Each layer is binary image where 1 is class and 0 is not-class
+
         Parameters
         ----------
         mask: np.ndarray
@@ -21,11 +25,15 @@ class HSMask:
             where:
                 X, Y data resolution.
                 Z is a count of channels (1, 3, 4).
+        label_class: dict
+            dictionary where keys are number of the binary layer in mask
+            and values are description class of this layer
+
         Attributes
         ----------
         data: np.ndarray
 
-        metadata: dict
+        label_class: dict
 
         Examples
         --------
@@ -38,7 +46,7 @@ class HSMask:
     def __init__(self,
                  mask: Optional[np.array] = None,
                  label_class: Optional[Dict] = None):
-        if mask:
+        if np.any(mask):
             if HSMask.__is_correct_2d_mask(mask):
                 print("got 2d mask")
                 self.data = HSMask.convert_2d_to_3d_mask(mask)
@@ -58,6 +66,8 @@ class HSMask:
 
             self.n_classes = self.data.shape[-1]
         else:
+            print("Created void mask")
+            print("Class labeles is empty")
             self.data = None
             self.label_class = None
     # ------------------------------------------------------------------------------------------------------------------
@@ -70,25 +80,80 @@ class HSMask:
     # ------------------------------------------------------------------------------------------------------------------
 
     def __len__(self):
-        return self.data.shape[-1]
+        if np.any(self.data):
+            return self.data.shape[-1]
+        else:
+            return 0
     # ------------------------------------------------------------------------------------------------------------------
 
     def get_2d(self) -> np.ndarray:
+        """
+        get_2d()
+            returns 2d-mask with values in [0,1,2...]
+
+        """
         return HSMask.convert_3d_to_2d_mask(self.data)
     # ------------------------------------------------------------------------------------------------------------------
 
     def get_3d(self) -> np.ndarray:
+        """
+        get_3d()
+            returns 3d-mask where each layer (Z-axe) is binary image
+        """
         return self.data
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO must be realise
-    def delete_layer(self, pos: int):
-        pass
+    def __update_label_class(self, label_class: Dict):
+        if HSMask.__is_correct_class_dict(d=label_class,
+                                          class_count=len(self.data)):
+            self.label_class = label_class
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO must be realise
-    def add_layer(self, pos: int):
-        pass
+    def delete_layer(self, pos: int):
+        """
+        delete_layer(pos)
+            deletes layer in mask by index
+            Parameters
+            ----------
+            pos: int
+                layer number for deleting
+        """
+        tmp_list = list(np.transpose(self.data, (2, 0, 1)))
+        tmp_list.pop(pos)
+        self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def add_void_layer(self, pos: int):
+        """
+        add_void_layer(pos)
+            adds filled by zeros layer in mask by index
+            Parameters
+            ----------
+            pos: int
+                layer position for adding
+        """
+        tmp_list = list(np.transpose(self.data, (2, 0, 1)))
+        tmp_list.insert(pos, np.zeros(self.data.shape[:-1], dtype="uint8"))
+        self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def add_completed_layer(self, pos: int, layer: np.ndarray):
+        """
+        add_completed_layer(pos, layer)
+            adds filled by completed layer in mask by index
+            Parameters
+            ----------
+            pos: int
+                layer position for adding
+            layer: np.ndarray
+                binary layer
+        """
+        if self.__is_correct_binary_layer(layer):
+            tmp_list = list(np.transpose(self.data, (2, 0, 1)))
+            tmp_list.insert(pos, layer)
+            self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
+        else:
+            raise ValueError("Incorrect layer!")
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
@@ -102,24 +167,22 @@ class HSMask:
             ----------
             mask: np.ndarray
 
-            Returns
-            -------
-
         """
         # input mask must have 2 dimensions
-        if len(mask.shape) > 2:
-            return False
+        valid_types = ["uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64"]
+        return len(mask.shape) == 2 and mask.dtype in valid_types
+    # ------------------------------------------------------------------------------------------------------------------
 
-        # data type in mask must be integer
-        if mask.dtype not in ["uint8", "uint16", "uint32", "uint64",
-                              "int8", "int16", "int32", "int64"]:
-            return False
+    def __is_correct_binary_layer(self, layer: np.ndarray) -> bool:
+        """
+        __is_correct_binary_layer(layer)
+            checks is input layer has only binary values (0 and 1) or not
 
-        # number of classes in mask must be as 0,1,2... not 1,2... not 0,2,5 ...
-        if np.all(np.unique(mask) != np.array(range(0, len(np.unique(mask))))):
-            return False
-
-        return True
+            Parameters
+            ----------
+            layer: np.ndarray
+        """
+        return np.all(layer.shape == self.data.shape[:-1]) and np.all(np.unique(layer) == np.array([0, 1]))
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
@@ -129,9 +192,10 @@ class HSMask:
             3D mask must have class values as binary image in N-layers
             Each layer must be binary!
             minimal is two-layer image
+
             Parameters
             ----------
-            mask
+            mask: np.ndarray
 
             Returns
             -------
@@ -142,7 +206,7 @@ class HSMask:
 
         # check each layer that it's binary
         for layer in np.transpose(mask, (2, 0, 1)):
-            if np.unique(layer) != np.array([0, 1]):
+            if np.all(np.unique(layer) != np.array([0, 1])):
                 return False
 
         return True
@@ -150,6 +214,14 @@ class HSMask:
 
     @staticmethod
     def __is_correct_class_dict(d: dict, class_count: int) -> bool:
+        """
+        __is_correct_class_dict(d, class_count)
+            checks class descriptions in input dictionary
+            Parameters
+            ----------
+            d: dict
+            class_count: int
+        """
 
         if not d:
             return False
@@ -162,13 +234,22 @@ class HSMask:
 
     @staticmethod
     def convert_2d_to_3d_mask(mask: np.ndarray) -> np.ndarray:
-        mask_3d = []
+        """
+        convert_2d_to_3d_mask(mask)
+            returns 3d mask consists binary layers from 2d mask
+
+            Parameters
+            ----------
+            mask: np.ndarray
+        """
+        h, w = mask.shape
+        count_classes = np.max(mask) + 1
+        mask_3d = np.zeros((h, w, count_classes))
+
         for cl in np.unique(mask):
+            mask_3d[:, :, cl] = (mask == cl).astype('uint8')
 
-            mask_3d.append((mask == cl).astype('uint8'))
-        mask_3d = np.array(mask_3d)
-
-        return np.transpose(mask_3d, (1, 2, 0))
+        return mask_3d
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
@@ -180,10 +261,9 @@ class HSMask:
         return mask_2d.astype('uint8')
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_mask(self,
-                  path_to_file: str,
-                  mat_key: str = None,
-                  h5_key: str = None):
+    def load(self,
+             path_to_data: str,
+             key: str = None):
 
         """
         load_mask(path_to_file, mat_key, h5_key)
@@ -199,83 +279,107 @@ class HSMask:
 
             Parameters
             ----------
-            path_to_file: str
+            path_to_data: str
                 Path to file
-            mat_key: str
-                Key for field in .mat file as dict object
-                mat_file['image']
-            h5_key: str
-                Key for field in .h5 file as 5h object
-
+            key: str
+                Key for field in .mat and .h5 file as dict object
+                file['image']
         """
 
-        def load_img(path_to_file: str) -> np.ndarray:
-            """
-            ____________
-            necessary for reading 3-dimensional images
-            ____________
-
-            Parameters
-            ----------
-            path_to_file: str
-                Path to file
-            """
-            img = Image.open(path_to_file).convert("L")
-            img = np.array(img)
-            if HSMask.__is_correct_2d_mask(img):
-                return HSMask.convert_2d_to_3d_mask(img)
-            else:
-                raise ValueError("Not supported image type")
-
-
-        _, file_extension = os.path.splitext(path_to_file)
+        _, file_extension = os.path.splitext(path_to_data)
 
         if file_extension in ['.jpg', '.jpeg', '.bmp', '.png']:
-            '''
-            loading a mask from images
-            '''
-            self.data = load_img(path_to_file)
+            self.data = self.load_from_image(path_to_data=path_to_data)
 
         elif file_extension == '.npy':
-            '''
-            loading a mask from numpy file
-            '''
-            tmp_data = np.load(path_to_file)
-            if HSMask.__is_correct_2d_mask(tmp_data):
-                self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
-            elif HSMask.__is_correct_3d_mask(tmp_data):
-                self.data = tmp_data
-            else:
-                raise ValueError("Unsupported type of mask")
+            self.load_from_npy(path_to_data=path_to_data)
 
         elif file_extension == '.mat':
-            '''
-            loading a mask from mat file
-            '''
-            tmp_data = loadmat(path_to_file)[mat_key]
-            print(tmp_data.dtype)
-            if HSMask.__is_correct_2d_mask(tmp_data):
-                self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
-            elif HSMask.__is_correct_3d_mask(tmp_data):
-                self.data = tmp_data
-            else:
-                raise ValueError("Unsupported type of mask")
+            self.load_from_mat(path_to_data=path_to_data,
+                               key=key)
 
         elif file_extension == '.h5':
-            '''
-            loading a mask from h5 file
-            '''
-            tmp_data = h5py.File(path_to_file, 'r')[h5_key]
-            if HSMask.__is_correct_2d_mask(tmp_data):
-                self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
-            elif HSMask.__is_correct_3d_mask(tmp_data):
-                self.data = tmp_data
-            else:
-                raise ValueError("Unsupported type of mask")
+            self.load_from_h5(path_to_data=path_to_data,
+                              key=key)
+
+        elif file_extension == '.tiff' or file_extension == '.tif':
+            self.load_from_tiff(path_to_data=path_to_data)
 
         # updates number of classes after loading mask
         self.n_classes = self.data.shape[-1]
-        self.label_class = {}
+        self.load_class_info(path_to_data)
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load_from_mat(self, path_to_data, key):
+        tmp_data = loadmat(path_to_data)[key]
+        if HSMask.__is_correct_2d_mask(tmp_data):
+            self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
+        elif HSMask.__is_correct_3d_mask(tmp_data):
+            self.data = tmp_data
+        else:
+            raise ValueError("Unsupported type of mask")
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load_from_image(self, path_to_data):
+        img = Image.open(path_to_data).convert("L")
+        img = np.array(img)
+        if HSMask.__is_correct_2d_mask(img):
+            self.data = HSMask.convert_2d_to_3d_mask(img)
+        else:
+            raise ValueError("Not supported image type")
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load_from_h5(self,
+                     path_to_data,
+                     key='img'):
+        tmp_data = h5py.File(path_to_data, 'r')[key]
+        if HSMask.__is_correct_2d_mask(tmp_data):
+            self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
+        elif HSMask.__is_correct_3d_mask(tmp_data):
+            self.data = tmp_data
+        else:
+            raise ValueError("Unsupported type of mask")
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load_from_tiff(self,
+                       path_to_data):
+        with rasterio.open(path_to_data) as raster:
+            tmp_data = raster.read()
+            tmp_data = tmp_data.transpose((1, 2, 0))
+        if HSMask.__is_correct_2d_mask(tmp_data):
+            self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
+        elif HSMask.__is_correct_3d_mask(tmp_data):
+            self.data = tmp_data
+        else:
+            raise ValueError("Unsupported type of mask")
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load_from_npy(self,
+                      path_to_data):
+        tmp_data = np.load(path_to_data)
+        if HSMask.__is_correct_2d_mask(tmp_data):
+            self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
+        elif HSMask.__is_correct_3d_mask(tmp_data):
+            self.data = tmp_data
+        else:
+            raise ValueError("Unsupported type of mask")
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def save(self,
+             path_to_file: str,
+             key: str = 'img'):
+        if path_to_file.endswith('.mat'):
+            self.save_to_mat(path_to_file=path_to_file, mat_key=key)
+        elif path_to_file.endswith('.h5'):
+            self.save_to_h5(path_to_file=path_to_file, h5_key=key)
+        elif path_to_file.endswith('.tiff'):
+            self.save_to_tiff(path_to_file=path_to_file)
+        elif path_to_file.endswith('.npy'):
+            self.save_to_npy(path_to_file=path_to_file)
+        elif path_to_file.endswith('.png') or path_to_file.endswith('.bmp'):
+            self.save_to_images(path_to_save_file=path_to_file)
+        else:
+            raise Exception('Unsupported extension')
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_mat(self,
@@ -298,6 +402,7 @@ class HSMask:
         """
         temp_dict = {mat_key: self.data}
         savemat(path_to_file, temp_dict)
+        self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_h5(self,
@@ -314,7 +419,7 @@ class HSMask:
         ----------
         path_to_file: str
             Path to file
-        mat_key: str
+        h5_key: str
             Key for field in .mat file as dict object
             mat_file['image']
         h5_key: str
@@ -323,6 +428,7 @@ class HSMask:
 
         with h5py.File(path_to_file, 'w') as f:
             f.create_dataset(h5_key, data=self.data)
+        self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
     
     def save_to_npy(self,
@@ -340,10 +446,36 @@ class HSMask:
             Path to file
         """
         np.save(path_to_file, self.data)
+        self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_image(self,
-                   path_to_save_file: str):
+    def save_to_tiff(self,
+                     path_to_file: str):
+        if not path_to_file.endswith('.tif') and not path_to_file.endswith('.tiff'):
+            raise Exception('Incorrect file format')
+
+        dt = 'int8'
+        if self.data.dtype.name == 'uint8' or self.data.dtype.name == 'int8':
+            dt = 'int8'
+        elif self.data.dtype.name == 'uint16' or self.data.dtype.name == 'int16':
+            dt = 'int16'
+        elif self.data.dtype.name == 'uint32' or self.data.dtype.name == 'int32':
+            dt = 'int32'
+
+        d = {'driver': 'GTiff',
+             'dtype': dt,
+             'nodata': None,
+             'width': self.data.shape[1],
+             'height': self.data.shape[0],
+             'count': self.data.shape[2],
+             'interleave': 'band'}
+
+        with rasterio.open(path_to_file, 'w', **d) as dst:
+            dst.write(self.data.transpose((2, 0, 1)))
+        self.save_class_info(path_to_file)
+
+    def save_to_images(self,
+                       path_to_save_file: str):
         """
         save_image(path_to_save_file)
 
@@ -358,12 +490,26 @@ class HSMask:
         """
         img = Image.fromarray(self.data[:, :, 0])
         img.save(path_to_save_file)
+        self.save_class_info(path_to_save_file)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def load_class_info(self):
-        pass
+    def load_class_info(self, path_to_data):
+        path_to_data = '.'.join(path_to_data.split('.')[:-1]) + '_metainfo.json'
+        if os.path.exists(path_to_data):
+            with open(path_to_data, 'r') as json_file:
+                data = json.load(json_file)
+            self.label_class = data['label_class']
+        else:
+            print("Metainfo file does not exist!")
+            self.label_class = {}
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save_class_info(self):
-        pass
+    def save_class_info(self, path_to_data):
+        path_to_data = '.'.join(path_to_data.split('.')[:-1]) + '_metainfo.json'
+        if not self.label_class:
+            print('Wavelengths are empty! Save as empy dict')
+            self.label_class = {}
+        data = {"label_class": self.label_class}
+        with open(path_to_data, 'w') as outfile:
+            outfile.write(json.dumps(data))
     # ------------------------------------------------------------------------------------------------------------------

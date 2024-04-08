@@ -1,15 +1,15 @@
-from openhsl.models.model import Model
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-
-import numpy as np
 import math
-from typing import Any, Optional
-
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
 from torch.nn import init
+from typing import Any, Optional, Dict, Union
+
+from openhsl.hsi import HSImage
+from openhsl.hs_mask import HSMask
+from openhsl.models.model import Model
 
 
 class M1DCNN_Net(nn.Module):
@@ -32,7 +32,9 @@ class M1DCNN_Net(nn.Module):
     def _get_final_flattened_size(self):
         with torch.no_grad():
             x = torch.zeros(1, 1, self.input_channels)
-            x = self.pool(self.conv(x))
+            x = self.conv_1(x)
+            x = self.conv_2(x)
+            x = self.pool(x)
         return x.numel()
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -52,7 +54,9 @@ class M1DCNN_Net(nn.Module):
         self.input_channels = input_channels
 
         # [The first hidden convolution layer C1 filters the n1 x 1 input data with 20 kernels of size k1 x 1]
-        self.conv = nn.Conv1d(1, 20, kernel_size)
+        self.conv_1 = nn.Conv1d(1, 20, kernel_size)
+        self.conv_2 = nn.Conv1d(20, 20, kernel_size)
+        self.bn_conv = nn.BatchNorm1d(20)
         self.pool = nn.MaxPool1d(pool_size)
         self.features_size = self._get_final_flattened_size()
         # [n4 is set to be 100]
@@ -65,7 +69,9 @@ class M1DCNN_Net(nn.Module):
         # [In our design architecture, we choose the hyperbolic tangent function tanh(u)]
         x = x.squeeze(dim=-1).squeeze(dim=-1)
         x = x.unsqueeze(1)
-        x = self.conv(x)
+        x = self.conv_1(x)
+        x = self.bn_conv(x)
+        x = self.conv_2(x)
         x = torch.tanh(self.pool(x))
         x = x.view(-1, self.features_size)
         x = torch.tanh(self.fc1(x))
@@ -79,15 +85,15 @@ class M1DCNN(Model):
                  n_classes,
                  device,
                  n_bands,
-                 path_to_weights=None):
+                 path_to_weights=None
+                 ):
+        super(M1DCNN, self).__init__()
         self.hyperparams: dict[str: Any] = dict()
         self.hyperparams['patch_size'] = 1
         self.hyperparams['n_classes'] = n_classes
         self.hyperparams['ignored_labels'] = [0]
         self.hyperparams['device'] = device
         self.hyperparams['n_bands'] = n_bands
-        self.hyperparams["learning_rate"] = 0.01
-        self.hyperparams['batch_size'] = 100
         self.hyperparams['center_pixel'] = True
         self.hyperparams['net_name'] = 'm1dcnn'
         weights = torch.ones(n_classes)
@@ -96,8 +102,6 @@ class M1DCNN(Model):
         self.hyperparams["weights"] = weights
 
         self.model = M1DCNN_Net(n_bands, n_classes)
-        self.optimizer = optim.SGD(self.model.parameters(), lr=self.hyperparams["learning_rate"])
-        self.loss = nn.CrossEntropyLoss(weight=self.hyperparams["weights"])
 
         if path_to_weights:
             self.model.load_state_dict(torch.load(path_to_weights))
@@ -110,24 +114,49 @@ class M1DCNN(Model):
     # ------------------------------------------------------------------------------------------------------------------
 
     def fit(self,
-            X: HSImage,
-            y: HSMask,
-            epochs: int = 10,
-            train_sample_percentage: float = 0.5):
+            X: Union[HSImage, np.ndarray],
+            y: Union[HSMask, np.ndarray],
+            fit_params: Dict):
 
-        self.model, self.losses = super().fit_nn(X=X,
-                                                 y=y,
-                                                 hyperparams=self.hyperparams,
-                                                 epochs=epochs,
-                                                 model=self.model,
-                                                 optimizer=self.optimizer,
-                                                 loss=self.loss,
-                                                 train_sample_percentage=train_sample_percentage)
+        fit_params.setdefault('epochs', 10)
+        fit_params.setdefault('train_sample_percentage', 0.5)
+        fit_params.setdefault('dataloader_mode', 'random')
+        fit_params.setdefault('loss', nn.CrossEntropyLoss(weight=self.hyperparams["weights"]))
+        fit_params.setdefault('batch_size', 100)
+        fit_params.setdefault('optimizer_params', {'learning_rate': 0.05})
+        fit_params.setdefault('optimizer',
+                              optim.SGD(self.model.parameters(),
+                                        lr=fit_params['optimizer_params']["learning_rate"]))
+        fit_params.setdefault('scheduler_type', None)
+        fit_params.setdefault('scheduler_params', None)
+
+        fit_params.setdefault('wandb', self.wandb_run)
+        fit_params.setdefault('tensorboard', self.writer)
+
+        fit_params.setdefault('wandb_vis', False)
+        fit_params.setdefault('tensorboard_viz', False)
+
+        self.model, history = super().fit_nn(X=X,
+                                             y=y,
+                                             hyperparams=self.hyperparams,
+                                             model=self.model,
+                                             fit_params=fit_params)
+        self.train_loss = history["train_loss"]
+        self.val_loss = history["val_loss"]
+        self.train_accs = history["train_accuracy"]
+        self.val_accs = history["val_accuracy"]
+        self.lrs = history["lr"]
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
                 X: HSImage,
-                y: Optional[HSMask] = None) -> np.ndarray:
-        prediction = super().predict_nn(X=X, y=y, model=self.model, hyperparams=self.hyperparams)
+                y: Optional[HSMask] = None,
+                batch_size=100) -> np.ndarray:
+
+        self.hyperparams.setdefault('batch_size', batch_size)
+        prediction = super().predict_nn(X=X,
+                                        y=y,
+                                        model=self.model,
+                                        hyperparams=self.hyperparams)
         return prediction
 # ----------------------------------------------------------------------------------------------------------------------

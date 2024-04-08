@@ -1,13 +1,13 @@
-import os.path
-
+import json
 import h5py
 import numpy as np
+import os.path
+import rasterio
+
 from os import listdir, mkdir
-from os.path import isdir, splitext
 from PIL import Image
 from scipy.io import loadmat, savemat
 from typing import Optional, List
-import json
 
 
 class HSImage:
@@ -53,11 +53,28 @@ class HSImage:
             Inits HSI object.
 
         """
+        if hsi is None:
+            print('Created void HSI data')
         self.data = hsi
+
+        if wavelengths is None:
+            print('Wavelengths data is empty')
         self.wavelengths = wavelengths
+
     # ------------------------------------------------------------------------------------------------------------------
 
     def __getitem__(self, item):
+        """
+        Returns i-channel of HSI
+
+        Parameters
+        ----------
+        item
+
+        Returns
+        -------
+
+        """
         if item < len(self):
             return self.data[:, :, item]
         else:
@@ -66,6 +83,74 @@ class HSImage:
 
     def __len__(self):
         return self.data.shape[-1]
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def calibrate_white_reference(self, coefficients):
+        self.data = self.data / coefficients[None, None, :]
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def to_spectral_list(self):
+        """
+        Converts HSI to list of spectrals (as ravel)
+
+        ^ y
+        | [0][1][2]
+        | [3][4][5] --> [0][1][2][3][4][5][6][7][8]
+        | [6][7][8]
+        --------> x
+
+        Returns
+        -------
+        list
+        """
+        return np.reshape(self.data, (self.data.shape[0] * self.data.shape[1], self.data.shape[2]))
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load_from_spectral_list(self, spectral_list, height, width):
+        """
+        Create HSI from spectral list with height and width
+
+
+                                          ^ y
+                                          | [0][1][2]
+        [0][1][2][3][4][5][6][7][8] -->   | [3][4][5]
+                                          | [6][7][8]
+                                          --------> x
+
+        Parameters
+        ----------
+        spectral_list
+        height
+        width
+
+        Returns
+        -------
+
+        """
+        self.data = np.reshape(spectral_list, (height, width, len(spectral_list[0])))
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def get_hyperpixel_by_coordinates(self,
+                                      x: int,
+                                      y: int) -> np.ndarray:
+        """
+        get_hyperpixel_by_coordinates(x, y)
+
+            Returns hyperpixel from HSI by coordinates
+
+            Parameters
+            ----------
+            x - X-coordinate
+            y - Y-coordinate
+
+            Returns
+            -------
+            np.ndarray
+        """
+        height, width, _ = self.data.shape
+        if y >= height or x >= width:
+            raise IndexError('Coordinates are out of range')
+        return self.data[y, x, :]
     # ------------------------------------------------------------------------------------------------------------------
 
     def rot90(self):
@@ -79,12 +164,13 @@ class HSImage:
 
     def load_metadata(self,
                       path_to_file: str):
+        path_to_file = '.'.join(path_to_file.split('.')[:-1]) + '_metainfo.json'
         if os.path.exists(path_to_file):
             with open(path_to_file, 'r') as json_file:
                 data = json.load(json_file)
             self.wavelengths = data['wavelengths']
         else:
-            print("Metainfo file does not exist!")
+            print("Metainfo file does not exist! Wavelengths will be empty.")
             self.wavelengths = []
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -102,12 +188,60 @@ class HSImage:
             -------
 
         """
+        path_to_file = '.'.join(path_to_file.split('.')[:-1]) + '_metainfo.json'
         if not self.wavelengths:
-            print('Wavelengths are empty! Save as empy list')
+            print('Wavelengths are empty! Save as empy list.')
             self.wavelengths = []
         data = {"wavelengths": list(self.wavelengths)}
         with open(path_to_file, 'w') as outfile:
             outfile.write(json.dumps(data))
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def load(self,
+             path_to_data: str,
+             key: Optional[str] = None):
+        """
+        load(path_to_data, key)
+
+            Loading HSI from files
+
+            Parameters
+            ----------
+            path_to_data: str
+                path to data source such as directory (set of images) or file (mat, h5, npy, tiff)
+            key: str
+                key for files like mat or h5
+        """
+        if os.path.isdir(path_to_data):
+            self.load_from_layer_images(path_to_dir=path_to_data)
+        elif path_to_data.endswith('.mat'):
+            self.load_from_mat(path_to_file=path_to_data, mat_key=key)
+        elif path_to_data.endswith('.h5'):
+            self.load_from_h5(path_to_file=path_to_data, h5_key=key)
+        elif path_to_data.endswith('.npy'):
+            self.load_from_npy(path_to_file=path_to_data)
+        elif path_to_data.endswith('.tiff') or path_to_data.endswith('.tif'):
+            self.load_from_tiff(path_to_file=path_to_data)
+        else:
+            raise Exception('Unsupported file extension')
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def save(self,
+             path_to_data: str,
+             key=None,
+             img_format=None):
+        if os.path.isdir(path_to_data):
+            self.save_to_images(path_to_dir=path_to_data, img_format=img_format)
+        elif path_to_data.endswith('.mat'):
+            self.save_to_mat(path_to_file=path_to_data, mat_key=key)
+        elif path_to_data.endswith('.h5'):
+            self.save_to_h5(path_to_file=path_to_data, h5_key=key)
+        elif path_to_data.endswith('.npy'):
+            self.save_to_npy(path_to_file=path_to_data)
+        elif path_to_data.endswith('.tiff') or path_to_data.endswith('.tif'):
+            self.save_to_tiff(path_to_file=path_to_data)
+        else:
+            raise Exception('Unsupported file extension')
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_mat(self,
@@ -131,8 +265,7 @@ class HSImage:
         """
         self.data = loadmat(path_to_file)[mat_key]
 
-        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
-        self.load_metadata(path_to_meta)
+        self.load_metadata(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_tiff(self,
@@ -147,10 +280,10 @@ class HSImage:
             path_to_file: str
                 Path to .tiff file
             """
-            # TODO GDAL or what?
-        self.data = ...
-        self.wavelengths = ...
-        pass
+        with rasterio.open(path_to_file) as raster:
+            band = raster.read()
+            self.data = band.transpose((1, 2, 0))
+        self.load_metadata(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_npy(self,
@@ -167,8 +300,7 @@ class HSImage:
         """
         self.data = np.load(path_to_file)
 
-        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
-        self.load_metadata(path_to_meta)
+        self.load_metadata(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_h5(self,
@@ -186,10 +318,9 @@ class HSImage:
             h5_key: str
                 Key for field in .h5 file as dict object
         """
-        self.data = h5py.File(path_to_file, 'r')[h5_key]
+        self.data = np.array(h5py.File(path_to_file, 'r')[h5_key])
 
-        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
-        self.load_metadata(path_to_meta)
+        self.load_metadata(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def load_from_layer_images(self,
@@ -213,6 +344,8 @@ class HSImage:
         for image_name in images_list:
             img = Image.open(f'{path_to_dir}/{image_name}').convert("L")
             hsi.append(np.array(img))
+        if not hsi:
+            raise Exception("Can't read files!")
 
         self.data = np.array(hsi).transpose((1, 2, 0))
     # ------------------------------------------------------------------------------------------------------------------
@@ -235,8 +368,7 @@ class HSImage:
         temp_dict = {mat_key: self.data}
         savemat(path_to_file, temp_dict)
 
-        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
-        self.save_metadata(path_to_meta)
+        self.save_metadata(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_tiff(self,
@@ -251,8 +383,28 @@ class HSImage:
             path_to_file: str
                 Path to saving file
         """
-        # TODO GDAL?
-        ...
+        if not path_to_file.endswith('.tif') and not path_to_file.endswith('.tiff'):
+            raise Exception('Incorrect file format')
+
+        dt = 'uint8'
+        if self.data.dtype.name == 'uint8' or self.data.dtype.name == 'int8':
+            dt = 'uint8'
+        elif self.data.dtype.name == 'uint16' or self.data.dtype.name == 'int16':
+            dt = 'uint16'
+        elif self.data.dtype.name == 'uint32' or self.data.dtype.name == 'int32':
+            dt = 'uint32'
+
+        d = {'driver': 'GTiff',
+             'dtype': dt,
+             'nodata': None,
+             'width': self.data.shape[1],
+             'height': self.data.shape[0],
+             'count': self.data.shape[2],
+             'interleave': 'band'}
+
+        with rasterio.open(path_to_file, 'w', **d) as dst:
+            dst.write(self.data.transpose((2, 0, 1)))
+        self.save_metadata(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_h5(self,
@@ -273,8 +425,7 @@ class HSImage:
         with h5py.File(path_to_file, 'w') as f:
             f.create_dataset(h5_key, data=self.data)
 
-        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
-        self.save_metadata(path_to_meta)
+        self.save_metadata(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_npy(self,
@@ -290,13 +441,12 @@ class HSImage:
                 Path to saving file
         """
         np.save(path_to_file, self.data)
-        path_to_meta = splitext(path_to_file)[0] + '_metadata.json'
-        self.save_metadata(path_to_meta)
+        self.save_metadata(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
     def save_to_images(self,
                        path_to_dir: str,
-                       format: str = 'png'):
+                       img_format: str = 'png'):
         """
         save_to_images(path_to_dir, format)
 
@@ -306,14 +456,17 @@ class HSImage:
             ----------
             path_to_dir: str
                 Path to saving file
-            format: str
+            img_format: str
                 Format of images (png, jpg, jpeg, bmp)
         """
-        if not isdir(path_to_dir):
+        if not os.path.isdir(path_to_dir):
             mkdir(path_to_dir)
-        for i in range(self.data.shape[-1]):
-            if format in ('png', 'jpg', 'jpeg', 'bmp'):
-                Image.fromarray(self.data[:, :, i]).convert("L").save(f'{path_to_dir}/{i}.{format}')
-            else:
-                raise Exception('Unexpected format')
+
+        supported_formats = tuple(['png', 'jpg', 'jpeg', 'bmp'])
+
+        if img_format in supported_formats:
+            for i in range(self.data.shape[-1]):
+                Image.fromarray(self.data[:, :, i]).convert("L").save(f'{path_to_dir}/{i}.{img_format}')
+        else:
+            raise Exception('Unexpected format')
     # ------------------------------------------------------------------------------------------------------------------
