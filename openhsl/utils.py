@@ -1,4 +1,3 @@
-import math
 import matplotlib.patches as mpatches
 import numpy as np
 import os
@@ -6,7 +5,6 @@ import wandb
 import yaml
 
 from itertools import product
-from pathlib import Path
 from sklearn.cluster import KMeans, SpectralClustering
 from scipy.interpolate import interp1d
 from scipy.io import loadmat
@@ -631,3 +629,31 @@ def hsi_to_rgb(hsi: HSImage,
     rgb = contrast_correction(rgb, gamma_thresh)
 
     return rgb
+
+
+def unite_hsi_and_mask(hsi_list,
+                       mask_list,
+                       mode: Literal['v', 'h'] = 'v') -> Tuple[HSImage, HSMask]:
+    """
+    hsi_list:
+        [hsi_1, hsi_2, ... hsi_N]
+    mask_list:
+        [mask_1, mask_2, ..., mask_N]
+    mode:
+        'v' for vertical stacking or 'h' for horizontal stacking
+
+    Returns united hsi and mask sets as HSImage and HSMask pair
+    """
+    try:
+        if mode == 'v':
+            united_hsi = HSImage(np.vstack(hsi_list))
+            united_mask = HSMask(np.vstack(mask_list))
+        elif mode == 'h':
+            united_hsi = HSImage(np.hstack(hsi_list))
+            united_mask = HSMask(np.hstack(mask_list))
+        else:
+            raise Exception('wrong unite mode')
+    except Exception:
+        raise Exception('Incomparable size of hsi or mask in list')
+
+    return united_hsi, united_mask
