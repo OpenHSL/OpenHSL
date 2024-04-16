@@ -13,7 +13,7 @@ from openhsl.hsi import HSImage
 from openhsl.hs_mask import HSMask
 from openhsl.data.utils import get_dataset
 from openhsl.data.tf_dataloader import get_test_generator, get_train_val_gens
-from openhsl.utils import init_wandb, init_tensorboard
+from openhsl.models.utils import init_wandb, init_tensorboard
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -128,14 +128,10 @@ class TF2DCNN:
         # add visualisations via callbacks
         callbacks = []
 
-        if fit_params['wandb_vis']:
-            wandb_run = init_wandb(path='wandb.yaml')
-            if wandb_run:
-                wandb_callback = wandb.keras.WandbCallback(monitor='val_loss',
-
-                                                           log_evaluation=True,
-                                                           )
-                callbacks.append(wandb_callback)
+        if self.wandb_run:
+            wandb_callback = wandb.keras.WandbCallback(monitor='val_loss',
+                                                       log_evaluation=True)
+            callbacks.append(wandb_callback)
 
         if fit_params['tensorboard_vis']:
             tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./tensorboard")
@@ -158,9 +154,8 @@ class TF2DCNN:
 
         self.model.save(f'{checkpoint_filepath}/weights.h5')
 
-        if fit_params['wandb_vis']:
-            if wandb_run:
-                wandb_run.finish()
+        if self.wandb_run:
+            self.wandb_run.finish()
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
