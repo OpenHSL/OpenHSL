@@ -6,8 +6,9 @@ import rasterio
 
 from os import listdir, mkdir
 from PIL import Image
+from scipy.interpolate import interp1d
 from scipy.io import loadmat, savemat
-from typing import Optional, List
+from typing import Optional, List, Union
 
 
 class HSImage:
@@ -470,3 +471,273 @@ class HSImage:
         else:
             raise Exception('Unexpected format')
     # ------------------------------------------------------------------------------------------------------------------
+
+
+def __neighbor_el(elements_list: list, element: float) -> float:
+    """
+    neighbor_el(elements_list, element)
+
+        Return the closest element from list to given element
+
+        Parameters
+        ----------
+        elements_list: list
+
+        element: float
+
+        Returns
+        -------
+            float
+    """
+    return min(elements_list, key=lambda x: abs(x - element))
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def __get_band_numbers(w_l: int, w_data: Union[list, np.ndarray]) -> int:
+    """
+    get_band_numbers(w_l, w_data)
+
+        Returns the required channel value in the hyperspectral image
+
+        Parameters
+        ----------
+        w_l: int
+           the desired wavelength (nm)
+
+        w_data: list or np.ndarray
+            list of wavelengths
+
+        Returns
+        ------
+            int
+    """
+
+    if w_l in w_data:
+        w_data = list(w_data)
+        return w_data.index(w_l)
+    else:
+        w_data = np.array(w_data)
+        delta = w_data - w_l
+        abs_delta = list(map(abs, delta))
+        index_new_wl = abs_delta.index(min(abs_delta))
+
+        return index_new_wl
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def minmax_normalization(mask: np.ndarray) -> np.ndarray:
+    """
+    normalization(mask)
+
+        Returns a normalized mask from 0 to 1
+
+        Parameters
+        ----------
+        mask: np.ndarray
+            Denormalized array
+        Return
+        ------
+            np.ndarray
+    """
+
+    return (mask - np.min(mask)) / (np.max(mask) - np.min(mask))
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def contrast_correction(rgb, gamma_thresh):
+    gray_mean = np.mean(rgb, axis=2)
+    un = np.unique(gray_mean)
+
+    coord = np.where(gray_mean == un[int(len(un) * gamma_thresh - 1)])
+    x, y = coord
+    m = np.max(rgb[int(x[0]), int(y[0]), :])
+
+    rgb[rgb > m] = m
+    rgb = rgb / np.max(rgb)
+
+    return rgb
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def __xyz2srgb_exgamma(xyz: np.ndarray) -> np.ndarray:
+    """
+    See IEC_61966-2-1.pdf
+    No gamma correction has been incorporated here, nor any clipping, so this
+    transformation remains strictly linear.  Nor is there any data-checking.
+    DHF 9-Feb-11
+    """
+    # Image dimensions
+    d = xyz.shape
+    r = d[0] * d[1]
+    w = d[2]
+
+    # Reshape for calculation, converting to w columns with r rows.
+    xyz = np.reshape(xyz, (r, w))
+
+    # Forward transformation from 1931 CIE XYZ values to sRGB values (Eqn 6 in
+    # IEC_61966-2-1.pdf).
+
+    m = np.array([[3.2406, -1.5372, -0.4986],
+                  [-0.9689, 1.8758, 0.0414],
+                  [0.0557, -0.2040, 1.0570]])
+
+    s_rgb = np.dot(xyz, m.T)
+
+    # Reshape to recover shape of original input.
+    s_rgb = np.reshape(s_rgb, d)
+
+    return s_rgb
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def __get_bounds_vlr(w_data: List):
+    """
+    Returns visible left and right spectrum bounds
+    Parameters
+    ----------
+    w_data:
+        list of wavelengths
+    """
+    right_bound = w_data.index(__neighbor_el(w_data, 720))
+    left_bound = w_data.index(__neighbor_el(w_data, 400))
+    return left_bound, right_bound
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def __convert_hsi_to_xyz(xyz_bar_path,
+                         hsi,
+                         rgb_waves):
+    """
+    Converting HSI to XYZ
+    Parameters
+    ----------
+    xyz_bar_path
+    hsi
+    rgb_waves
+
+    Returns
+    -------
+
+    """
+    xyz_bar = loadmat(xyz_bar_path)['xyzbar']
+
+    xyz_bar_0 = xyz_bar[:, 0]
+    xyz_bar_1 = xyz_bar[:, 1]
+    xyz_bar_2 = xyz_bar[:, 2]
+
+    wl_vlr = np.linspace(400, 720, 33)
+
+    f_0 = interp1d(wl_vlr, xyz_bar_0)
+    f_1 = interp1d(wl_vlr, xyz_bar_1)
+    f_2 = interp1d(wl_vlr, xyz_bar_2)
+
+    xyz_0 = [f_0(i) for i in rgb_waves]
+    xyz_1 = [f_1(i) for i in rgb_waves]
+    xyz_2 = [f_2(i) for i in rgb_waves]
+
+    xyz_bar_new = (np.array([xyz_0, xyz_1, xyz_2])).T
+
+    r, c, w = hsi.shape
+    radiances = np.reshape(hsi, (r * c, w))
+
+    xyz = np.dot(radiances, xyz_bar_new)
+    xyz = np.reshape(xyz, (r, c, 3))
+    xyz = (xyz - np.min(xyz)) / (np.max(xyz) - np.min(xyz))
+    return xyz
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def simple_hsi_to_rgb(hsi: HSImage,
+                      gamma_thresh: float = 0.98) -> np.ndarray:
+    """
+    simple_hsi_to_rgb(cube, wave_data)
+
+        Return rgb-image from hyperspectral image
+
+        Parameters
+        ----------
+        hsi: HSImage or np.ndarray
+           hyperspectral image
+
+        gamma_thresh
+
+        Returns
+        ------
+            np.ndarray
+    """
+
+    cube_data = hsi.data
+
+    if hsi.wavelengths is None:
+        raise Exception("Cannot convert HSI to RGB without wavelengths information")
+    else:
+        w_data = hsi.wavelengths
+
+    wl_440 = 440
+    wl_550 = 550
+    wl_640 = 640
+
+    blue_band_numbers = __get_band_numbers(wl_440, w_data)
+    green_band_numbers = __get_band_numbers(wl_550, w_data)
+    red_band_numbers = __get_band_numbers(wl_640, w_data)
+
+    blue = cube_data[:, :, blue_band_numbers].astype(float)
+    green = cube_data[:, :, green_band_numbers].astype(float)
+    red = cube_data[:, :, red_band_numbers].astype(float)
+
+    simple_rgb = np.dstack((red.astype(np.uint8), green.astype(np.uint8), blue.astype(np.uint8)))
+
+    simple_rgb = contrast_correction(simple_rgb, gamma_thresh)
+
+    return simple_rgb
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def hsi_to_rgb(hsi: HSImage,
+               xyz_bar_path: str = './xyzbar.mat',
+               gamma_thresh: float = 0.98) -> np.ndarray:
+    """
+    hsi_to_rgb(cube, w_data, illumination_coef, xyzbar)
+
+        Extracts an RGB image from an HSI image
+
+        Parameters
+        ----------
+        hsi: HSImage or np.ndarray
+            hyperspectral image
+
+        xyz_bar_path: str
+            path to mat file with CMF CIE 1931
+
+        gamma_thresh: float
+            coefficient for contrast correction
+
+        Returns
+        ------
+            np.ndarray
+
+    """
+
+    hsi_data = hsi.data
+
+    if hsi.wavelengths is None:
+        raise Exception("Cannot convert HSI to RGB without wavelengths information")
+    else:
+        w_data = list(hsi.wavelengths)
+
+    left_bound, right_bound = __get_bounds_vlr(w_data)
+
+    rgb_waves = w_data[left_bound: right_bound]
+
+    new_cube = hsi_data[:, :, left_bound: right_bound]
+
+    xyz = __convert_hsi_to_xyz(xyz_bar_path=xyz_bar_path,
+                               hsi=new_cube,
+                               rgb_waves=rgb_waves)
+
+    rgb = __xyz2srgb_exgamma(xyz)
+    rgb = minmax_normalization(rgb)
+
+    rgb = contrast_correction(rgb, gamma_thresh)
+
+    return rgb

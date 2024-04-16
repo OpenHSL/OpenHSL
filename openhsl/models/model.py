@@ -16,7 +16,7 @@ from openhsl.data.utils import get_dataset
 from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
                                         sliding_window, sample_gt, convert_to_color_
-from openhsl.utils import init_wandb, init_tensorboard, EarlyStopping
+from openhsl.models.utils import init_wandb, init_tensorboard, EarlyStopping
 
 
 SchedulerTypes = Literal['StepLR', 'CosineAnnealingLR', 'ReduceLROnPlateau']
