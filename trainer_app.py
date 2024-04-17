@@ -28,6 +28,7 @@ from openhsl.models.model import train_one_epoch, val_one_epoch, get_optimizer, 
 from openhsl.data.utils import get_palette, convert_to_color_, sample_gt
 import openhsl.data.utils as hsl_utils
 from openhsl.models.utils import get_mean_weights
+from openhsl.data.utils import apply_pca
 
 from openhsl.models.ssftt import SSFTT
 from openhsl.models.m1dcnn import M1DCNN
@@ -613,6 +614,9 @@ class MainWindow(CIU):
             run_name = f"{self.ui.choose_model_for_train.currentText()}_{start_time[0]}_{start_time[1]}"
 
             hsi = deepcopy(self.current_train_hsi)
+            if self.ui.apply_pca_check.isChecked():
+                hsi.data, _ = apply_pca(hsi.data, int(self.ui.pca_value_edit.text()))
+
             scaler = getattr(hsl_utils, self.ui.scaler_edit.currentText())
             scaler = scaler(per=self.ui.per_edit.currentText())
             hsi.data = scaler.fit_transform(hsi.data)
