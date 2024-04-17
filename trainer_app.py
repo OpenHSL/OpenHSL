@@ -614,12 +614,13 @@ class MainWindow(CIU):
             run_name = f"{self.ui.choose_model_for_train.currentText()}_{start_time[0]}_{start_time[1]}"
 
             hsi = deepcopy(self.current_train_hsi)
-            if self.ui.apply_pca_check.isChecked():
-                hsi.data, _ = apply_pca(hsi.data, int(self.ui.pca_value_edit.text()))
 
             scaler = getattr(hsl_utils, self.ui.scaler_edit.currentText())
             scaler = scaler(per=self.ui.per_edit.currentText())
             hsi.data = scaler.fit_transform(hsi.data)
+
+            if self.ui.apply_pca_check.isChecked():
+                hsi.data, _ = apply_pca(hsi.data, int(self.ui.pca_value_edit.text()))
 
             fits = {"hsi": hsi,
                     "mask": self.current_train_mask,
@@ -684,12 +685,12 @@ class MainWindow(CIU):
 
             hsi = deepcopy(self.current_test_hsi)
 
-            if self.ui.pca_inf_check.isChecked():
-                hsi.data, _ = apply_pca(hsi.data, int(self.ui.edit_inf_pca_value.text()))
-
             scaler = getattr(hsl_utils, self.ui.scaler_inf_edit.currentText())
             scaler = scaler(per=self.ui.per_inf_edit.currentText())
             hsi.data = scaler.fit_transform(hsi.data)
+
+            if self.ui.pca_inf_check.isChecked():
+                hsi.data, _ = apply_pca(hsi.data, int(self.ui.edit_inf_pca_value.text()))
 
             fits = {"hsi": hsi,
                     "weights": weight_path,
