@@ -1,7 +1,7 @@
 import ctypes
 import json
 import sys
-from PyQt6.QtCore import Qt, QDir, QEvent, QLineF ,QObject, QPointF, QRect, QRectF, QSignalMapper, QThread, QTimer, \
+from PyQt6.QtCore import Qt, QDir, QEvent, QLineF, QObject, QPointF, QRect, QRectF, QSignalMapper, QThread, QTimer, \
     pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
@@ -10,10 +10,10 @@ from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, 
     QSlider, QSpinBox, QTableWidget, QToolBar, QToolButton, QWidget
 from PyQt6 import uic
 from typing import Any, Dict, List, Optional
-from openhsl.hs_device import HSDevice, HSDeviceType, HSCalibrationSlitData, HSCalibrationWavelengthData
+from openhsl.build.hs_device import HSDevice, HSDeviceType, HSCalibrationSlitData, HSCalibrationWavelengthData
 from openhsl.gui.device.hs_device_qt import HSDeviceQt
 from openhsl.gui.device.hs_graphics_view import HSGraphicsView
-import openhsl.utils as utils
+import openhsl.build.utils as utils
 
 
 # noinspection PyTypeChecker
@@ -21,6 +21,7 @@ class HSDeviceGUI(QMainWindow):
     read_slit_image = pyqtSignal(str)
     threshold_slit_image = pyqtSignal()
     compute_slit_angle = pyqtSignal(QRectF)
+
     def __init__(self):
         super(HSDeviceGUI, self).__init__()
         uic.loadUi('hs_device_mainwindow.ui', self)
@@ -414,7 +415,7 @@ class HSDeviceGUI(QMainWindow):
     @pyqtSlot()
     def on_ui_slit_image_path_button_clicked(self):
         file_path, _filter = QFileDialog.getOpenFileName(self, "Choose file", "",
-                                                "Image file (*.bmp *.png *.jpg *.tif)")
+                                                         "Image file (*.bmp *.png *.jpg *.tif)")
         if file_path != "":
             self.slit_image_path = file_path
             self.ui_slit_image_path_line_edit.setText(self.slit_image_path)

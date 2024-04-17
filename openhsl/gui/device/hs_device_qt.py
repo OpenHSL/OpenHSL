@@ -4,8 +4,9 @@ import numpy as np
 from PyQt6.QtCore import QObject, QRectF, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QImage
 from typing import Optional
-from openhsl.hs_device import HSDevice, HSCalibrationWavelengthData
-import openhsl.hs_image_utils as hsiutils
+from openhsl.build.hs_device import HSDevice, HSCalibrationWavelengthData
+import openhsl.build.hs_image_utils as hsiutils
+
 
 class HSDeviceQt(QObject, HSDevice):
     send_slit_image = pyqtSignal(QImage)
@@ -13,6 +14,7 @@ class HSDeviceQt(QObject, HSDevice):
     compute_slit_angle_finished = pyqtSignal()
     adjsut_slit_angle_range = pyqtSignal(float, float)
     adjsut_slit_intercept_range = pyqtSignal(float, float)
+
     # send_slit_angle = pyqtSignal(float)
     # send_slit_offset = pyqtSignal(float)
     def __init__(self):

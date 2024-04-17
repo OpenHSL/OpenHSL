@@ -5,6 +5,7 @@ from typing import Optional, Tuple
 
 class HSGraphicsView(QGraphicsView):
     marquee_area_changed = pyqtSignal(QPointF, QPointF)
+
     def __init__(self, parent: Optional[QWidget] = None):
         super(HSGraphicsView, self).__init__(parent)
         self.marquee_area_top_left = QPoint()

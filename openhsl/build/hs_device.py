@@ -1,8 +1,8 @@
 import numpy as np
-from openhsl.hs_image_utils import BaseIntEnum
+from openhsl.build.hs_image_utils import BaseIntEnum
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
-import openhsl.utils as utils
+import openhsl.build.utils as utils
 
 
 class HSCalibrationWavelengthData:
