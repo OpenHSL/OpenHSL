@@ -683,6 +683,10 @@ class MainWindow(CIU):
             weight_path = self.imported_weights[item.text()]
 
             hsi = deepcopy(self.current_test_hsi)
+
+            if self.ui.pca_inf_check.isChecked():
+                hsi.data, _ = apply_pca(hsi.data, int(self.ui.edit_inf_pca_value.text()))
+
             scaler = getattr(hsl_utils, self.ui.scaler_inf_edit.currentText())
             scaler = scaler(per=self.ui.per_inf_edit.currentText())
             hsi.data = scaler.fit_transform(hsi.data)

@@ -113,7 +113,7 @@
           <number>0</number>
          </property>
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="inference_widget">
           <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -150,7 +150,7 @@
             <widget class="QComboBox" name="device_box"/>
            </item>
            <item>
-            <widget class="QFrame" name="frame_13">
+            <widget class="QFrame" name="inference_pref_frame">
              <property name="frameShape">
               <enum>QFrame::NoFrame</enum>
              </property>
@@ -174,6 +174,13 @@
                <number>0</number>
               </property>
               <item row="0" column="0">
+               <widget class="QCheckBox" name="pca_inf_check">
+                <property name="text">
+                 <string>Apply PCA</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
                <widget class="QLabel" name="label_12">
                 <property name="text">
                  <string>Scaler</string>
@@ -181,6 +188,27 @@
                </widget>
               </item>
               <item row="1" column="1">
+               <widget class="QComboBox" name="scaler_inf_edit">
+                <item>
+                 <property name="text">
+                  <string>HyperStandardScaler</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>HyperMinMaxScaler</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="label_13">
+                <property name="text">
+                 <string>per</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
                <widget class="QComboBox" name="per_inf_edit">
                 <item>
                  <property name="text">
@@ -194,25 +222,20 @@
                 </item>
                </widget>
               </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_13">
-                <property name="text">
-                 <string>per</string>
-                </property>
-               </widget>
-              </item>
               <item row="0" column="1">
-               <widget class="QComboBox" name="scaler_inf_edit">
-                <item>
-                 <property name="text">
-                  <string>HyperStandardScaler</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>HyperMinMaxScaler</string>
-                 </property>
-                </item>
+               <widget class="QLineEdit" name="edit_inf_pca_value">
+                <property name="text">
+                 <string>40</string>
+                </property>
+                <property name="frame">
+                 <bool>true</bool>
+                </property>
+                <property name="cursorPosition">
+                 <number>2</number>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                </property>
                </widget>
               </item>
              </layout>
@@ -229,7 +252,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>372</width>
-                <height>283</height>
+                <height>205</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_13">
