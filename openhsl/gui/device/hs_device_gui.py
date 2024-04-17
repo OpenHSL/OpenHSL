@@ -255,7 +255,7 @@ class HSDeviceGUI(QMainWindow):
 
     def load_settings(self):
         settings_filename = self.settings_name
-        if utils.dir_exists(settings_filename):
+        if utils.path_exists(settings_filename):
             with open(settings_filename) as settings_file:
                 self.settings_dict = json.load(settings_file)
             # Settings tab
@@ -271,7 +271,7 @@ class HSDeviceGUI(QMainWindow):
         utils.save_dict_to_json(self.device_settings_dict, self.device_settings_path)
 
     def load_device_settings(self):
-        if utils.dir_exists(self.device_settings_path):
+        if utils.path_exists(self.device_settings_path):
             self.device_settings_dict = utils.load_dict_from_json(self.device_settings_path)
             if utils.key_exists_in_dict(self.device_settings_dict, "slit_image_path"):
                 self.slit_image_path = self.device_settings_dict["slit_image_path"]
@@ -345,7 +345,7 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot(str)
     def on_ui_recent_device_settings_action_triggered(self, path: str):
-        if utils.dir_exists(path):
+        if utils.path_exists(path):
             self.device_settings_path = path
             self.ui_device_settings_path_line_edit.setText(self.device_settings_path)
             self.last_device_settings_path = self.device_settings_path

@@ -7,7 +7,7 @@ from typing import Optional
 
 
 # TODO rename to path_exists
-def dir_exists(path: str) -> bool:
+def path_exists(path: str) -> bool:
     return Path(path).exists()
 
 
