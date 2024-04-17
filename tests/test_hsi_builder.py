@@ -1,11 +1,13 @@
 #sys.path.insert(1, '../OpenHSL')
 
-import os
-import shutil
-import pytest
 import numpy as np
+import os
+import pytest
+import shutil
+
+from openhsl.base.hsi import HSImage
 from openhsl.build.builder import HSBuilder
-from openhsl.hsi import HSImage
+
 
 path_to_metadata = "../meta_data.json"
 path_to_copter_data = "../test_data/builder/copter"

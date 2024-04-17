@@ -2,18 +2,18 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
 
-from torch.nn import init
-from typing import Any, Optional, Dict, Union
+from typing import Any, Dict, Optional, Union
 
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-from openhsl.models.model import Model
+from openhsl.base.hsi import HSImage
+from openhsl.base.hs_mask import HSMask
+from openhsl.nn.models.model import Model
 
 
 class ParallelConvBlock(nn.Module):
-    def __init__(self, inp, out):
+    def __init__(self,
+                 inp,
+                 out):
         super().__init__()
         self.conv1 = nn.Conv3d(inp, 16, (1, 1, 1), padding=(0, 0, 0))
         self.bn_conv1 = nn.BatchNorm3d(16)
@@ -24,7 +24,9 @@ class ParallelConvBlock(nn.Module):
         self.conv4 = nn.Conv3d(16, out, (11, 1, 1), padding=(5, 0, 0))
         self.bn_conv4 = nn.BatchNorm3d(out)
 
-    def forward(self, x, **kwargs):
+    def forward(self,
+                x,
+                **kwargs):
 
         x1 = self.conv1(x)
         x2 = self.conv2(x)
@@ -32,6 +34,7 @@ class ParallelConvBlock(nn.Module):
         x4 = self.conv4(x)
 
         return x1 + x2 + x3 + x4
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class NM3DCNN_Net(nn.Module):
@@ -49,11 +52,14 @@ class NM3DCNN_Net(nn.Module):
     @staticmethod
     def weight_init(m):
         if isinstance(m, nn.Linear) or isinstance(m, nn.Conv3d):
-            init.kaiming_uniform_(m.weight)
-            init.zeros_(m.bias)
+            nn.init.kaiming_uniform_(m.weight)
+            nn.init.zeros_(m.bias)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, input_channels, n_classes, patch_size=7):
+    def __init__(self,
+                 input_channels,
+                 n_classes,
+                 patch_size=7):
         super(NM3DCNN_Net, self).__init__()
         self.input_channels = input_channels
         self.patch_size = patch_size
@@ -102,15 +108,15 @@ class NM3DCNN_Net(nn.Module):
 
         x = self.conv1(x)
         x = self.bn_conv1(x)
-        x = F.relu(x)
+        x = nn.functional.relu(x)
         x = self.pcb_1(x)
-        x = F.relu(x)
+        x = nn.functional.relu(x)
         x = self.pcb_2(x)
-        x = F.relu(x)
+        x = nn.functional.relu(x)
 
         x = self.conv4(x)
         x = self.bn_conv4(x)
-        x = F.relu(x)
+        x = nn.functional.relu(x)
 
         x = x.view(-1, self.features_size)
         x = self.fc(x)
@@ -202,4 +208,3 @@ class NM3DCNN(Model):
 
         return prediction
 # ----------------------------------------------------------------------------------------------------------------------
-

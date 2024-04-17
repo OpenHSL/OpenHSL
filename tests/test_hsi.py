@@ -1,7 +1,8 @@
 import pytest
-from scipy.io import loadmat
-from openhsl.hsi import HSImage
 import numpy as np
+
+from scipy.io import loadmat
+from openhsl.base.hsi import HSImage
 
 
 @pytest.fixture

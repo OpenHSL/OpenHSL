@@ -8,15 +8,13 @@ import torch.nn as nn
 import torch.utils.data as udata
 
 from abc import ABC, abstractmethod
-from tqdm import trange, tqdm
 from torcheval.metrics import MulticlassAccuracy
-from typing import Iterable, Dict, Literal
+from tqdm import trange, tqdm
+from typing import Dict, Iterable, Literal
 
-from openhsl.data.utils import get_dataset
-from openhsl.data.torch_dataloader import create_torch_loader
-from openhsl.data.utils import camel_to_snake, grouper, count_sliding_window, \
-                                        sliding_window, sample_gt, convert_to_color_
-from openhsl.utils import init_wandb, init_tensorboard, EarlyStopping
+from openhsl.nn.data.torch_dataloader import create_torch_loader
+from openhsl.nn.data.utils import get_dataset, grouper, count_sliding_window, sliding_window, sample_gt
+from openhsl.nn.models.utils import camel_to_snake, init_wandb, init_tensorboard, EarlyStopping
 
 
 SchedulerTypes = Literal['StepLR', 'CosineAnnealingLR', 'ReduceLROnPlateau']
@@ -430,8 +428,6 @@ def test(net: nn.Module,
     Test a model on a specific image
     """
 
-    # ToDo: Refactor def test(), merge with val if possible
-
     patch_size = hyperparams["patch_size"]
     center_pixel = hyperparams["center_pixel"]
     batch_size, device = hyperparams["batch_size"], hyperparams["device"]
@@ -491,7 +487,10 @@ def save_train_mask(model_name, dataset_name, mask):
     if not os.path.isdir(mask_dir):
         os.makedirs(mask_dir, exist_ok=True)
     gray_filename = f"{mask_dir}/{time_str}_gray_mask.npy"
+
+    # TODO check what's wrong here
     color_filename = f"{mask_dir}/{time_str}_color_mask.png"
+
     np.save(gray_filename, mask)
 # ----------------------------------------------------------------------------------------------------------------------
 

@@ -2,23 +2,23 @@ import copy
 import re
 import itertools
 import numpy as np
-import seaborn as sns
 import sklearn.model_selection
 import torch
 
-from typing import Tuple, Literal, Union, Optional
+from typing import Literal, Optional, Tuple, Union
 from sklearn.decomposition import PCA
-from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
 
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
+from openhsl.base.hsi import HSImage
+from openhsl.base.hs_mask import HSMask
+
 
 ScaleType = Literal['band', 'pixel']
 SamplerMod = Literal['random', 'fixed', 'disjoint']
 
 
-def get_dataset(hsi: HSImage, mask: Optional[HSMask] = None) -> Tuple[np.ndarray, np.ndarray]:
+def get_dataset(hsi: Union[HSImage, np.ndarray],
+                mask: Optional[HSMask, np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
     """
     return data from .mat files in tuple
 
@@ -34,73 +34,36 @@ def get_dataset(hsi: HSImage, mask: Optional[HSMask] = None) -> Tuple[np.ndarray
         mask of hyperspectral image
 
     """
-    ignored_labels = [0]
     if isinstance(hsi, HSImage):
         for n, ch in enumerate(hsi):
             if np.all(np.unique(ch) == [0]):
                 print(f"WARNING! {n}-CHANNEL HAS NO VALID DATA! ONLY ZEROS IN DATA!")
             else:
                 continue
-
         img = hsi.data
+
     elif isinstance(hsi, np.ndarray):
         img = copy.deepcopy(hsi)
+
     else:
         raise Exception(f"Wrong type of hsi, {type(hsi)}")
 
-    if np.any(mask):
+    if mask is not None:
         if isinstance(mask, HSMask):
             gt = mask.get_2d()
+
         elif isinstance(mask, np.ndarray):
             gt = copy.deepcopy(mask)
+
         else:
             raise Exception(f"Wrong type of mask, {type(mask)}")
+
         gt = gt.astype("int32")
+
     else:
         gt = None
 
     return img, gt
-
-
-def __prepare_pred_target(prediction, target):
-    prediction = prediction.flatten()
-
-    if isinstance(target, HSMask):
-        target = target.get_2d()
-    target = target.flatten()
-
-    # remove all pixels with zero-value mask
-    indices = np.nonzero(target)
-    prediction = prediction[indices]
-    target = target[indices]
-
-    return prediction, target
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def get_accuracy(prediction: np.ndarray,
-                 target: Union[np.ndarray, HSMask],
-                 *args,
-                 **kwargs):
-    prediction, target = __prepare_pred_target(prediction, target)
-
-    return accuracy_score(target, prediction, *args, **kwargs)
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def get_f1(prediction: np.ndarray,
-           target: Union[np.ndarray, HSMask],
-           *args,
-           **kwargs):
-    prediction, target = __prepare_pred_target(prediction, target)
-
-    return f1_score(prediction, target, *args, **kwargs)
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def get_confusion_matrix():
-    pass
-# ----------------------------------------------------------------------------------------------------------------------
 
 
 class HyperStandardScaler:
@@ -297,21 +260,6 @@ def standardize_input_data(data: np.ndarray) -> np.ndarray:
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def get_device(ordinal: int):
-    # Use GPU ?
-    if ordinal < 0:
-        print("Computation on CPU")
-        device = torch.device('cpu')
-    elif torch.cuda.is_available():
-        print("Computation on CUDA GPU device {}".format(ordinal))
-        device = torch.device('cuda:{}'.format(ordinal))
-    else:
-        print("/!\\ CUDA was requested but is not available! Computation will go on CPU. /!\\")
-        device = torch.device('cpu')
-    return device
-# ----------------------------------------------------------------------------------------------------------------------
-
-
 def sliding_window(image, step=10, window_size=(20, 20), with_data=True):
     """Sliding window generator over an input image.
 
@@ -413,7 +361,6 @@ def sample_gt(gt: np.ndarray,
     """
     indices = np.nonzero(gt)
     X = list(zip(*indices))  # x,y features
-    y = gt[indices].ravel()  # classes
     train_gt = np.zeros_like(gt)
     test_gt = np.zeros_like(gt)
 
@@ -470,40 +417,3 @@ def sample_gt(gt: np.ndarray,
     return train_gt, test_gt
 # ----------------------------------------------------------------------------------------------------------------------
 
-
-def camel_to_snake(name):
-    s = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s).lower()
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def get_palette(num_classes):
-    palette = {0: (0, 0, 0)}
-    for k, color in enumerate(sns.color_palette("hls", num_classes)):
-        palette[k + 1] = tuple(np.asarray(255 * np.array(color), dtype="uint8"))
-
-    return palette
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def convert_to_color_(arr_2d, palette=None):
-    """Convert an array of labels to RGB color-encoded image.
-
-    Args:
-        arr_2d: int 2D array of labels
-        palette: dict of colors used (label number -> RGB tuple)
-
-    Returns:
-        arr_3d: int 2D images of color-encoded labels in RGB format
-
-    """
-    arr_3d = np.zeros((arr_2d.shape[0], arr_2d.shape[1], 3), dtype=np.uint8)
-    if palette is None:
-        palette = get_palette(np.max(arr_2d))
-
-    for c, i in palette.items():
-        m = arr_2d == c
-        arr_3d[m] = i
-
-    return arr_3d
-# ----------------------------------------------------------------------------------------------------------------------
