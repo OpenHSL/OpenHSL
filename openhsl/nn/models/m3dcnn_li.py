@@ -2,14 +2,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
 
-from torch.nn import init
-from typing import Any, Optional, Dict, Union
+from typing import Any, Dict, Optional, Union
 
-from openhsl.models.model import Model
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
+from openhsl.base.hsi import HSImage
+from openhsl.base.hs_mask import HSMask
+from openhsl.nn.models.model import Model
 
 
 class Li3DCNN_Net(nn.Module):
@@ -23,8 +21,8 @@ class Li3DCNN_Net(nn.Module):
     @staticmethod
     def weight_init(m):
         if isinstance(m, nn.Linear) or isinstance(m, nn.Conv3d):
-            init.xavier_uniform_(m.weight.data)
-            init.constant_(m.bias.data, 0)
+            nn.init.xavier_uniform_(m.weight.data)
+            nn.init.constant_(m.bias.data, 0)
 
     def __init__(self, input_channels, n_classes, n_planes=2, patch_size=5):
         super(Li3DCNN_Net, self).__init__()
@@ -62,8 +60,8 @@ class Li3DCNN_Net(nn.Module):
     # ------------------------------------------------------------------------------------------------------------------
 
     def forward(self, x):
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
+        x = nn.functional.relu(self.conv1(x))
+        x = nn.functional.relu(self.conv2(x))
         x = x.view(-1, self.features_size)
         x = self.dropout(x)
         x = self.fc(x)

@@ -1,11 +1,10 @@
 import numpy as np
-import torch
-import torch.utils
 import torch.utils.data as udata
 
-from typing import Dict, Any
+from torch import from_numpy
+from typing import Any, Dict
 
-from openhsl.data.utils import is_coordinate_in_padded_area
+from openhsl.nn.data.utils import is_coordinate_in_padded_area
 
 
 def create_torch_loader(img: np.array,
@@ -14,9 +13,10 @@ def create_torch_loader(img: np.array,
                         shuffle: Any = False):
     dataset = TorchDataLoader(img, gt, **hyperparams)
     return udata.DataLoader(dataset, batch_size=hyperparams["batch_size"], shuffle=shuffle)
+# ----------------------------------------------------------------------------------------------------------------------
 
 
-class TorchDataLoader(torch.utils.data.Dataset):
+class TorchDataLoader(udata.Dataset):
     """ Generic class for a hyperspectral scene """
 
     def __init__(self,
@@ -113,8 +113,8 @@ class TorchDataLoader(torch.utils.data.Dataset):
         label = np.asarray(np.copy(label), dtype="int64")
 
         # Load the data into PyTorch tensors
-        data = torch.from_numpy(data)
-        label = torch.from_numpy(label)
+        data = from_numpy(data)
+        label = from_numpy(label)
         # Extract the center label if needed
         if self.center_pixel and self.patch_size > 1:
             label = label[self.patch_size // 2, self.patch_size // 2]

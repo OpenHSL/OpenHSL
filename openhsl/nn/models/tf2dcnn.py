@@ -3,17 +3,16 @@ import os
 import tensorflow as tf
 import wandb
 
+from keras.layers import BatchNormalization, Conv2D, Dense, Dropout, Flatten
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, Conv2D, BatchNormalization
 from keras.optimizers import SGD
-from keras.callbacks import Callback
-from typing import Optional, Dict, Any, Union
+from typing import Any, Dict, Optional, Union
 
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-from openhsl.data.utils import get_dataset
-from openhsl.data.tf_dataloader import get_test_generator, get_train_val_gens
-from openhsl.models.utils import init_wandb, init_tensorboard
+from openhsl.base.hsi import HSImage
+from openhsl.base.hs_mask import HSMask
+from openhsl.nn.data.tf_dataloader import get_test_generator, get_train_val_gens
+from openhsl.nn.data.utils import get_dataset
+from openhsl.nn.models.utils import init_tensorboard, init_wandb
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -171,8 +170,7 @@ class TF2DCNN:
         test_generator = get_test_generator(img, patch_size=self.hyperparams['patch_size'])
         ds_test = tf.data.Dataset.from_generator(lambda: test_generator, types, shapes).batch(batch_size)
 
-        # TODO bad issue
-        total = sum([1 for i in ds_test])
+        total = sum([1 for _ in ds_test])
 
         test_generator = get_test_generator(img, patch_size=self.hyperparams['patch_size'])
         ds_test = tf.data.Dataset.from_generator(lambda: test_generator, types, shapes).batch(batch_size)

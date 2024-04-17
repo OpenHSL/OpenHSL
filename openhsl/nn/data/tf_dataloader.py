@@ -1,6 +1,9 @@
 import numpy as np
 
-from openhsl.data.utils import pad_with_zeros, split_train_test_set
+from openhsl.nn.data.utils import pad_with_zeros, split_train_test_set
+
+
+# TODO docstrings all methods here...
 
 
 def get_data_generator(X: np.ndarray,
@@ -42,7 +45,12 @@ def get_test_generator(X: np.array,
 
 
 class Gen:
-    def __init__(self, X, indices, labels, patch_size, num_classes):
+    def __init__(self,
+                 X,
+                 indices,
+                 labels,
+                 patch_size,
+                 num_classes):
         self.X = X
         self.indices = indices
         self.labels = labels
@@ -89,5 +97,4 @@ def get_train_val_gens(X: np.array,
     val_gen = Gen(X, X_val, y_val, patch_size, num_classes=num_classes)
 
     return train_gen, val_gen
-
 # ----------------------------------------------------------------------------------------------------------------------

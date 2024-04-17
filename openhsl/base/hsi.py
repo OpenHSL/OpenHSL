@@ -1,5 +1,5 @@
-import json
 import h5py
+import json
 import numpy as np
 import os.path
 import rasterio
@@ -8,7 +8,7 @@ from os import listdir, mkdir
 from PIL import Image
 from scipy.interpolate import interp1d
 from scipy.io import loadmat, savemat
-from typing import Optional, List, Union
+from typing import List, Optional, Union
 
 
 class HSImage:
@@ -741,3 +741,4 @@ def hsi_to_rgb(hsi: HSImage,
     rgb = contrast_correction(rgb, gamma_thresh)
 
     return rgb
+# ----------------------------------------------------------------------------------------------------------------------
