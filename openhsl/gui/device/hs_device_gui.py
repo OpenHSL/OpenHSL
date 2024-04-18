@@ -311,7 +311,7 @@ class HSDeviceGUI(QMainWindow):
 
         # TODO add mutex locker
         if self.init_after_load_device_settings:
-            self.draw_slit_data()
+            self.on_compute_slit_angle_finished()
 
     @pyqtSlot(QImage)
     def receive_slit_preview_image(self, image_qt: QImage):
