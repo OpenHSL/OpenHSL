@@ -71,6 +71,16 @@ class HSDeviceGUI(QMainWindow):
         self.ui_slit_image_path_line_edit: QLineEdit = self.findChild(QLineEdit, 'slitImagePath_lineEdit')
         self.ui_load_slit_image_button: QPushButton = self.findChild(QPushButton, 'loadSlitImage_pushButton')
         self.ui_calc_slit_angle_button: QPushButton = self.findChild(QPushButton, 'calcSlitAngle_pushButton')
+        # Barrel distortion tab
+        self.ui_barrel_distortion_graphics_view: HSGraphicsView = \
+            self.findChild(HSGraphicsView, 'barrelDistortion_graphicsView')
+        self.ui_apply_rotation_checkbox: QCheckBox = self.findChild(QCheckBox, 'applyRotation_checkBox')
+        self.ui_barrel_distortion_equation_view_label: QLabel = \
+            self.findChild(QLabel, 'barrelDistortionEquationView_label')
+        self.ui_barrel_distortion_equation_set_button: QPushButton = \
+            self.findChild(QPushButton, 'barrelDistortionEquationSet_pushButton')
+        self.ui_barrel_distortion_equation_estimate_button: QPushButton = \
+            self.findChild(QPushButton, 'barrelDistortionEquationEstimate_pushButton')
         # Wavelengths tab
         self.ui_wavelength_table_widget: QTableWidget = self.findChild(QTableWidget, 'wavelength_tableWidget')
         # Settings tab
