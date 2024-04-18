@@ -585,6 +585,21 @@ class HSDeviceGUI(QMainWindow):
         # zero interval timer fires only when after all events in the queue are processed
         QTimer.singleShot(0, self.on_main_window_is_shown)
 
+    def show_message_box(self, title: str, message: str, message_type: str = 'info'):
+        message_box = QMessageBox(QMessageBox.Icon.NoIcon, title, message, QMessageBox.StandardButton.Ok, self)
+        message_box.setModal(True)
+        icon_size = 36
+        icon_qsize = QSize(icon_size, icon_size)
+        icon_path = 'icons:ud-info-square.svg'
+        if message_type == 'info':
+            icon_path = 'icons:ud-info-square.svg'
+        elif message_type == 'warn':
+            icon_path = 'icons:ud-exclamation-square.svg'
+        elif message_type == 'error':
+            icon_path = 'icons:ud-x-square.svg'
+        message_box.setIconPixmap(QIcon(icon_path).pixmap(icon_qsize))
+        message_box.show()
+
 
 def main():
     import sass

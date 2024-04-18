@@ -429,6 +429,19 @@ QPushButton {
 }
 
 /****************************************
+ *             QMessageBox              *
+ ****************************************/
+
+QMessageBox {
+	background-color: $bg-dark;
+	color: $fg-text;
+
+	//QLabel#qt_msgbox_label{
+	//	min-width: 100px;
+	//}
+}
+
+/****************************************
  *             QScrollBar               *
  ****************************************/
 
