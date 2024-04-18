@@ -18,7 +18,7 @@ SamplerMod = Literal['random', 'fixed', 'disjoint']
 
 
 def get_dataset(hsi: Union[HSImage, np.ndarray],
-                mask: Optional[HSMask, np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
+                mask: Optional[HSMask] = None) -> Tuple[np.ndarray, np.ndarray]:
     """
     return data from .mat files in tuple
 

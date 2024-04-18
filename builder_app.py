@@ -1,23 +1,21 @@
-import sys
 import json
+import sys
+
 from copy import deepcopy
+
+from PyQt5.QtCore import QThread, QObject, pyqtSignal as Signal, pyqtSlot as Slot
 from PyQt5.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit
 
-from gui.utils import (get_date_time, save_json_dict, create_dir_if_not_exist,
-                       get_file_directory, get_file_extension, get_file_name)
 from gui.common_gui import CIU
-from gui.utils import request_keys_from_mat_file, request_keys_from_h5_file
 from gui.mac_builder_gui import Ui_MainWindow
-from PyQt5.QtCore import QThread, QObject, pyqtSignal as Signal, pyqtSlot as Slot
+from gui.utils import (get_date_time, save_json_dict, create_dir_if_not_exist,
+                       get_file_directory, get_file_extension, get_file_name,
+                       request_keys_from_mat_file, request_keys_from_h5_file)
 
+from openhsl.base.hsi import HSImage, hsi_to_rgb
 from openhsl.build.builder import HSBuilder
-from openhsl.hsi import HSImage
-from openhsl.utils import hsi_to_rgb
-
-from pprint import pprint
 
 
-# ic.disable()
 class Worker(QObject):
     meta_data = Signal(dict)
 

@@ -190,7 +190,7 @@ class HSImage:
 
         """
         path_to_file = '.'.join(path_to_file.split('.')[:-1]) + '_metainfo.json'
-        if not self.wavelengths:
+        if self.wavelengths is None:
             print('Wavelengths are empty! Save as empy list.')
             self.wavelengths = []
         data = {"wavelengths": list(self.wavelengths)}

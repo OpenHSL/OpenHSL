@@ -1,42 +1,40 @@
+import matplotlib.pyplot as plt
+import numpy as np
 import os
 import sys
 import torch
 import torch.nn as nn
 import tensorflow as tf
-from keras.callbacks import Callback
-from tqdm import trange
+
 from copy import deepcopy
-import numpy as np
+from keras.callbacks import Callback
 from sklearn.metrics import classification_report, confusion_matrix
-import matplotlib.pyplot as plt
+from tqdm import trange
 
-from PyQt5.QtWidgets import (QApplication, QFileDialog)
-from PyQt5.QtGui import QFont
 from PyQt5.QtCore import QThread, QObject, pyqtSignal as Signal, pyqtSlot as Slot
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import (QApplication, QFileDialog)
 
+from gui.common_gui import CIU
+from gui.mac_trainer_gui import Ui_MainWindow
 from gui.utils import (get_file_name, get_file_extension, get_date_time, create_dir_if_not_exist,
                        request_keys_from_h5_file, request_keys_from_mat_file,
                        get_gpu_info)
-from gui.common_gui import CIU
-from gui.mac_trainer_gui import Ui_MainWindow
 
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-from openhsl.data.utils import get_dataset
-from openhsl.data.torch_dataloader import create_torch_loader
-from openhsl.models.model import train_one_epoch, val_one_epoch, get_optimizer, get_scheduler
-from openhsl.data.utils import get_palette, convert_to_color_, sample_gt
-import openhsl.data.utils as hsl_utils
-from openhsl.models.utils import get_mean_weights
-from openhsl.data.utils import apply_pca
+import openhsl.nn.data.utils as hsl_utils
+from openhsl.base.hsi import HSImage
+from openhsl.base.hs_mask import HSMask, get_palette, convert_to_color
+from openhsl.nn.data.tf_dataloader import get_train_val_gens
+from openhsl.nn.data.torch_dataloader import create_torch_loader
+from openhsl.nn.data.utils import get_dataset, sample_gt, apply_pca
+from openhsl.nn.models.model import train_one_epoch, val_one_epoch, get_optimizer, get_scheduler
+from openhsl.nn.models.utils import get_mean_weights
 
-from openhsl.models.ssftt import SSFTT
-from openhsl.models.m1dcnn import M1DCNN
-from openhsl.models.m3dcnn_li import M3DCNN as LI
-from openhsl.models.nm3dcnn import NM3DCNN
-from openhsl.data.tf_dataloader import get_test_generator, get_train_val_gens
-from openhsl.models.tf2dcnn import TF2DCNN
-
+from openhsl.nn.models.ssftt import SSFTT
+from openhsl.nn.models.m1dcnn import M1DCNN
+from openhsl.nn.models.m3dcnn_li import M3DCNN as LI
+from openhsl.nn.models.nm3dcnn import NM3DCNN
+from openhsl.nn.models.tf2dcnn import TF2DCNN
 
 models_dict = {
     "M1DCNN": M1DCNN,
@@ -47,7 +45,6 @@ models_dict = {
 }
 
 stop_train = False
-
 
 tf_train_params = {}
 
@@ -185,7 +182,8 @@ class TrainWorker(QObject):
 
                 train_generator, val_generator = get_train_val_gens(X=img,
                                                                     y=gt,
-                                                                    train_sample_percentage=fits["fit_params"]['train_sample_percentage'],
+                                                                    train_sample_percentage=fits["fit_params"][
+                                                                        'train_sample_percentage'],
                                                                     patch_size=5)
 
                 types = (tf.float32, tf.int32)
@@ -208,7 +206,7 @@ class TrainWorker(QObject):
                     os.makedirs(checkpoint_filepath)
 
                 # add visualisations via callbacks
-                callbacks = []
+                callbacks = list()
 
                 callbacks.append(SendStatsCallback(self.progress_signal))
 
@@ -221,11 +219,6 @@ class TrainWorker(QObject):
                                         steps_per_epoch=steps,
                                         verbose=1,
                                         callbacks=callbacks)
-
-                #self.train_loss = history.history.get('loss', [])
-                #self.val_loss = history.history.get('val_loss', [])
-                #self.train_accs = history.history.get('accuracy', [])
-                #self.val_accs = history.history.get('val_accuracy', [])
 
                 net.model.save(f'{checkpoint_filepath}/weights.h5')
 
@@ -357,10 +350,10 @@ class MainWindow(CIU):
 
     def import_weights(self):
         file_name, _ = QFileDialog.getOpenFileName(self,
-                                                    "Select a weight file",
-                                                    "",
-                                                    "(*.pth);;(*.pt);;(*.h5)",
-                                                    options=QFileDialog.Options())
+                                                   "Select a weight file",
+                                                   "",
+                                                   "(*.pth);;(*.pt);;(*.h5)",
+                                                   options=QFileDialog.Options())
         if file_name:
             name = get_file_name(file_name)
             self.stack_str_in_QListWidget(self.ui.list_of_models, name)
@@ -379,12 +372,14 @@ class MainWindow(CIU):
             if ext == ".mat":
                 keys = request_keys_from_mat_file(file_name)
                 key = self.show_dialog_with_choice(keys, "Select a key", "Keys:")
-                if not key: return
+                if not key:
+                    return
                 hsi.load_from_mat(file_name, key)
             elif ext == ".h5":
                 keys = request_keys_from_h5_file(file_name)
                 key = self.show_dialog_with_choice(keys, "Select a key", "Keys:")
-                if not key: return
+                if not key:
+                    return
                 hsi.load_from_h5(file_name, key)
             elif ext == ".npy":
                 hsi.load_from_npy(file_name)
@@ -450,8 +445,8 @@ class MainWindow(CIU):
 
     def show_mask(self):
         if self.current_mask is not None:
-            self.current_image = convert_to_color_(self.current_mask.get_2d(),
-                                                   self.current_data[self.current_key]["palette"])
+            self.current_image = convert_to_color(self.current_mask.get_2d(),
+                                                  self.current_data[self.current_key]["palette"])
             self.update_current_image(self.ui.horizontalSlider.value(),
                                       self.ui.highcontast_check.isChecked(),
                                       self.ui.spin_channels.value(),
@@ -459,8 +454,8 @@ class MainWindow(CIU):
 
     def show_predict(self):
         if self.current_predict is not None:
-            self.current_image = convert_to_color_(self.current_predict,
-                                                   self.current_data[self.current_key]["palette"])
+            self.current_image = convert_to_color(self.current_predict,
+                                                  self.current_data[self.current_key]["palette"])
             self.update_current_image(self.ui.horizontalSlider.value(),
                                       self.ui.highcontast_check.isChecked(),
                                       self.ui.spin_channels.value(),
@@ -532,14 +527,14 @@ class MainWindow(CIU):
             if self.current_data[item]["mask"]:
                 self.current_test_mask = self.current_data[item]["mask"]
                 mask_array = self.current_test_mask.get_2d()
-                mask_array = convert_to_color_(mask_array, self.current_data[item]["palette"])
+                mask_array = convert_to_color(mask_array, self.current_data[item]["palette"])
                 self.set_image_to_label(image=mask_array,
                                         image_label=self.ui.mask_test_icon,
                                         scale_factor=20)
 
             if isinstance(self.current_data[item]["predict"], np.ndarray):
                 self.current_test_predict = self.current_data[item]["predict"]
-                mask_array = convert_to_color_(self.current_test_predict, self.current_data[item]["palette"])
+                mask_array = convert_to_color(self.current_test_predict, self.current_data[item]["palette"])
                 self.set_image_to_label(image=mask_array,
                                         image_label=self.ui.predict_test_icon,
                                         scale_factor=20)
@@ -554,7 +549,7 @@ class MainWindow(CIU):
                 mid = self.current_train_hsi.data.shape[2] // 2
                 self.current_train_mask = self.current_data[item]["mask"]
                 mask_array = self.current_train_mask.get_2d()
-                mask_array = convert_to_color_(mask_array, self.current_data[item]["palette"])
+                mask_array = convert_to_color(mask_array, self.current_data[item]["palette"])
                 self.set_image_to_label(image=self.current_data[item]['hsi'].data,
                                         image_label=self.ui.hsi_icon_label,
                                         scale_factor=20,
@@ -574,11 +569,11 @@ class MainWindow(CIU):
             self.ui.learning_progressbar.setValue(0)
             self.ui.learning_progressbar.setMaximum(int(self.ui.epochs_edit.text()))
 
-            self.g_val_accs = []
-            self.g_train_accs = []
-            self.g_epochs = []
-            self.g_val_losses = []
-            self.g_train_losses = []
+            self.g_val_accs = list()
+            self.g_train_accs = list()
+            self.g_epochs = list()
+            self.g_val_losses = list()
+            self.g_train_losses = list()
 
             if self.ui.need_load_weight_checkBox.isChecked():
                 item = self.ui.list_of_models.currentItem()
@@ -707,7 +702,8 @@ class MainWindow(CIU):
         elif "predict" in data:
             self.current_test_predict = data["predict"]
             self.current_data[self.current_test_key]["predict"] = self.current_test_predict
-            mask_array = convert_to_color_(self.current_test_predict, self.current_data[self.current_test_key]["palette"])
+            mask_array = convert_to_color(self.current_test_predict,
+                                          self.current_data[self.current_test_key]["palette"])
             self.set_image_to_label(image=mask_array,
                                     image_label=self.ui.predict_test_icon,
                                     scale_factor=20)
@@ -735,7 +731,8 @@ class MainWindow(CIU):
 
     def update_cm(self):
         if self.current_confusion_matrix is not None:
-            self.set_image_to_label(self.current_confusion_matrix, self.ui.cm_matrix_label, int(self.ui.cm_slider.value()))
+            self.set_image_to_label(self.current_confusion_matrix, self.ui.cm_matrix_label,
+                                    int(self.ui.cm_slider.value()))
 
     def update_metrics(self, report):
         self.ui.accuracy_label.setText(str(report["accuracy"]))

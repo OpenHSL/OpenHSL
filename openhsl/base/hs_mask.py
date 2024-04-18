@@ -518,7 +518,7 @@ class HSMask:
     # ------------------------------------------------------------------------------------------------------------------
 
 
-def __get_palette(num_classes):
+def get_palette(num_classes):
     palette = {0: (0, 0, 0)}
     for k, color in enumerate(sns.color_palette("hls", num_classes)):
         palette[k + 1] = tuple(np.asarray(255 * np.array(color), dtype="uint8"))
@@ -527,7 +527,7 @@ def __get_palette(num_classes):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def __convert_to_color(arr_2d, palette=None):
+def convert_to_color(arr_2d, palette=None):
     """Convert an array of labels to RGB color-encoded image.
 
     Args:
@@ -540,7 +540,7 @@ def __convert_to_color(arr_2d, palette=None):
     """
     arr_3d = np.zeros((arr_2d.shape[0], arr_2d.shape[1], 3), dtype=np.uint8)
     if palette is None:
-        palette = __get_palette(np.max(arr_2d))
+        palette = get_palette(np.max(arr_2d))
 
     for c, i in palette.items():
         m = arr_2d == c
@@ -560,9 +560,9 @@ def colorize_mask(mask: Union[HSMask, np.ndarray], palette=None):
         raise Exception("Unsupported mask type")
 
     if palette is None:
-        palette = __get_palette(np.max(mask_data))
+        palette = get_palette(np.max(mask_data))
 
-    colored_mask = __convert_to_color(mask_data, palette=palette)
+    colored_mask = convert_to_color(mask_data, palette=palette)
 
     return colored_mask
 # ----------------------------------------------------------------------------------------------------------------------
@@ -573,9 +573,9 @@ def draw_colored_mask(mask: HSMask,
                       mask_labels: dict = None,
                       stack_type: Literal['v', 'h'] = 'v'):
     # TODO rethink it
-    palette = __get_palette(np.max(mask.get_2d()))
+    palette = get_palette(np.max(mask.get_2d()))
 
-    color_gt = __convert_to_color(mask.get_2d(), palette=palette)
+    color_gt = convert_to_color(mask.get_2d(), palette=palette)
 
     t = 1
     tmp = lambda x: [i / 255 for i in x]
@@ -590,7 +590,7 @@ def draw_colored_mask(mask: HSMask,
 
     plt.figure(figsize=(12, 12))
     if np.any(predicted_mask):
-        color_pred = __convert_to_color(predicted_mask, palette=palette)
+        color_pred = convert_to_color(predicted_mask, palette=palette)
         if stack_type == 'v':
             combined = np.vstack((color_gt, color_pred))
         elif stack_type == 'h':
