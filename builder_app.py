@@ -1,14 +1,20 @@
 import sys
 import json
+from copy import deepcopy
 from PyQt5.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit
 
 from gui.utils import (get_date_time, save_json_dict, create_dir_if_not_exist,
                        get_file_directory, get_file_extension, get_file_name)
 from gui.common_gui import CIU
+from gui.utils import request_keys_from_mat_file, request_keys_from_h5_file
 from gui.mac_builder_gui import Ui_MainWindow
 from PyQt5.QtCore import QThread, QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
 from openhsl.build.builder import HSBuilder
+from openhsl.hsi import HSImage
+from openhsl.utils import hsi_to_rgb
+
+from pprint import pprint
 
 
 # ic.disable()
@@ -46,6 +52,9 @@ class MainWindow(CIU):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.hsis = {}
+        self.pixel_color = None
+        self.current_pixel = None
+        self.current_hsi = None
 
         # THREAD SETUP
         self.worker = Worker()
@@ -59,17 +68,13 @@ class MainWindow(CIU):
         self.worker_thread.start()
 
         # BUTTONS CONNECTIONS
-        self.ui.import_data_btn.clicked.connect(
-            lambda: self.import_file(formats="(*.avi);;(*.mp4)",
-                                     destination_widget=self.ui.imported_Qlist))
-        self.ui.import_dir_btn.clicked.connect(
-            lambda: self.import_dir(destination_widget=self.ui.imported_Qlist))
-        self.ui.delete_data_btn.clicked.connect(
-            lambda: self.delete_from_QListWidget(self.ui.imported_Qlist))
-        self.ui.build_btn.clicked.connect(self.start_build)
+        self.ui.build_file_btn.clicked.connect(self.start_build_from_file)
+        self.ui.build_dir_btn.clicked.connect(lambda: self.start_build_from_file(dir=True))
         self.ui.show_btn.clicked.connect(self.show_local_hsi)
         self.ui.save_as_btn.clicked.connect(self.save_hsi)
         self.ui.delete_hsi.clicked.connect(self.delete_hsi_from_hsi_Qlist)
+        self.ui.import_hsi.clicked.connect(self.import_hsi)
+        self.ui.white_point_btn.clicked.connect(self.set_white_point)
 
         # OHTER INTERACT
         self.ui.horizontalSlider.valueChanged.connect(
@@ -97,11 +102,74 @@ class MainWindow(CIU):
         self.ui.metadata_checkbox.stateChanged.connect(
             lambda: self.change_state_btn_cause_checkbox(self.ui.check_light_norm))
 
+        self.ui.view_box.currentIndexChanged.connect(self.view_changed)
+
         self.show()
 
-    def start_build(self):
-        if self.ui.imported_Qlist.currentItem():
-            meta = {"data": self.ui.imported_Qlist.currentItem().text(),
+    def set_white_point(self):
+        if self.current_hsi is None: return
+        if self.current_pixel is None: return
+        new_hsi = deepcopy(self.current_hsi)
+        hyperpixel = new_hsi.data[self.current_pixel[1], self.current_pixel[0], :]
+        new_hsi.calibrate_white_reference(hyperpixel)
+        time = get_date_time()[1]
+        self.hsis[f"{time}_white_point"] = {"hsi": new_hsi}
+        self.stack_str_in_QListWidget(self.ui.hsi_Qlist, f"{time}_white_point")
+
+    def view_changed(self):
+        if self.current_image is None: return
+        state = self.ui.view_box.currentText()
+        if state == "layers":
+            self.current_image = self.current_hsi.data
+            self.update_current_image(self.ui.horizontalSlider.value(),
+                                      self.ui.check_high_contast.isChecked(),
+                                      self.ui.spinBox.value(),
+                                      self.ui.image_label)
+        elif state == "RGB":
+            self.current_image = hsi_to_rgb(self.current_hsi)
+            self.update_current_image(self.ui.horizontalSlider.value(),
+                                      False,
+                                      0,
+                                      self.ui.image_label)
+
+    def import_hsi(self):
+        file_name, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+                                                   "(*.npy);;(*.mat);;(*.h5);;(*.tiff)",
+                                                   options=QFileDialog.Options())
+        if file_name:
+            hsi = HSImage()
+            name = self.cut_path_with_deep(file_name, 1)
+            ext = get_file_extension(file_name)
+            if ext == ".mat":
+                keys = request_keys_from_mat_file(file_name)
+                key = self.show_dialog_with_choice(keys, "Choose key", "Choose key from list")
+                if not key: return
+                hsi.load_from_mat(file_name, key)
+
+            elif ext == ".h5":
+                keys = request_keys_from_h5_file(file_name)
+                key = self.show_dialog_with_choice(keys, "Choose key", "Choose key from list")
+                if not key: return
+                hsi.load_from_h5(file_name, key)
+
+            elif ext == ".npy":
+                hsi.load_from_npy(file_name)
+
+            elif ext == ".tiff":
+                hsi.load_from_tiff(file_name)
+
+            self.hsis[name] = {"hsi": hsi}
+            self.stack_str_in_QListWidget(self.ui.hsi_Qlist, name)
+
+    def start_build_from_file(self, dir=False):
+        if dir:
+            file_name = QFileDialog.getExistingDirectory(self, "Select Directory")
+        else:
+            file_name, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+                                                       "(*.avi)",
+                                                       options=QFileDialog.Options())
+        if file_name:
+            meta = {"data": file_name,
                     "norm_rotation": self.ui.check_norm_rotation.isChecked(),
                     "barrel_distortion_normalize": self.ui.check_barrel_dist_norm.isChecked(),
                     "light_normalize": self.ui.check_light_norm.isChecked(),
@@ -120,7 +188,8 @@ class MainWindow(CIU):
                                                            options=QFileDialog.Options())
                 if file_name:
                     meta["metadata"] = file_name
-                else: return
+                else:
+                    return
 
             if self.ui.telemetry_requiared.isChecked():
                 file_name, _ = QFileDialog.getOpenFileName(self,
@@ -130,26 +199,42 @@ class MainWindow(CIU):
                                                            options=QFileDialog.Options())
                 if file_name:
                     meta["telemetry"] = file_name
-                else: return
+                else:
+                    return
 
-            self.ui.build_btn.setEnabled(False)
+            self.ui.build_file_btn.setEnabled(False)
+            self.ui.build_dir_btn.setEnabled(False)
             self.meta_requested.emit(meta)
 
     def write_meta(self, meta):
         if "error" in meta:
-            self.ui.build_btn.setEnabled(True)
+            self.ui.build_file_btn.setEnabled(True)
+            self.ui.build_dir_btn.setEnabled(True)
             self.show_error(meta["error"])
             return
 
         self.hsis[meta["time"]] = meta
         self.stack_str_in_QListWidget(self.ui.hsi_Qlist, meta["time"])
-        self.ui.build_btn.setEnabled(True)
+        self.ui.build_file_btn.setEnabled(True)
+        self.ui.build_dir_btn.setEnabled(True)
 
     def show_local_hsi(self):
         item = self.ui.hsi_Qlist.currentItem()
         if item:
             item = item.text()
             hsi = self.hsis[item]["hsi"]
+            ### IT's a HARDCODE SHIT!!!!!!!!!!!!!
+            import numpy as np
+            hsi.wavelengths = np.linspace(320, 920, 103)
+            ### IT"S A HARDCODE SHIT END!!!!!!!!!!!
+            self.current_hsi = hsi
+
+            self.ui.view_box.removeItem(1)
+
+            if len(hsi.wavelengths) == hsi.data.shape[2]:
+                self.ui.view_box.addItem("RGB")
+
+
             self.current_image = hsi.data
             self.ui.spinBox.setValue(0)
             self.ui.spinBox.setMaximum(self.current_image.shape[2] - 1)
@@ -157,6 +242,24 @@ class MainWindow(CIU):
                                       self.ui.check_high_contast.isChecked(),
                                       0,
                                       self.ui.image_label)
+            self.ui.image_label.mousePressEvent = self.get_pixel_index
+
+    def get_pixel_index(self, event):
+        x = event.pos().x()
+        y = event.pos().y()
+        pixmap = self.ui.image_label.pixmap()
+        if pixmap:
+            if 0 <= x < pixmap.width() and 0 <= y < pixmap.height():
+                x = int(x / pixmap.width() * self.current_image.shape[1])
+                y = int(y / pixmap.height() * self.current_image.shape[0])
+                self.pixel_color = self.current_hsi.data[y, x, :]
+                self.current_pixel = (x, y)
+                self.update_histogram()
+
+    def update_histogram(self):
+        if self.pixel_color is not None:
+            self.ui.histogramm.clear()
+            self.ui.histogramm.plot(self.pixel_color, pen=(255, 255, 255))
 
     def save_hsi(self):
         item = self.ui.hsi_Qlist.currentItem()

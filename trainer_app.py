@@ -5,6 +5,7 @@ import torch.nn as nn
 import tensorflow as tf
 from keras.callbacks import Callback
 from tqdm import trange
+from copy import deepcopy
 import numpy as np
 from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
@@ -25,6 +26,9 @@ from openhsl.data.utils import get_dataset
 from openhsl.data.torch_dataloader import create_torch_loader
 from openhsl.models.model import train_one_epoch, val_one_epoch, get_optimizer, get_scheduler
 from openhsl.data.utils import get_palette, convert_to_color_, sample_gt
+import openhsl.data.utils as hsl_utils
+from openhsl.models.utils import get_mean_weights
+from openhsl.data.utils import apply_pca
 
 from openhsl.models.ssftt import SSFTT
 from openhsl.models.m1dcnn import M1DCNN
@@ -245,6 +249,9 @@ class MainWindow(CIU):
         self.imported_weights = {}
         self.show()
 
+        # set list of models as multiple selection
+        self.ui.list_of_models.setSelectionMode(self.ui.list_of_models.MultiSelection)
+
         devices = get_gpu_info()
         self.devices_dict = {"cpu": "cpu"}
         devices.remove("cpu")
@@ -311,6 +318,7 @@ class MainWindow(CIU):
         self.ui.stop_train_btn.clicked.connect(self.stop_train)
         self.ui.start_inference_btn.clicked.connect(self.start_inference)
         self.ui.estimate_btn.clicked.connect(self.estimate)
+        self.ui.get_average_btn.clicked.connect(self.get_average)
 
         # OTHER INTERACT
         self.ui.horizontalSlider.valueChanged.connect(
@@ -331,6 +339,21 @@ class MainWindow(CIU):
 
         self.ui.image_view_box.currentIndexChanged.connect(self.view_changed)
         self.ui.cm_slider.valueChanged.connect(self.update_cm)
+
+    def get_average(self):
+        items = self.ui.list_of_models.selectedItems()
+        if len(items) > 1:
+            try:
+                weights = [self.imported_weights[item.text()] for item in items]
+                weights = [torch.load(weight, map_location="cpu") for weight in weights]
+                mean_weights = get_mean_weights(weights)
+                time = get_date_time()
+                name = f"mean_weights_{time[0]}_{time[1]}"
+                torch.save(mean_weights, f"checkpoints/{name}.pth")
+                self.imported_weights[name] = f"checkpoints/{name}.pth"
+                self.stack_str_in_QListWidget(self.ui.list_of_models, name)
+            except Exception as e:
+                self.show_error(str(e))
 
     def import_weights(self):
         file_name, _ = QFileDialog.getOpenFileName(self,
@@ -590,7 +613,16 @@ class MainWindow(CIU):
             start_time = get_date_time()
             run_name = f"{self.ui.choose_model_for_train.currentText()}_{start_time[0]}_{start_time[1]}"
 
-            fits = {"hsi": self.current_train_hsi,
+            hsi = deepcopy(self.current_train_hsi)
+
+            scaler = getattr(hsl_utils, self.ui.scaler_edit.currentText())
+            scaler = scaler(per=self.ui.per_edit.currentText())
+            hsi.data = scaler.fit_transform(hsi.data)
+
+            if self.ui.apply_pca_check.isChecked():
+                hsi.data, _ = apply_pca(hsi.data, int(self.ui.pca_value_edit.text()))
+
+            fits = {"hsi": hsi,
                     "mask": self.current_train_mask,
                     "model": models_dict[str(self.ui.choose_model_for_train.currentText())],
                     "device": self.devices_dict[str(self.ui.device_box2.currentText())],
@@ -631,7 +663,6 @@ class MainWindow(CIU):
 
                 self.imported_weights[data["run_name"]] = f"checkpoints/{data['run_name']}.pth"
 
-
         if "end" in data:
             self.ui.start_learning_btn.setEnabled(True)
             return
@@ -651,7 +682,17 @@ class MainWindow(CIU):
         item = self.ui.list_of_models.currentItem()
         if self.current_test_hsi and item:
             weight_path = self.imported_weights[item.text()]
-            fits = {"hsi": self.current_test_hsi,
+
+            hsi = deepcopy(self.current_test_hsi)
+
+            scaler = getattr(hsl_utils, self.ui.scaler_inf_edit.currentText())
+            scaler = scaler(per=self.ui.per_inf_edit.currentText())
+            hsi.data = scaler.fit_transform(hsi.data)
+
+            if self.ui.pca_inf_check.isChecked():
+                hsi.data, _ = apply_pca(hsi.data, int(self.ui.edit_inf_pca_value.text()))
+
+            fits = {"hsi": hsi,
                     "weights": weight_path,
                     "device": str(self.ui.device_box.currentText()),
                     "model": models_dict[str(self.ui.choose_model_for_inference.currentText())]}
