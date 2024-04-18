@@ -14,6 +14,7 @@ class HSDeviceQt(QObject, HSDevice):
     compute_slit_angle_finished = pyqtSignal()
     adjsut_slit_angle_range = pyqtSignal(float, float)
     adjsut_slit_intercept_range = pyqtSignal(float, float)
+    send_slit_image_rotated = pyqtSignal(QImage)
 
     # send_slit_angle = pyqtSignal(float)
     # send_slit_offset = pyqtSignal(float)
@@ -22,6 +23,7 @@ class HSDeviceQt(QObject, HSDevice):
 
         self.slit_image: Optional[np.ndarray] = None
         self.slit_image_to_send: Optional[np.ndarray] = None
+        self.slit_image_rotated: Optional[np.ndarray] = None
         self.slit_image_height = 0
         self.slit_image_width = 0
         self.threshold_value = 40
@@ -125,3 +127,11 @@ class HSDeviceQt(QObject, HSDevice):
         image_thresholded_qt = QImage(image_thresholded, image_thresholded.shape[1], image_thresholded.shape[0],
                                       QImage.Format.Format_RGB888)
         self.send_slit_preview_image.emit(image_thresholded_qt.copy())
+
+    @pyqtSlot()
+    def on_rotate_bd_slit_image(self):
+        self.slit_image_rotated = hsiutils.rotate_image(copy.deepcopy(self.slit_image), self.get_slit_angle())
+        slit_image_rotated = hsiutils.rotate_image(copy.deepcopy(self.slit_image_to_send), self.get_slit_angle())
+        slit_image_rotated_qt = QImage(slit_image_rotated, slit_image_rotated.shape[1], slit_image_rotated.shape[0],
+                                       QImage.Format.Format_RGB888)
+        self.send_slit_image_rotated.emit(slit_image_rotated_qt.copy())

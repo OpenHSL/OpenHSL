@@ -123,6 +123,8 @@ class HSDeviceGUI(QMainWindow):
         self.hsd.adjsut_slit_intercept_range.connect(self.on_adjust_slit_intercept_range)
         # Barrel distortion tab
         self.ui_bdt_apply_rotation_checkbox.clicked.connect(self.on_ui_bdt_apply_rotation_checkbox_clicked)
+        self.rotate_bd_slit_image.connect(self.hsd.on_rotate_bd_slit_image, Qt.ConnectionType.QueuedConnection)
+        self.hsd.send_slit_image_rotated.connect(self.receive_bd_slit_image_rotated, Qt.ConnectionType.QueuedConnection)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -354,6 +356,8 @@ class HSDeviceGUI(QMainWindow):
         # TODO add mutex locker
         if self.init_after_load_device_settings:
             self.on_compute_slit_angle_finished()
+            self.ui_bdt_apply_rotation_checkbox.setChecked(True)
+            self.on_ui_bdt_apply_rotation_checkbox_clicked(True)
 
     @pyqtSlot(QImage)
     def receive_slit_preview_image(self, image_qt: QImage):
@@ -479,6 +483,10 @@ class HSDeviceGUI(QMainWindow):
             self.rotate_bd_slit_image.emit()
         else:
             self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.slit_image_qt))
+
+    @pyqtSlot(QImage)
+    def receive_bd_slit_image_rotated(self, image_qt: QImage):
+        self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
 
     # Tab 2: wavelengths tab slots
 
