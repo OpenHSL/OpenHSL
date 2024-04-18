@@ -401,6 +401,22 @@ QPushButton {
 		}
 	}
 
+	&[id="table"] {
+		image: url(icons:ud-table.svg);
+		border: none;
+		width: 16px;
+
+		&:hover {
+			image: url(icons:ud-table-hover.svg);
+			background-color: $bg-button-hover;
+		}
+
+		&:pressed {
+			image: url(icons:ud-table.svg);
+			background-color: $bg-pressed;
+		}
+	}
+
 	&[id="big"] {
 		border-radius: 2px;
 		min-width: 60;
