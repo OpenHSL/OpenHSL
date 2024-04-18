@@ -21,6 +21,8 @@ class HSDeviceGUI(QMainWindow):
     read_slit_image = pyqtSignal(str)
     threshold_slit_image = pyqtSignal()
     compute_slit_angle = pyqtSignal(QRectF)
+    rotate_bd_slit_image = pyqtSignal()
+    threshold_bd_slit_image = pyqtSignal()
 
     def __init__(self):
         super(HSDeviceGUI, self).__init__()
@@ -72,15 +74,18 @@ class HSDeviceGUI(QMainWindow):
         self.ui_load_slit_image_button: QPushButton = self.findChild(QPushButton, 'loadSlitImage_pushButton')
         self.ui_calc_slit_angle_button: QPushButton = self.findChild(QPushButton, 'calcSlitAngle_pushButton')
         # Barrel distortion tab
-        self.ui_barrel_distortion_graphics_view: HSGraphicsView = \
-            self.findChild(HSGraphicsView, 'barrelDistortion_graphicsView')
-        self.ui_apply_rotation_checkbox: QCheckBox = self.findChild(QCheckBox, 'applyRotation_checkBox')
-        self.ui_barrel_distortion_equation_view_label: QLabel = \
-            self.findChild(QLabel, 'barrelDistortionEquationView_label')
-        self.ui_barrel_distortion_equation_set_button: QPushButton = \
-            self.findChild(QPushButton, 'barrelDistortionEquationSet_pushButton')
-        self.ui_barrel_distortion_equation_estimate_button: QPushButton = \
-            self.findChild(QPushButton, 'barrelDistortionEquationEstimate_pushButton')
+        self.ui_bdt_graphics_view: HSGraphicsView = self.findChild(HSGraphicsView, 'bdt_graphicsView')
+        self.ui_bdt_apply_rotation_checkbox: QCheckBox = self.findChild(QCheckBox, 'bdtApplyRotation_checkBox')
+        self.ui_bdt_slit_image_threshold_value_checkbox: QCheckBox = \
+            self.findChild(QCheckBox, 'bdtSlitImageThresholdValue_checkBox')
+        self.ui_bdt_slit_image_threshold_value_horizontal_slider: QSlider = \
+            self.findChild(QSlider, 'bdtSlitImageThresholdValue_horizontalSlider')
+        self.ui_bdt_slit_image_threshold_value_spinbox: QSpinBox = \
+            self.findChild(QSpinBox, 'bdtSlitImageThresholdValue_spinBox')
+        self.ui_bdt_equation_view_label: QLabel = self.findChild(QLabel, 'bdtEquationView_label')
+        self.ui_bdt_equation_set_button: QPushButton = self.findChild(QPushButton, 'bdtEquationSet_pushButton')
+        self.ui_bdt_equation_estimate_button: QPushButton = \
+            self.findChild(QPushButton, 'bdtEquationEstimate_pushButton')
         # Wavelengths tab
         self.ui_wavelength_table_widget: QTableWidget = self.findChild(QTableWidget, 'wavelength_tableWidget')
         # Settings tab
@@ -116,6 +121,8 @@ class HSDeviceGUI(QMainWindow):
         self.hsd.compute_slit_angle_finished.connect(self.on_compute_slit_angle_finished)
         self.hsd.adjsut_slit_angle_range.connect(self.on_adjust_slit_angle_range)
         self.hsd.adjsut_slit_intercept_range.connect(self.on_adjust_slit_intercept_range)
+        # Barrel distortion tab
+        self.ui_bdt_apply_rotation_checkbox.clicked.connect(self.on_ui_bdt_apply_rotation_checkbox_clicked)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -130,6 +137,11 @@ class HSDeviceGUI(QMainWindow):
         self.slit_graphics_marquee_area_rect_item = QGraphicsRectItem()
         self.slit_graphics_text_item = QGraphicsTextItem()
         self.slit_angle_slider_mult = 10000000
+
+        # Barrel distortion tab graphics
+        self.bdt_graphics_scene = QGraphicsScene(self)
+        self.bdt_graphics_pixmap_item = QGraphicsPixmapItem()
+        self.bdt_graphics_marquee_area_rect_item = QGraphicsRectItem()
 
         # TODO add mutex locker
         # TODO List[bool], for each tab different val?
@@ -171,6 +183,12 @@ class HSDeviceGUI(QMainWindow):
         self.ui_slit_angle_graphics_view.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
         self.ui_slit_angle_graphics_view.marquee_area_changed.connect(self.on_marquee_area_changed)
 
+        self.ui_bdt_graphics_view.setScene(self.bdt_graphics_scene)
+        self.ui_bdt_graphics_view.setRenderHints(gv_hints)
+        self.ui_bdt_graphics_view.setMouseTracking(True)
+        self.ui_bdt_graphics_view.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
+        self.ui_bdt_graphics_view.marquee_area_changed.connect(self.on_marquee_area_changed)
+
         dashed_pen = QPen(QColor("white"))
         dashed_pen.setStyle(Qt.PenStyle.DashLine)
         dashed_pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
@@ -207,8 +225,15 @@ class HSDeviceGUI(QMainWindow):
         self.slit_graphics_marquee_area_rect_item.setBrush(brush_marquee)
         self.slit_graphics_marquee_area_rect_item.setOpacity(0.5)
 
+        self.bdt_graphics_marquee_area_rect_item.setPen(dashed_pen_marquee)
+        self.bdt_graphics_marquee_area_rect_item.setBrush(brush_marquee)
+        self.bdt_graphics_marquee_area_rect_item.setOpacity(0.5)
+
         self.ui_slit_image_threshold_value_checkbox.setEnabled(False)
         self.ui_calc_slit_angle_button.setEnabled(False)
+
+        self.ui_bdt_apply_rotation_checkbox.setEnabled(False)
+        self.ui_bdt_equation_estimate_button.setEnabled(False)
 
     def initialize_texts(self):
         text_font = QFont("Century Gothic", 20, QFont.Weight.Light)
@@ -311,6 +336,7 @@ class HSDeviceGUI(QMainWindow):
     @pyqtSlot(QImage)
     def receive_slit_image(self, slit_image_qt: QImage):
         self.slit_image_qt = slit_image_qt
+        # Slit angle tab graphics scene
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_text_item)
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_pixmap_item)
         self.clear_marquee_area(self.slit_graphics_marquee_area_rect_item)
@@ -318,6 +344,12 @@ class HSDeviceGUI(QMainWindow):
         self.slit_angle_graphics_scene.addItem(self.slit_graphics_pixmap_item)
         self.ui_slit_image_threshold_value_checkbox.setEnabled(True)
         self.ui_calc_slit_angle_button.setEnabled(False)
+        # Barrel distortion tab graphics scene
+        self.bdt_graphics_scene.removeItem(self.bdt_graphics_pixmap_item)
+        self.clear_marquee_area(self.bdt_graphics_marquee_area_rect_item)
+        self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.slit_image_qt))
+        self.bdt_graphics_scene.addItem(self.bdt_graphics_pixmap_item)
+        self.ui_bdt_apply_rotation_checkbox.setEnabled(True)
 
         # TODO add mutex locker
         if self.init_after_load_device_settings:
@@ -439,6 +471,15 @@ class HSDeviceGUI(QMainWindow):
     def on_ui_calc_slit_angle_button_clicked(self):
         self.compute_slit_angle.emit(self.slit_graphics_marquee_area_rect_item.rect())
 
+    # Tab 1: barrel distortion tab slots
+
+    @pyqtSlot(bool)
+    def on_ui_bdt_apply_rotation_checkbox_clicked(self, checked: bool):
+        if checked:
+            self.rotate_bd_slit_image.emit()
+        else:
+            self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.slit_image_qt))
+
     # Tab 2: wavelengths tab slots
 
     # Tab 4: settings tab slots
@@ -468,6 +509,8 @@ class HSDeviceGUI(QMainWindow):
 
         if graphics_view == self.ui_slit_angle_graphics_view:
             marquee_area_graphics_rect_item = self.slit_graphics_marquee_area_rect_item
+        elif graphics_view == self.ui_bdt_graphics_view:
+            marquee_area_graphics_rect_item = self.bdt_graphics_marquee_area_rect_item
 
         if marquee_area_graphics_rect_item is not None:
             marquee_area_graphics_rect_item.setRect(marquee_area_rect)

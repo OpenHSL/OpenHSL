@@ -404,6 +404,7 @@ QPushButton {
 	&[id="table"] {
 		image: url(icons:ud-table.svg);
 		border: none;
+		margin: 0;
 		width: 16px;
 
 		&:hover {
