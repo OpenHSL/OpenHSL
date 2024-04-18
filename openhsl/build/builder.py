@@ -10,31 +10,7 @@ from typing import Dict, Optional
 from openhsl.base.hsi import HSImage
 from openhsl.build.raw_pb_data import RawData
 from openhsl.build.uav_builder import build_hypercube_by_videos
-
-
-def gaussian(length: int,
-             mean: float,
-             std: float) -> np.ndarray:
-    """
-    gaussian(length, mean, std)
-
-        Returns gaussian 1D-kernel
-
-        Parameters
-        ----------
-        length: int
-            gaussian 1D-Kernel length
-        mean: float
-            "height" of gaussian
-        std:
-            "slope" of gaussian
-        Returns
-        -------
-            np.ndarray
-
-    """
-    return np.exp(-((np.arange(0, length) - mean) ** 2) / 2.0 / (std ** 2)) / math.sqrt(2.0 * math.pi) / std
-# ----------------------------------------------------------------------------------------------------------------------
+from openhsl.build.utils import gaussian
 
 
 class HSBuilder:
@@ -331,7 +307,7 @@ class HSBuilder:
               roi=False,
               flip_wavelengths=False):
         """
-            Creates HSI from device-data
+        Creates HSI from device-data
         """
         preproc_frames = []
         for frame in tqdm(self.frame_iterator,
@@ -372,7 +348,7 @@ class HSBuilder:
         Returns
         -------
         self.hsi : HSImage
-            Builded from source hsi object
+            Built from source hsi object
 
         """
         return self.hsi

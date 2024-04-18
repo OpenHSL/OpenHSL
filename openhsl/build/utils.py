@@ -44,6 +44,23 @@ def save_dict_to_json(data: dict, path: str) -> None:
         json.dump(data, handle, indent=4)
 
 
-# TODO move into hs_image_utils
 def gaussian(length: int, mean: float, std: float) -> np.ndarray:
+    """
+    gaussian(length, mean, std)
+
+        Returns gaussian 1D-kernel
+
+        Parameters
+        ----------
+        length: int
+            gaussian 1D-Kernel length
+        mean: float
+            "height" of gaussian
+        std:
+            "slope" of gaussian
+        Returns
+        -------
+            np.ndarray
+
+    """
     return np.exp(-((np.arange(0, length) - mean) ** 2) / 2.0 / (std ** 2)) / math.sqrt(2.0 * math.pi) / std
