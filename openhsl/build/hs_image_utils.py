@@ -10,6 +10,7 @@ class BaseIntEnum(enum.IntEnum):
     """
     Base class for int enumeration
     """
+
     def describe(self):
         return self.name, self.value
 
@@ -50,6 +51,14 @@ def compute_slit_angle(frame: np.ndarray, x: int, y: int, w: int, h: int,
     return slope, angle, intercept
 
 
-def threshold_image(image: np.ndarray, threshold_value: int, max_value, threshold_type = 0):
+def rotate_image(image: np.ndarray, angle: float) -> np.ndarray:
+    h, w = image.shape[0:2]
+    center_x, center_y = (w // 2, h // 2)
+    rotation_matrix = cv.getRotationMatrix2D((center_x, center_y), angle, 1.0)
+    image_rotated = cv.warpAffine(image, rotation_matrix, (w, h))
+    return image_rotated
+
+
+def threshold_image(image: np.ndarray, threshold_value: int, max_value, threshold_type=0):
     _, image_thresholded = cv.threshold(image, threshold_value, max_value, threshold_type)
     return image_thresholded
