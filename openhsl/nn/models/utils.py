@@ -244,7 +244,7 @@ def get_accuracy(prediction: np.ndarray,
                  **kwargs):
     prediction, target = __prepare_pred_target(prediction, target)
 
-    return accuracy_score(target, prediction, *args, **kwargs)
+    return accuracy_score(y_true=target, y_pred=prediction, *args, **kwargs)
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -254,7 +254,7 @@ def get_f1(prediction: np.ndarray,
            **kwargs):
     prediction, target = __prepare_pred_target(prediction, target)
 
-    return f1_score(prediction, target, *args, **kwargs)
+    return f1_score(y_true=target, y_pred=prediction, *args, **kwargs)
 # ----------------------------------------------------------------------------------------------------------------------
 
 

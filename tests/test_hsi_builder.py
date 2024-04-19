@@ -9,7 +9,7 @@ from openhsl.base.hsi import HSImage
 from openhsl.build.builder import HSBuilder
 
 
-path_to_metadata = "../meta_data.json"
+path_to_metadata = "../microscope_build_metadata.json"
 path_to_copter_data = "../test_data/builder/copter"
 path_to_copter_metadata = "../test_data/builder/copter/gps_2021-03-30.csv"
 path_to_rail_data = "../test_data/builder/imgs"
