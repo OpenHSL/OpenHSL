@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional
 from openhsl.build.hs_device import HSDevice, HSDeviceType, HSCalibrationSlitData, HSCalibrationWavelengthData
 from openhsl.gui.device.hs_device_qt import HSDeviceQt
 from openhsl.gui.device.hs_graphics_view import HSGraphicsView
+import openhsl.gui.device.utils as hsd_gui_utils
 import openhsl.build.utils as utils
 
 
@@ -613,11 +614,8 @@ class HSDeviceGUI(QMainWindow):
 
 
 def main():
-    import sass
-
-    qss_str = sass.compile(filename="Resources/Dark.scss", output_style='expanded')
-    with open("Resources/Dark.qss", 'w') as f:
-        f.write(qss_str)
+    # TODO remove before release
+    hsd_gui_utils.compile_scss_into_qss("Resources/Dark.scss", "Resources/Dark.qss")
 
     QDir.addSearchPath('icons', './Resources/Images/')
     QDir.addSearchPath('resources', './Resources/')
