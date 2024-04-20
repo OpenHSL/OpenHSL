@@ -171,6 +171,40 @@ QGroupBox::indicator:hover {
 }
 
 /****************************************
+ *             QHeaderView              *
+ ****************************************/
+QHeaderView {
+  background-color: #404142;
+}
+
+QHeaderView::section {
+  background-color: #404142;
+  color: #d0d0d0;
+  border: 1px solid #2e2f30;
+  padding-top: 1px;
+  padding-bottom: 2px;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+QHeaderView::section::vertical {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+QHeaderView[id="checkable"]::section {
+  padding-left: 29px;
+}
+
+QHeaderView[id="checkable"]::section:checked {
+  ackground-color: #654321;
+  background: #c80;
+  background: red;
+}
+
+/****************************************
  *               QLabel                 *
  ****************************************/
 QLabel {
@@ -198,7 +232,7 @@ QLineEdit:disabled {
 /****************************************
  *             QMainWindow              *
  ****************************************/
-QMainWindow {
+QMainWindow, QWidget#EquationForm {
   background-color: #2e2f30;
   color: #d0d0d0;
 }
@@ -620,14 +654,9 @@ QSpinBox::down-button:pressed, QDoubleSpinBox::down-button:pressed {
   background-color: #2e2f30;
 }
 
-QSpinBox::up-arrow:disabled, QDoubleSpinBox::up-arrow:disabled {
-  image: url(:/MainForm/Resources/Images/arrow-black-up-disabled.png);
-}
-
-QSpinBox::down-arrow:disabled, QDoubleSpinBox::down-arrow:disabled {
-  image: url(:/MainForm/Resources/Images/arrow-black-down-disabled.png);
-}
-
+/****************************************
+ *             QTabWidget               *
+ ****************************************/
 QTabWidget::pane {
   /* The tab widget frame */
   border: 1px solid #9b9b9b;
@@ -641,6 +670,9 @@ QTabWidget::tab-bar {
   /* move to the right by 5px */
 }
 
+/****************************************
+ *               QTabBar                *
+ ****************************************/
 /* Style the tab using the tab sub-control. Note that
     it reads QTabBar _not_ QTabWidget */
 QTabBar::tab {
@@ -682,4 +714,37 @@ QTabBar::tab:last:selected {
 
 QTabBar::tab:only-one {
   margin: 0;
+}
+
+/****************************************
+ *            QTableWidget              *
+ ****************************************/
+QTableWidget {
+  background-color: #2e2f30;
+  color: #d0d0d0;
+}
+
+QTableWidget::item {
+  background-color: #5b5c5d;
+  color: #d0d0d0;
+  border: none;
+}
+
+QTableWidget::item:alternate {
+  background-color: #6f6f71;
+}
+
+QTableWidget::item:hover {
+  background: #654321;
+}
+
+QTableWidget::item:selected {
+  background: #48494a;
+  color: white;
+}
+
+QTableWidget QTableCornerButton::section {
+  background-color: #404142;
+  color: #d0d0d0;
+  border: 1px solid #2e2f30;
 }

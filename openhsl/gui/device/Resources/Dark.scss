@@ -24,6 +24,11 @@ $bg-scroll: #787878;
 $bg-scroll-handle: #383838;
 $bg-scroll-handle-hover: #404040;
 //$bg-tab-selected: #5b5c5d;
+$bg-table-header: #404142;
+$bg-table-item: #5b5c5d;
+$bg-table-item-alternate: #6f6f71;
+$bg-table-item-hover: #654321;
+$bg-table-item-selected: #48494a;
 
 /****************************************
  *              QCheckBox               *
@@ -219,6 +224,42 @@ QGroupBox {
 }
 
 /****************************************
+ *             QHeaderView              *
+ ****************************************/
+
+QHeaderView {
+	background-color: $bg-table-header;
+
+	&::section {
+		background-color: $bg-table-header;
+		color: $fg-text;
+		border: 1px solid $bg-dark;
+		padding-top: 1px;
+		padding-bottom: 2px;
+		padding-left: 2px;
+		padding-right: 2px;
+
+		&::vertical {
+			padding-top: 2px;
+			padding-bottom: 2px;
+			padding-left: 4px;
+			padding-right: 4px;
+		}
+	}
+}
+
+QHeaderView[id="checkable"]{
+	&::section {
+		padding-left: 29px;
+		&:checked {
+			ackground-color: #654321;
+			background: #c80;
+			background: red;
+		}
+	}
+}
+
+/****************************************
  *               QLabel                 *
  ****************************************/
 
@@ -249,7 +290,7 @@ QLineEdit {
  *             QMainWindow              *
  ****************************************/
 
-QMainWindow {
+QMainWindow, QWidget#EquationForm {
 	background-color: $bg-dark;
 	color: $fg-text;
 }
@@ -700,13 +741,9 @@ QSpinBox, QDoubleSpinBox {
 	}
 }
 
-QSpinBox::up-arrow:disabled, QDoubleSpinBox::up-arrow:disabled {
-	image: url(:/MainForm/Resources/Images/arrow-black-up-disabled.png);
-}
-
-QSpinBox::down-arrow:disabled, QDoubleSpinBox::down-arrow:disabled {
-	image: url(:/MainForm/Resources/Images/arrow-black-down-disabled.png);
-}
+/****************************************
+ *             QTabWidget               *
+ ****************************************/
 
 QTabWidget {
 	//top: 2px;
@@ -722,6 +759,10 @@ QTabWidget::tab-bar {
     left: 10px; /* move to the right by 5px */
 	//margin-bottom: -5px;
 }
+
+/****************************************
+ *               QTabBar                *
+ ****************************************/
 
 /* Style the tab using the tab sub-control. Note that
     it reads QTabBar _not_ QTabWidget */
@@ -769,5 +810,39 @@ QTabBar {
 		&:only-one {
 			margin: 0;
 		}
+	}
+}
+
+/****************************************
+ *            QTableWidget              *
+ ****************************************/
+
+QTableWidget {
+	background-color: $bg-dark;
+	color: $fg-text;
+
+	&::item {
+		background-color: $bg-table-item;
+		color: $fg-text;
+		border: none;
+
+		&:alternate {
+			background-color: $bg-table-item-alternate;
+		}
+
+		&:hover {
+			background: $bg-table-item-hover;
+		}
+
+		&:selected {
+			background: $bg-table-item-selected;
+			color: $fg-text-selected;
+		}
+	}
+
+	& QTableCornerButton::section {
+		background-color: $bg-table-header;
+		color: $fg-text;
+		border: 1px solid $bg-dark;
 	}
 }
