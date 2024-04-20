@@ -7,10 +7,11 @@ from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QIm
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
     QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsRectItem, \
     QGraphicsTextItem, QGraphicsScene, QGraphicsView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QMessageBox, \
-    QPushButton, QSlider, QSpinBox, QTableWidget, QToolBar, QToolButton, QWidget
+    QPushButton, QSlider, QSpinBox, QTableWidget, QTableWidgetItem, QToolBar, QToolButton, QWidget
 from PyQt6 import uic
 from typing import Any, Dict, List, Optional
 from openhsl.build.hs_device import HSDevice, HSDeviceType, HSCalibrationSlitData, HSCalibrationWavelengthData
+from openhsl.gui.device.custom_controls import CheckableHeaderView
 from openhsl.gui.device.hs_device_qt import HSDeviceQt
 from openhsl.gui.device.hs_graphics_view import HSGraphicsView
 import openhsl.gui.device.utils as hsd_gui_utils
@@ -35,12 +36,18 @@ class HSDeviceGUI(QMainWindow):
         openhsl_id = 'locus.openhsl.hs_device_gui.0.0.1'  # arbitrary string
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(openhsl_id)
 
+        self.bdew = QWidget()
+        uic.loadUi('bd_equation_form.ui', self.bdew)
+        self.bdew.setWindowIcon(QIcon("icons:openhsl.svg"))
+
         qss_path = "./Resources/Dark.qss"
         # qss_path = "./Resources/Grey.qss"
+        self.stylesheet = ""
 
         with open(qss_path, 'r') as f:
-            strings = f.read()
-            self.setStyleSheet(strings)
+            self.stylesheet = f.read()
+            self.setStyleSheet(self.stylesheet)
+            self.bdew.setStyleSheet(self.stylesheet)
 
         self.hsd = HSDeviceQt()
         self.t_hsd = QThread()
@@ -74,7 +81,7 @@ class HSDeviceGUI(QMainWindow):
         self.ui_slit_image_path_line_edit: QLineEdit = self.findChild(QLineEdit, 'slitImagePath_lineEdit')
         self.ui_load_slit_image_button: QPushButton = self.findChild(QPushButton, 'loadSlitImage_pushButton')
         self.ui_calc_slit_angle_button: QPushButton = self.findChild(QPushButton, 'calcSlitAngle_pushButton')
-        # Barrel distortion tab
+        # Barrel distortion tab - BDT
         self.ui_bdt_graphics_view: HSGraphicsView = self.findChild(HSGraphicsView, 'bdt_graphicsView')
         self.ui_bdt_apply_rotation_checkbox: QCheckBox = self.findChild(QCheckBox, 'bdtApplyRotation_checkBox')
         self.ui_bdt_slit_image_threshold_value_checkbox: QCheckBox = \
@@ -87,6 +94,10 @@ class HSDeviceGUI(QMainWindow):
         self.ui_bdt_equation_set_button: QPushButton = self.findChild(QPushButton, 'bdtEquationSet_pushButton')
         self.ui_bdt_equation_estimate_button: QPushButton = \
             self.findChild(QPushButton, 'bdtEquationEstimate_pushButton')
+        # BDT: Barrel distortion equation window
+        self.ui_bdew_equation_table_widget: QTableWidget = self.bdew.findChild(QTableWidget, 'equation_tableWidget')
+        self.ui_bdew_polynomial_degree_spinbox: QSpinBox = self.bdew.findChild(QSpinBox, 'polynomialDegree_spinBox')
+        self.ui_bdew_equation_checkable_header_view: Optional[CheckableHeaderView] = None
         # Wavelengths tab
         self.ui_wavelength_table_widget: QTableWidget = self.findChild(QTableWidget, 'wavelength_tableWidget')
         # Settings tab
@@ -237,6 +248,36 @@ class HSDeviceGUI(QMainWindow):
 
         self.ui_bdt_apply_rotation_checkbox.setEnabled(False)
         self.ui_bdt_equation_estimate_button.setEnabled(False)
+
+        self.bdew.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.ui_bdew_equation_table_widget.setMouseTracking(True)
+        self.ui_bdew_equation_checkable_header_view = CheckableHeaderView(Qt.Orientation.Vertical,
+                                                                          self.ui_bdew_equation_table_widget)
+        self.ui_bdew_equation_checkable_header_view.setProperty('id', 'checkable')
+        self.ui_bdew_equation_checkable_header_view.setHighlightSections(True)
+        checkbox_stylesheet = hsd_gui_utils.parse_qss_by_class_name(self.stylesheet, 'QCheckBox')
+        self.ui_bdew_equation_checkable_header_view.checkbox_stylesheet = checkbox_stylesheet
+        self.ui_bdew_equation_table_widget.setVerticalHeader(self.ui_bdew_equation_checkable_header_view)
+        self.fill_bdew()
+        self.bdew.show()
+
+    def fill_bdew(self):
+        poly_deg = self.ui_bdew_polynomial_degree_spinbox.value()
+        self.ui_bdew_equation_table_widget.setColumnCount(1)
+        self.ui_bdew_equation_table_widget.setRowCount(poly_deg)
+        vhl = []
+        for i in range(poly_deg):
+            vhl.append(f"r^{{{i}}}")
+            twi = QTableWidgetItem(f"{1}")
+            twi.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.ui_bdew_equation_table_widget.setItem(i, 0, twi)
+        self.ui_bdew_equation_table_widget.setVerticalHeaderLabels(vhl)
+
+        self.ui_bdew_equation_table_widget.setHorizontalHeaderLabels(['Coefficient'])
+        self.ui_bdew_equation_table_widget.horizontalHeader().setMinimumHeight(22)
+        self.ui_bdew_equation_table_widget.horizontalHeader().resizeSection(0, 200)
+        self.ui_bdew_equation_table_widget.horizontalHeader().setStretchLastSection(True)
+        self.ui_bdew_equation_table_widget.setAlternatingRowColors(True)
 
     def initialize_texts(self):
         text_font = QFont("Century Gothic", 20, QFont.Weight.Light)
