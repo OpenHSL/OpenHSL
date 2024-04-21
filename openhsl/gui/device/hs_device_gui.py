@@ -11,9 +11,8 @@ from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, 
 from PyQt6 import uic
 from typing import Any, Dict, List, Optional
 from openhsl.build.hs_device import HSDevice, HSDeviceType, HSCalibrationSlitData, HSCalibrationWavelengthData
-from openhsl.gui.device.custom_controls import CheckableLatexHeaderView
+from openhsl.gui.device.custom_controls import CheckableLatexHeaderView, HSGraphicsView
 from openhsl.gui.device.hs_device_qt import HSDeviceQt
-from openhsl.gui.device.hs_graphics_view import HSGraphicsView
 import openhsl.gui.device.utils as hsd_gui_utils
 import openhsl.build.utils as utils
 

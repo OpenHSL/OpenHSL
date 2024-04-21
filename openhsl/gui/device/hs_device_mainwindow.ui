@@ -958,7 +958,7 @@
   <customwidget>
    <class>HSGraphicsView</class>
    <extends>QGraphicsView</extends>
-   <header>openhsl.gui.device.hs_graphics_view</header>
+   <header>openhsl.gui.device.custom_controls</header>
   </customwidget>
  </customwidgets>
  <resources/>
