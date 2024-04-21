@@ -157,6 +157,8 @@ class HSGraphicsView(QGraphicsView):
                 pos_on_scene, out_of_bound = self.get_pos_on_scene(event.pos())
                 self.marquee_area_bottom_right = pos_on_scene
                 self.marquee_area_changed.emit(self.marquee_area_top_left, self.marquee_area_bottom_right)
+        elif event.buttons() & (Qt.MouseButton.LeftButton | Qt.MouseButton.RightButton):
+            return None
         else:
             return super(HSGraphicsView, self).mouseMoveEvent(event)
 
