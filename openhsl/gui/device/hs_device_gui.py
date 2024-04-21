@@ -135,7 +135,9 @@ class HSDeviceGUI(QMainWindow):
         # Barrel distortion tab
         self.ui_bdt_apply_rotation_checkbox.clicked.connect(self.on_ui_bdt_apply_rotation_checkbox_clicked)
         self.rotate_bd_slit_image.connect(self.hsd.on_rotate_bd_slit_image, Qt.ConnectionType.QueuedConnection)
-        self.hsd.send_slit_image_rotated.connect(self.receive_bd_slit_image_rotated, Qt.ConnectionType.QueuedConnection)
+        self.hsd.send_slit_image_rotated.connect(
+            self.on_receive_bd_slit_image_rotated, Qt.ConnectionType.QueuedConnection)
+        self.ui_bdt_equation_set_button.clicked.connect(self.on_ui_bdt_equation_set_button_clicked)
         self.ui_bdew_polynomial_degree_spinbox.valueChanged.connect(
             self.on_ui_bdew_polynomial_degree_spinbox_value_changed)
         # Settings tab
@@ -260,7 +262,6 @@ class HSDeviceGUI(QMainWindow):
         self.ui_bdew_equation_checkable_header_view.checkbox_stylesheet = checkbox_stylesheet
         self.ui_bdew_equation_table_widget.setVerticalHeader(self.ui_bdew_equation_checkable_header_view)
         self.fill_bdew()
-        self.bdew.show()
 
     def fill_bdew(self):
         self.ui_bdew_equation_checkable_header_view.clear_data()
@@ -542,8 +543,12 @@ class HSDeviceGUI(QMainWindow):
             self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.slit_image_qt))
 
     @pyqtSlot(QImage)
-    def receive_bd_slit_image_rotated(self, image_qt: QImage):
+    def on_receive_bd_slit_image_rotated(self, image_qt: QImage):
         self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
+
+    @pyqtSlot()
+    def on_ui_bdt_equation_set_button_clicked(self):
+        self.bdew.show()
 
     @pyqtSlot(int)
     def on_ui_bdew_polynomial_degree_spinbox_value_changed(self, value: int):
