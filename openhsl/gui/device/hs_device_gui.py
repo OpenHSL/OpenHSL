@@ -267,10 +267,10 @@ class HSDeviceGUI(QMainWindow):
         self.ui_bdew_equation_checkable_header_view.clear_data()
         poly_deg = self.ui_bdew_polynomial_degree_spinbox.value()
         self.ui_bdew_equation_table_widget.setColumnCount(1)
-        self.ui_bdew_equation_table_widget.setRowCount(poly_deg)
-        vhl = []
+        self.ui_bdew_equation_table_widget.setRowCount(poly_deg + 1)
+        vhl = ["$1$"]
 
-        for i in range(poly_deg):
+        for i in range(poly_deg + 1):
             vhl.append(f"$r^{{{i + 1}}}$")
             twi = QTableWidgetItem(f"{1}")
             twi.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
