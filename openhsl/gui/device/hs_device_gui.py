@@ -1,3 +1,4 @@
+import copy
 import ctypes
 import json
 import sys
@@ -134,9 +135,18 @@ class HSDeviceGUI(QMainWindow):
         self.hsd.adjsut_slit_intercept_range.connect(self.on_adjust_slit_intercept_range)
         # Barrel distortion tab
         self.ui_bdt_apply_rotation_checkbox.clicked.connect(self.on_ui_bdt_apply_rotation_checkbox_clicked)
+        self.ui_bdt_slit_image_threshold_value_checkbox.clicked.connect(
+            self.on_ui_bdt_slit_image_threshold_value_checkbox_clicked)
+        self.ui_bdt_slit_image_threshold_value_horizontal_slider.valueChanged.connect(
+            self.on_ui_bdt_slit_image_threshold_value_horizontal_slider_value_changed)
+        self.ui_bdt_slit_image_threshold_value_spinbox.valueChanged.connect(
+            self.on_ui_bdt_slit_image_threshold_value_spinbox_value_changed)
         self.rotate_bd_slit_image.connect(self.hsd.on_rotate_bd_slit_image, Qt.ConnectionType.QueuedConnection)
-        self.hsd.send_slit_image_rotated.connect(
+        self.threshold_bd_slit_image.connect(self.hsd.on_threshold_bd_slit_image, Qt.ConnectionType.QueuedConnection)
+        self.hsd.send_bd_slit_image_rotated.connect(
             self.on_receive_bd_slit_image_rotated, Qt.ConnectionType.QueuedConnection)
+        self.hsd.send_bd_slit_image_thresholded.connect(self.on_receive_bd_slit_image_thresholded,
+                                                        Qt.ConnectionType.QueuedConnection)
         self.ui_bdt_equation_set_button.clicked.connect(self.on_ui_bdt_equation_set_button_clicked)
         self.ui_bdew_polynomial_degree_spinbox.valueChanged.connect(
             self.on_ui_bdew_polynomial_degree_spinbox_value_changed)
@@ -159,6 +169,7 @@ class HSDeviceGUI(QMainWindow):
         self.bdt_graphics_scene = QGraphicsScene(self)
         self.bdt_graphics_pixmap_item = QGraphicsPixmapItem()
         self.bdt_graphics_marquee_area_rect_item = QGraphicsRectItem()
+        self.bdt_slit_image_qt: Optional[QImage] = None
 
         # TODO add mutex locker
         # TODO List[bool], for each tab different val?
@@ -275,10 +286,9 @@ class HSDeviceGUI(QMainWindow):
             twi = QTableWidgetItem(f"{1}")
             twi.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.ui_bdew_equation_table_widget.setItem(i, 0, twi)
-        self.ui_bdew_equation_checkable_header_view.generate_latex_labels(vhl, 10, '#d0d0d0')
 
+        self.ui_bdew_equation_checkable_header_view.generate_latex_labels(vhl, 10, '#d0d0d0')
         self.ui_bdew_equation_table_widget.setVerticalHeaderLabels([''] * len(vhl))
-        # self.ui_bdew_equation_checkable_header_view.generate_pixmaps(vhl, 10, '#d0d0d0')
 
         self.ui_bdew_equation_table_widget.setHorizontalHeaderLabels(['Coefficient'])
         self.ui_bdew_equation_table_widget.horizontalHeader().setMinimumHeight(22)
@@ -389,7 +399,8 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot(QImage)
     def receive_slit_image(self, slit_image_qt: QImage):
-        self.slit_image_qt = slit_image_qt
+        self.slit_image_qt = slit_image_qt.copy()
+        self.bdt_slit_image_qt = slit_image_qt.copy()
         # Slit angle tab graphics scene
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_text_item)
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_pixmap_item)
@@ -542,8 +553,35 @@ class HSDeviceGUI(QMainWindow):
         else:
             self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.slit_image_qt))
 
+    @pyqtSlot(bool)
+    def on_ui_bdt_slit_image_threshold_value_checkbox_clicked(self, checked: bool):
+        if checked:
+            self.threshold_bd_slit_image.emit()
+        else:
+            self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.bdt_slit_image_qt))
+
+    @pyqtSlot(int)
+    def on_ui_bdt_slit_image_threshold_value_horizontal_slider_value_changed(self, value: int):
+        self.hsd.bd_threshold_value = value
+        self.ui_bdt_slit_image_threshold_value_spinbox.setValue(value)
+
+        if self.ui_bdt_slit_image_threshold_value_checkbox.isChecked():
+            self.threshold_bd_slit_image.emit()
+
+    @pyqtSlot(int)
+    def on_ui_bdt_slit_image_threshold_value_spinbox_value_changed(self, value: int):
+        self.hsd.bd_threshold_value = value
+        self.ui_bdt_slit_image_threshold_value_spinbox.setValue(value)
+
+        if self.ui_bdt_slit_image_threshold_value_checkbox.isChecked():
+            self.threshold_bd_slit_image.emit()
+
     @pyqtSlot(QImage)
     def on_receive_bd_slit_image_rotated(self, image_qt: QImage):
+        self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
+
+    @pyqtSlot(QImage)
+    def on_receive_bd_slit_image_thresholded(self, image_qt: QImage):
         self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
 
     @pyqtSlot()
