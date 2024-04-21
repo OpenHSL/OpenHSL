@@ -1,4 +1,5 @@
 import matplotlib as mpl
+from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from PyQt6.QtGui import QImage, QPixmap
 import re
@@ -13,7 +14,7 @@ def compile_scss_into_qss(scss_file_path: str, qss_file_path: str, output_style=
 
 # https://stackoverflow.com/a/32085761
 def latex_to_pixmap(latex_expression: str, font_size: int, color: str) -> QPixmap:
-    fig = mpl.figure.Figure()
+    fig = Figure()
     fig.patch.set_facecolor('none')
     fig.set_canvas(FigureCanvasAgg(fig))
     renderer = fig.canvas.get_renderer()
