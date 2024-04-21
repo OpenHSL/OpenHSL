@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, 
 from PyQt6 import uic
 from typing import Any, Dict, List, Optional
 from openhsl.build.hs_device import HSDevice, HSDeviceType, HSCalibrationSlitData, HSCalibrationWavelengthData
-from openhsl.gui.device.custom_controls import CheckableHeaderView
+from openhsl.gui.device.custom_controls import CheckableLatexHeaderView
 from openhsl.gui.device.hs_device_qt import HSDeviceQt
 from openhsl.gui.device.hs_graphics_view import HSGraphicsView
 import openhsl.gui.device.utils as hsd_gui_utils
@@ -97,7 +97,7 @@ class HSDeviceGUI(QMainWindow):
         # BDT: Barrel distortion equation window
         self.ui_bdew_equation_table_widget: QTableWidget = self.bdew.findChild(QTableWidget, 'equation_tableWidget')
         self.ui_bdew_polynomial_degree_spinbox: QSpinBox = self.bdew.findChild(QSpinBox, 'polynomialDegree_spinBox')
-        self.ui_bdew_equation_checkable_header_view: Optional[CheckableHeaderView] = None
+        self.ui_bdew_equation_checkable_header_view: Optional[CheckableLatexHeaderView] = None
         # Wavelengths tab
         self.ui_wavelength_table_widget: QTableWidget = self.findChild(QTableWidget, 'wavelength_tableWidget')
         # Settings tab
@@ -137,6 +137,8 @@ class HSDeviceGUI(QMainWindow):
         self.ui_bdt_apply_rotation_checkbox.clicked.connect(self.on_ui_bdt_apply_rotation_checkbox_clicked)
         self.rotate_bd_slit_image.connect(self.hsd.on_rotate_bd_slit_image, Qt.ConnectionType.QueuedConnection)
         self.hsd.send_slit_image_rotated.connect(self.receive_bd_slit_image_rotated, Qt.ConnectionType.QueuedConnection)
+        self.ui_bdew_polynomial_degree_spinbox.valueChanged.connect(
+            self.on_ui_bdew_polynomial_degree_spinbox_value_changed)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -251,8 +253,8 @@ class HSDeviceGUI(QMainWindow):
 
         self.bdew.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.ui_bdew_equation_table_widget.setMouseTracking(True)
-        self.ui_bdew_equation_checkable_header_view = CheckableHeaderView(Qt.Orientation.Vertical,
-                                                                          self.ui_bdew_equation_table_widget)
+        self.ui_bdew_equation_checkable_header_view = CheckableLatexHeaderView(Qt.Orientation.Vertical,
+                                                                               self.ui_bdew_equation_table_widget)
         self.ui_bdew_equation_checkable_header_view.setProperty('id', 'checkable')
         self.ui_bdew_equation_checkable_header_view.setHighlightSections(True)
         checkbox_stylesheet = hsd_gui_utils.parse_qss_by_class_name(self.stylesheet, 'QCheckBox')
@@ -262,16 +264,21 @@ class HSDeviceGUI(QMainWindow):
         self.bdew.show()
 
     def fill_bdew(self):
+        self.ui_bdew_equation_checkable_header_view.clear_data()
         poly_deg = self.ui_bdew_polynomial_degree_spinbox.value()
         self.ui_bdew_equation_table_widget.setColumnCount(1)
         self.ui_bdew_equation_table_widget.setRowCount(poly_deg)
         vhl = []
+
         for i in range(poly_deg):
-            vhl.append(f"r^{{{i}}}")
+            vhl.append(f"$r^{{{i + 1}}}$")
             twi = QTableWidgetItem(f"{1}")
             twi.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.ui_bdew_equation_table_widget.setItem(i, 0, twi)
-        self.ui_bdew_equation_table_widget.setVerticalHeaderLabels(vhl)
+        self.ui_bdew_equation_checkable_header_view.generate_latex_labels(vhl, 10, '#d0d0d0')
+
+        self.ui_bdew_equation_table_widget.setVerticalHeaderLabels([''] * len(vhl))
+        # self.ui_bdew_equation_checkable_header_view.generate_pixmaps(vhl, 10, '#d0d0d0')
 
         self.ui_bdew_equation_table_widget.setHorizontalHeaderLabels(['Coefficient'])
         self.ui_bdew_equation_table_widget.horizontalHeader().setMinimumHeight(22)
@@ -538,6 +545,11 @@ class HSDeviceGUI(QMainWindow):
     @pyqtSlot(QImage)
     def receive_bd_slit_image_rotated(self, image_qt: QImage):
         self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
+
+    @pyqtSlot(int)
+    def on_ui_bdew_polynomial_degree_spinbox_value_changed(self, value: int):
+        self.ui_bdew_equation_table_widget.clear()
+        self.fill_bdew()
 
     # Tab 2: wavelengths tab slots
 
