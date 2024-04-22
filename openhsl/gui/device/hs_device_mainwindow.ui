@@ -268,9 +268,9 @@
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QCheckBox" name="bdtDrawGrid_checkBox">
+           <widget class="QCheckBox" name="bdtSpectrumEdges_checkBox">
             <property name="text">
-             <string>Draw grid</string>
+             <string>Spectrum edges</string>
             </property>
            </widget>
           </item>

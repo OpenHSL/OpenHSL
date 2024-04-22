@@ -2,9 +2,11 @@ import copy
 import ctypes
 import json
 import sys
+
+import numpy as np
 from PyQt6.QtCore import Qt, QDir, QEvent, QLineF, QObject, QPointF, QRect, QRectF, QSignalMapper, QSize, QThread, \
     QTimer, pyqtSignal, pyqtSlot
-from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap
+from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap, QPolygonF
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
     QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsRectItem, \
     QGraphicsTextItem, QGraphicsScene, QGraphicsView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QMessageBox, \
@@ -25,6 +27,7 @@ class HSDeviceGUI(QMainWindow):
     compute_slit_angle = pyqtSignal(QRectF)
     rotate_bd_slit_image = pyqtSignal()
     threshold_bd_slit_image = pyqtSignal()
+    edge_bd_slit_image = pyqtSignal(QRectF)
 
     def __init__(self):
         super(HSDeviceGUI, self).__init__()
@@ -90,6 +93,7 @@ class HSDeviceGUI(QMainWindow):
             self.findChild(QSlider, 'bdtSlitImageThresholdValue_horizontalSlider')
         self.ui_bdt_slit_image_threshold_value_spinbox: QSpinBox = \
             self.findChild(QSpinBox, 'bdtSlitImageThresholdValue_spinBox')
+        self.ui_bdt_spectrum_edges_checkbox: QCheckBox = self.findChild(QCheckBox, 'bdtSpectrumEdges_checkBox')
         self.ui_bdt_equation_view_label: QLabel = self.findChild(QLabel, 'bdtEquationView_label')
         self.ui_bdt_equation_set_button: QPushButton = self.findChild(QPushButton, 'bdtEquationSet_pushButton')
         self.ui_bdt_equation_estimate_button: QPushButton = \
@@ -131,8 +135,8 @@ class HSDeviceGUI(QMainWindow):
         self.threshold_slit_image.connect(self.hsd.on_threshold_slit_image, Qt.ConnectionType.QueuedConnection)
         self.compute_slit_angle.connect(self.hsd.on_compute_slit_angle)
         self.hsd.compute_slit_angle_finished.connect(self.on_compute_slit_angle_finished)
-        self.hsd.adjsut_slit_angle_range.connect(self.on_adjust_slit_angle_range)
-        self.hsd.adjsut_slit_intercept_range.connect(self.on_adjust_slit_intercept_range)
+        self.hsd.adjust_slit_angle_range.connect(self.on_adjust_slit_angle_range)
+        self.hsd.adjust_slit_intercept_range.connect(self.on_adjust_slit_intercept_range)
         # Barrel distortion tab
         self.ui_bdt_apply_rotation_checkbox.clicked.connect(self.on_ui_bdt_apply_rotation_checkbox_clicked)
         self.ui_bdt_slit_image_threshold_value_checkbox.clicked.connect(
@@ -141,12 +145,16 @@ class HSDeviceGUI(QMainWindow):
             self.on_ui_bdt_slit_image_threshold_value_horizontal_slider_value_changed)
         self.ui_bdt_slit_image_threshold_value_spinbox.valueChanged.connect(
             self.on_ui_bdt_slit_image_threshold_value_spinbox_value_changed)
+        self.ui_bdt_spectrum_edges_checkbox.clicked.connect(self.on_ui_bdt_spectrum_edges_checkbox_clicked)
         self.rotate_bd_slit_image.connect(self.hsd.on_rotate_bd_slit_image, Qt.ConnectionType.QueuedConnection)
         self.threshold_bd_slit_image.connect(self.hsd.on_threshold_bd_slit_image, Qt.ConnectionType.QueuedConnection)
+        self.edge_bd_slit_image.connect(self.hsd.on_edge_bd_slit_image, Qt.ConnectionType.QueuedConnection)
         self.hsd.send_bd_slit_image_rotated.connect(
             self.on_receive_bd_slit_image_rotated, Qt.ConnectionType.QueuedConnection)
         self.hsd.send_bd_slit_image_thresholded.connect(self.on_receive_bd_slit_image_thresholded,
                                                         Qt.ConnectionType.QueuedConnection)
+        self.hsd.send_bd_slit_image_edged.connect(self.on_receive_bd_slit_image_edged,
+                                                  Qt.ConnectionType.QueuedConnection)
         self.ui_bdt_equation_set_button.clicked.connect(self.on_ui_bdt_equation_set_button_clicked)
         self.ui_bdew_polynomial_degree_spinbox.valueChanged.connect(
             self.on_ui_bdew_polynomial_degree_spinbox_value_changed)
@@ -169,7 +177,9 @@ class HSDeviceGUI(QMainWindow):
         self.bdt_graphics_scene = QGraphicsScene(self)
         self.bdt_graphics_pixmap_item = QGraphicsPixmapItem()
         self.bdt_graphics_marquee_area_rect_item = QGraphicsRectItem()
+        self.bdt_graphics_spectrum_polygon_item = QGraphicsPolygonItem()
         self.bdt_slit_image_qt: Optional[QImage] = None
+        self.bdt_spectrum_corners: Optional[np.ndarray] = None
 
         # TODO add mutex locker
         # TODO List[bool], for each tab different val?
@@ -234,6 +244,9 @@ class HSDeviceGUI(QMainWindow):
         brush_marquee = QBrush(QColor(255, 255, 255, 128))
         brush_marquee.setStyle(Qt.BrushStyle.BDiagPattern)
 
+        brush_spectrum = QBrush(QColor(255, 0, 0, 192))
+        brush_spectrum.setStyle(Qt.BrushStyle.BDiagPattern)
+
         circle_pen = QPen(QColor("red"))
         circle_pen.setWidth(2)
 
@@ -256,6 +269,10 @@ class HSDeviceGUI(QMainWindow):
         self.bdt_graphics_marquee_area_rect_item.setPen(dashed_pen_marquee)
         self.bdt_graphics_marquee_area_rect_item.setBrush(brush_marquee)
         self.bdt_graphics_marquee_area_rect_item.setOpacity(0.5)
+
+        self.bdt_graphics_spectrum_polygon_item.setPen(dashed_pen_slit)
+        self.bdt_graphics_spectrum_polygon_item.setBrush(brush_spectrum)
+        self.bdt_graphics_spectrum_polygon_item.setOpacity(0.75)
 
         self.ui_slit_image_threshold_value_checkbox.setEnabled(False)
         self.ui_calc_slit_angle_button.setEnabled(False)
@@ -567,6 +584,8 @@ class HSDeviceGUI(QMainWindow):
 
         if self.ui_bdt_slit_image_threshold_value_checkbox.isChecked():
             self.threshold_bd_slit_image.emit()
+        elif self.ui_bdt_spectrum_edges_checkbox.isChecked():
+            self.edge_bd_slit_image.emit(self.bdt_graphics_marquee_area_rect_item.rect())
 
     @pyqtSlot(int)
     def on_ui_bdt_slit_image_threshold_value_spinbox_value_changed(self, value: int):
@@ -575,6 +594,16 @@ class HSDeviceGUI(QMainWindow):
 
         if self.ui_bdt_slit_image_threshold_value_checkbox.isChecked():
             self.threshold_bd_slit_image.emit()
+        elif self.ui_bdt_spectrum_edges_checkbox.isChecked():
+            self.edge_bd_slit_image.emit(self.bdt_graphics_marquee_area_rect_item.rect())
+
+    @pyqtSlot(bool)
+    def on_ui_bdt_spectrum_edges_checkbox_clicked(self, checked: bool):
+        if checked:
+            self.edge_bd_slit_image.emit(self.bdt_graphics_marquee_area_rect_item.rect())
+            self.ui_bdt_slit_image_threshold_value_checkbox.setChecked(False)
+        else:
+            self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.bdt_slit_image_qt))
 
     @pyqtSlot(QImage)
     def on_receive_bd_slit_image_rotated(self, image_qt: QImage):
@@ -583,6 +612,12 @@ class HSDeviceGUI(QMainWindow):
     @pyqtSlot(QImage)
     def on_receive_bd_slit_image_thresholded(self, image_qt: QImage):
         self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
+
+    @pyqtSlot(QImage, np.ndarray)
+    def on_receive_bd_slit_image_edged(self, image_qt: QImage, corners: np.ndarray):
+        self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
+        self.bdt_spectrum_corners = corners
+        self.draw_bd_slit_data()
 
     @pyqtSlot()
     def on_ui_bdt_equation_set_button_clicked(self):
@@ -645,6 +680,19 @@ class HSDeviceGUI(QMainWindow):
         self.slit_graphics_roi_rect_item.setRect(QRectF(x, y, w, h))
         self.slit_angle_graphics_scene.addItem(self.slit_graphics_line_item)
         self.slit_angle_graphics_scene.addItem(self.slit_graphics_roi_rect_item)
+
+    def draw_bd_slit_data(self):
+        self.bdt_graphics_scene.removeItem(self.bdt_graphics_marquee_area_rect_item)
+        self.bdt_graphics_scene.removeItem(self.bdt_graphics_spectrum_polygon_item)
+
+        if self.bdt_spectrum_corners is not None:
+            polygon = QPolygonF()
+            for p in self.bdt_spectrum_corners:
+                polygon.append(QPointF(p[1], p[0]))
+            self.bdt_graphics_spectrum_polygon_item.setPolygon(polygon)
+            self.bdt_graphics_scene.addItem(self.bdt_graphics_spectrum_polygon_item)
+        else:
+            self.bdt_graphics_scene.addItem(self.bdt_graphics_marquee_area_rect_item)
 
     def eventFilter(self, obj, event):
         # if obj == self.ui_slit_angle_graphics_view:
