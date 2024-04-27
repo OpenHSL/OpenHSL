@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression
 from tqdm import tqdm
 from typing import Dict, Optional
 
-from openhsl.hsi import HSImage
+from openhsl.base.hsi import HSImage
 from openhsl.build.raw_pb_data import RawData
 from openhsl.build.uav_builder import build_hypercube_by_videos
 
@@ -214,12 +214,12 @@ class HSBuilder:
         width = frame.shape[1]
         height = frame.shape[0]
 
-        distCoeff = np.zeros((4, 1), np.float64)
+        dist_coeff = np.zeros((4, 1), np.float64)
 
-        distCoeff[0, 0] = barrel_coeffs['k1']
-        distCoeff[1, 0] = barrel_coeffs['k2']
-        distCoeff[2, 0] = barrel_coeffs['p1']
-        distCoeff[3, 0] = barrel_coeffs['p2']
+        dist_coeff[0, 0] = barrel_coeffs['k1']
+        dist_coeff[1, 0] = barrel_coeffs['k2']
+        dist_coeff[2, 0] = barrel_coeffs['p1']
+        dist_coeff[3, 0] = barrel_coeffs['p2']
         # assume unit matrix for camera
         cam = np.eye(3, dtype=np.float32)
 
@@ -230,7 +230,7 @@ class HSBuilder:
         cam[1, 1] = barrel_coeffs['focal_length_y']
 
         # here the undistortion will be computed
-        dst = cv2.undistort(frame, cam, distCoeff)
+        dst = cv2.undistort(frame, cam, dist_coeff)
 
         return dst
     # ------------------------------------------------------------------------------------------------------------------

@@ -6,20 +6,20 @@
 графических ускорителях RTX 3090
 
 """
-from typing import Tuple
 import numpy as np
 import pytest
+
 from time import time
+from typing import Tuple
 
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-from openhsl.data.utils import apply_pca, HyperStandardScaler
-
-from openhsl.models.m1dcnn import M1DCNN
-from openhsl.models.m3dcnn_li import M3DCNN as LI
-from openhsl.models.nm3dcnn import NM3DCNN
-from openhsl.models.tf2dcnn import TF2DCNN
-from openhsl.models.ssftt import SSFTT
+from openhsl.base.hsi import HSImage
+from openhsl.base.hs_mask import HSMask
+from openhsl.nn.data.utils import apply_pca, HyperStandardScaler
+from openhsl.nn.models.m1dcnn import M1DCNN
+from openhsl.nn.models.m3dcnn_li import M3DCNN as LI
+from openhsl.nn.models.nm3dcnn import NM3DCNN
+from openhsl.nn.models.tf2dcnn import TF2DCNN
+from openhsl.nn.models.ssftt import SSFTT
 
 
 @pytest.fixture

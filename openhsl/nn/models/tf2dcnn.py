@@ -3,17 +3,16 @@ import os
 import tensorflow as tf
 import wandb
 
+from keras.layers import BatchNormalization, Conv2D, Dense, Dropout, Flatten
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, Conv2D, BatchNormalization
 from keras.optimizers import SGD
-from keras.callbacks import Callback
-from typing import Optional, Dict, Any, Union
+from typing import Any, Dict, Optional, Union
 
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-from openhsl.data.utils import get_dataset
-from openhsl.data.tf_dataloader import get_test_generator, get_train_val_gens
-from openhsl.utils import init_wandb
+from openhsl.base.hsi import HSImage
+from openhsl.base.hs_mask import HSMask
+from openhsl.nn.data.tf_dataloader import get_test_generator, get_train_val_gens
+from openhsl.nn.data.utils import get_dataset
+from openhsl.nn.models.utils import init_tensorboard, init_wandb
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -34,6 +33,8 @@ class TF2DCNN:
         self.hyperparams['n_bands'] = n_bands
         self.hyperparams['center_pixel'] = True
         self.hyperparams['net_name'] = 'tf2d'
+        self.wandb_run = None
+        self.writer = None
 
         self.train_loss = []
         self.val_loss = []
@@ -69,6 +70,16 @@ class TF2DCNN:
             self.model.load_weights(path_to_weights)
     # ------------------------------------------------------------------------------------------------------------------
 
+    def init_wandb(self, path='../wandb.yaml'):
+        self.wandb_run = init_wandb(path=path)
+        if self.wandb_run:
+            self.wandb_run.watch(self.model)
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def init_tensorboard(self, path='tensorboard'):
+        self.writer = init_tensorboard(path_dir=path)
+    # ------------------------------------------------------------------------------------------------------------------
+
     def fit(self,
             X: Union[HSImage, np.ndarray],
             y: Union[HSMask, np.ndarray],
@@ -80,6 +91,10 @@ class TF2DCNN:
         # ToDo: add setdefault for optimizer, optimizer params and loss as in other models fit
         fit_params.setdefault('scheduler_type', None)
         fit_params.setdefault('scheduler_params', None)
+
+        fit_params.setdefault('wandb', self.wandb_run)
+        fit_params.setdefault('tensorboard', self.writer)
+
         fit_params.setdefault('wandb_vis', False)
         fit_params.setdefault('tensorboard_vis', False)
 
@@ -112,14 +127,10 @@ class TF2DCNN:
         # add visualisations via callbacks
         callbacks = []
 
-        if fit_params['wandb_vis']:
-            wandb_run = init_wandb(path='wandb.yaml')
-            if wandb_run:
-                wandb_callback = wandb.keras.WandbCallback(monitor='val_loss',
-
-                                                           log_evaluation=True,
-                                                           )
-                callbacks.append(wandb_callback)
+        if self.wandb_run:
+            wandb_callback = wandb.keras.WandbCallback(monitor='val_loss',
+                                                       log_evaluation=True)
+            callbacks.append(wandb_callback)
 
         if fit_params['tensorboard_vis']:
             tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./tensorboard")
@@ -142,9 +153,8 @@ class TF2DCNN:
 
         self.model.save(f'{checkpoint_filepath}/weights.h5')
 
-        if fit_params['wandb_vis']:
-            if wandb_run:
-                wandb_run.finish()
+        if self.wandb_run:
+            self.wandb_run.finish()
     # ------------------------------------------------------------------------------------------------------------------
 
     def predict(self,
@@ -160,8 +170,7 @@ class TF2DCNN:
         test_generator = get_test_generator(img, patch_size=self.hyperparams['patch_size'])
         ds_test = tf.data.Dataset.from_generator(lambda: test_generator, types, shapes).batch(batch_size)
 
-        # TODO bad issue
-        total = sum([1 for i in ds_test])
+        total = sum([1 for _ in ds_test])
 
         test_generator = get_test_generator(img, patch_size=self.hyperparams['patch_size'])
         ds_test = tf.data.Dataset.from_generator(lambda: test_generator, types, shapes).batch(batch_size)

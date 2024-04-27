@@ -29,6 +29,7 @@ PI_2 = math.pi / 2.0
 
 def blur_band(band):
     return blur_image(band) if BLUR_AUTO else band
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 def build_hypercube_by_videos(cube: np.ndarray,
@@ -56,7 +57,7 @@ def build_hypercube_by_videos(cube: np.ndarray,
             bands: np.ndarray
                 Building result - hypercube from UAV footage
     """
-    x, y, z = cube.shape  # in gaidel_legacy it's x=m, y=k, z=n
+    x, y, z = cube.shape
     gps = pd.read_csv(gps_filename, delimiter=CSV_DELIMITER)
 
     start_points = gps[gps[HEADER_CAM_ID] == "Hypercam start point"]

@@ -1,25 +1,23 @@
 import numpy as np
 import torch
-import torch.nn.functional as F
-import torch.nn.init as init
 import torch.optim as optim
 
 from einops import rearrange
 from torch import nn
 from typing import Any, Dict, Optional, Union
 
-from openhsl.data.utils import get_dataset
-from openhsl.data.torch_dataloader import create_torch_loader
-from openhsl.data.utils import sample_gt, camel_to_snake
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-from openhsl.models.model import train, save_train_mask
-from openhsl.models.model import Model
+from openhsl.base.hsi import HSImage
+from openhsl.base.hs_mask import HSMask
+from openhsl.nn.data.torch_dataloader import create_torch_loader
+from openhsl.nn.data.utils import get_dataset, sample_gt
+from openhsl.nn.models.model import train, save_train_mask, Model
+from openhsl.nn.models.utils import camel_to_snake
 
 
 def _weights_init(m):
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv3d):
-        init.kaiming_normal_(m.weight)
+        nn.init.kaiming_normal_(m.weight)
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class Residual(nn.Module):
@@ -29,6 +27,7 @@ class Residual(nn.Module):
 
     def forward(self, x, **kwargs):
         return self.fn(x, **kwargs) + x
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 # Equivalent to PreNorm
@@ -40,6 +39,7 @@ class LayerNormalize(nn.Module):
 
     def forward(self, x, **kwargs):
         return self.fn(self.norm(x), **kwargs)
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 # Equivalent to FeedForward
@@ -56,6 +56,7 @@ class MLP_Block(nn.Module):
 
     def forward(self, x):
         return self.net(x)
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class Attention(nn.Module):
@@ -80,7 +81,7 @@ class Attention(nn.Module):
         dots = torch.einsum('bhid,bhjd->bhij', q, k) * self.scale
 
         if mask:
-            mask = F.pad(mask.flatten(1), (1, 0), value=True)
+            mask = nn.functional.pad(mask.flatten(1), (1, 0), value=True)
             assert mask.shape[-1] == dots.shape[-1], 'mask has incorrect dimensions'
             mask = mask[:, None, :] * mask[:, :, None]
             dots.masked_fill_(~mask, float('-inf'))
@@ -93,6 +94,7 @@ class Attention(nn.Module):
         out = self.nn1(out)
         out = self.do1(out)
         return out
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class Transformer(nn.Module):
@@ -110,6 +112,7 @@ class Transformer(nn.Module):
             x = attention(x, mask=mask)  # go to attention
             x = mlp(x)  # go to MLP_Block
         return x
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class SSFTT_Net(nn.Module):
@@ -192,6 +195,7 @@ class SSFTT_Net(nn.Module):
         x = self.nn1(x)
 
         return x
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class SSFTT(Model):
@@ -308,4 +312,4 @@ class SSFTT(Model):
                                         hyperparams=self.hyperparams)
 
         return prediction
-
+# ----------------------------------------------------------------------------------------------------------------------

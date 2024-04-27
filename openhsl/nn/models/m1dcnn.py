@@ -4,12 +4,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from torch.nn import init
-from typing import Any, Optional, Dict, Union
+from typing import Any, Dict, Optional, Union
 
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-from openhsl.models.model import Model
+from openhsl.base.hsi import HSImage
+from openhsl.base.hs_mask import HSMask
+from openhsl.nn.models.model import Model
 
 
 class M1DCNN_Net(nn.Module):
@@ -25,8 +24,8 @@ class M1DCNN_Net(nn.Module):
         # [All the trainable parameters in our CNN should be initialized to
         # be a random value between −0.05 and 0.05.]
         if isinstance(m, nn.Linear) or isinstance(m, nn.Conv1d):
-            init.uniform_(m.weight, -0.05, 0.05)
-            init.zeros_(m.bias)
+            nn.init.uniform_(m.weight, -0.05, 0.05)
+            nn.init.zeros_(m.bias)
     # ------------------------------------------------------------------------------------------------------------------
 
     def _get_final_flattened_size(self):
@@ -48,7 +47,7 @@ class M1DCNN_Net(nn.Module):
             # [In our experiments, k1 is better to be [ceil](n1/9)]
             kernel_size = math.ceil(input_channels / 9)
         if pool_size is None:
-            # The authors recommand that k2's value is chosen so that the pooled features have 30~40 values
+            # The authors recommend that k2's value is chosen so that the pooled features have 30~40 values
             # ceil(kernel_size/5) gives the same values as in the paper so let's assume it's okay
             pool_size = math.ceil(kernel_size / 5)
         self.input_channels = input_channels
@@ -129,6 +128,10 @@ class M1DCNN(Model):
                                         lr=fit_params['optimizer_params']["learning_rate"]))
         fit_params.setdefault('scheduler_type', None)
         fit_params.setdefault('scheduler_params', None)
+
+        fit_params.setdefault('wandb', self.wandb_run)
+        fit_params.setdefault('tensorboard', self.writer)
+
         fit_params.setdefault('wandb_vis', False)
         fit_params.setdefault('tensorboard_viz', False)
 
