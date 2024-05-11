@@ -275,9 +275,19 @@ class HSDeviceGUI(QMainWindow):
         self.bdt_graphics_spectrum_polygon_item.setOpacity(0.75)
 
         self.ui_slit_image_threshold_value_checkbox.setEnabled(False)
+        self.ui_slit_image_threshold_value_horizontal_slider.setEnabled(False)
+        self.ui_slit_image_threshold_value_spinbox.setEnabled(False)
+        self.ui_slit_angle_horizontal_slider.setEnabled(False)
+        self.ui_slit_angle_double_spinbox.setEnabled(False)
+        self.ui_slit_intercept_horizontal_slider.setEnabled(False)
+        self.ui_slit_intercept_double_spinbox.setEnabled(False)
         self.ui_calc_slit_angle_button.setEnabled(False)
 
         self.ui_bdt_apply_rotation_checkbox.setEnabled(False)
+        self.ui_bdt_slit_image_threshold_value_checkbox.setEnabled(False)
+        self.ui_bdt_slit_image_threshold_value_spinbox.setEnabled(False)
+        self.ui_bdt_slit_image_threshold_value_horizontal_slider.setEnabled(False)
+        self.ui_bdt_spectrum_edges_checkbox.setEnabled(False)
         self.ui_bdt_equation_estimate_button.setEnabled(False)
 
         self.bdew.setWindowModality(Qt.WindowModality.ApplicationModal)
@@ -317,6 +327,7 @@ class HSDeviceGUI(QMainWindow):
         self.ui_bdew_equation_table_widget.horizontalHeader().resizeSection(0, 200)
         self.ui_bdew_equation_table_widget.horizontalHeader().setStretchLastSection(True)
         self.ui_bdew_equation_table_widget.setAlternatingRowColors(True)
+        self.check_ui_bdt_equation_estimate_button_availability()
 
     def initialize_texts(self):
         text_font = QFont("Century Gothic", 20, QFont.Weight.Light)
@@ -430,6 +441,8 @@ class HSDeviceGUI(QMainWindow):
         self.slit_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.slit_image_qt))
         self.slit_angle_graphics_scene.addItem(self.slit_graphics_pixmap_item)
         self.ui_slit_image_threshold_value_checkbox.setEnabled(True)
+        self.ui_slit_image_threshold_value_horizontal_slider.setEnabled(True)
+        self.ui_slit_image_threshold_value_spinbox.setEnabled(True)
         self.ui_calc_slit_angle_button.setEnabled(False)
         # Barrel distortion tab graphics scene
         self.bdt_graphics_scene.removeItem(self.bdt_graphics_pixmap_item)
@@ -437,6 +450,9 @@ class HSDeviceGUI(QMainWindow):
         self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.slit_image_qt))
         self.bdt_graphics_scene.addItem(self.bdt_graphics_pixmap_item)
         self.ui_bdt_apply_rotation_checkbox.setEnabled(True)
+        self.ui_bdt_slit_image_threshold_value_checkbox.setEnabled(True)
+        self.ui_bdt_slit_image_threshold_value_spinbox.setEnabled(True)
+        self.ui_bdt_slit_image_threshold_value_horizontal_slider.setEnabled(True)
 
         # TODO add mutex locker
         if self.init_after_load_device_settings:
@@ -454,6 +470,10 @@ class HSDeviceGUI(QMainWindow):
         self.ui_slit_angle_double_spinbox.setValue(self.hsd.get_slit_angle())
         self.ui_slit_intercept_horizontal_slider.setValue(self.hsd.get_slit_intercept(to_int=True))
         self.ui_slit_intercept_double_spinbox.setValue(self.hsd.get_slit_intercept(to_int=True))
+        self.ui_slit_angle_horizontal_slider.setEnabled(True)
+        self.ui_slit_angle_double_spinbox.setEnabled(True)
+        self.ui_slit_intercept_horizontal_slider.setEnabled(True)
+        self.ui_slit_intercept_double_spinbox.setEnabled(True)
 
         self.draw_slit_data()
 
@@ -625,6 +645,7 @@ class HSDeviceGUI(QMainWindow):
         self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
         self.bdt_spectrum_corners = corners
         self.draw_bd_slit_data()
+        self.check_ui_bdt_equation_estimate_button_availability()
 
     @pyqtSlot()
     def on_ui_bdt_equation_set_button_clicked(self):
@@ -645,6 +666,7 @@ class HSDeviceGUI(QMainWindow):
                 coeffs_dict['powers'].append(i)
                 coeffs_dict['coeffs'].append(coeff)
         self.hsd.set_equation_params(coeffs_dict)
+        self.check_ui_bdt_equation_estimate_button_availability()
 
     # Tab 2: wavelengths tab slots
 
@@ -682,10 +704,25 @@ class HSDeviceGUI(QMainWindow):
 
         if marquee_area_graphics_rect_item is not None:
             marquee_area_graphics_rect_item.setRect(marquee_area_rect)
-            self.ui_calc_slit_angle_button.setEnabled(not marquee_area_rect.isEmpty())
+            if graphics_view == self.ui_slit_angle_graphics_view:
+                self.ui_calc_slit_angle_button.setEnabled(not marquee_area_rect.isEmpty())
+            elif graphics_view == self.ui_bdt_graphics_view:
+                self.ui_bdt_spectrum_edges_checkbox.setEnabled(not marquee_area_rect.isEmpty())
             if marquee_area_graphics_rect_item not in graphics_view.scene().items():
                 graphics_view.scene().addItem(marquee_area_graphics_rect_item)
             graphics_view.update()
+
+    def check_ui_bdt_equation_estimate_button_availability(self):
+        if self.hsd.is_equation_data_enough():
+            self.ui_bdt_equation_estimate_button.setEnabled(True)
+        else:
+            self.ui_bdt_equation_estimate_button.setEnabled(False)
+
+    def check_ui_bdt_slit_image_threshold_value_checkbox_availability(self):
+        if self.bdt_graphics_marquee_area_rect_item.rect().isEmpty():
+           self.ui_bdt_slit_image_threshold_value_checkbox.setEnabled(False)
+        else:
+            self.ui_bdt_slit_image_threshold_value_checkbox.setEnabled(True)
 
     def draw_slit_data(self):
         self.slit_angle_graphics_scene.removeItem(self.slit_graphics_marquee_area_rect_item)
