@@ -42,6 +42,12 @@ class CheckableLatexHeaderView(QHeaderView):
     def get_check_list(self) -> List[bool]:
         return self.check_list
 
+    def set_section_checked(self, idx: int, value: bool):
+        if idx < len(self.check_list):
+            self.check_list[idx] = value
+            self.updateSection(idx)
+            self.checked_section_count_changed.emit()
+
     def paintSection(self, painter: QPainter, rect: QRect, logical_index: int):
         painter.save()
         super().paintSection(painter, rect, logical_index)

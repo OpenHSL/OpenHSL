@@ -1,7 +1,7 @@
 import numpy as np
 from openhsl.build.hs_image_utils import BaseIntEnum
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 import openhsl.build.utils as utils
 
 
@@ -66,6 +66,7 @@ class HSCalibrationSlitData:
         self.y: int = 0
         self.width: int = 0
         self.height: int = 0
+        self.barrel_distortion_params: Optional[Dict[str, List[float]]] = None
 
     def load_dict(self, data_dict: dict):
         if utils.key_exists_in_dict(data_dict, "slope"):
@@ -82,6 +83,8 @@ class HSCalibrationSlitData:
             self.width = data_dict["width"]
         if utils.key_exists_in_dict(data_dict, "height"):
             self.height = data_dict["height"]
+        if utils.key_exists_in_dict(data_dict, "barrel_distortion_params"):
+            self.barrel_distortion_params = data_dict["barrel_distortion_params"]
 
     @classmethod
     def from_dict(cls, data_dict: dict):
@@ -100,6 +103,8 @@ class HSCalibrationSlitData:
             obj.width = data_dict["width"]
         if utils.key_exists_in_dict(data_dict, "height"):
             obj.height = data_dict["height"]
+        if utils.key_exists_in_dict(data_dict, "barrel_distortion_params"):
+            obj.barrel_distortion_params = data_dict["barrel_distortion_params"]
 
         return obj
 
@@ -112,6 +117,7 @@ class HSCalibrationSlitData:
         data["y"] = self.y
         data["width"] = self.width
         data["height"] = self.height
+        data["barrel_distortion_params"] = self.barrel_distortion_params
 
         return data
 

@@ -51,6 +51,9 @@ class HSDeviceQt(QObject, HSDevice):
         self.wl_slit_image_to_send: Optional[np.ndarray] = None
         self.wl_data = HSCalibrationWavelengthData()
 
+    def get_equation_params(self) -> Dict[str, List[float]]:
+        return self.calib_slit_data.barrel_distortion_params
+
     def get_spectrum_corners(self):
         return copy.deepcopy(self.bd_corners)
 
@@ -66,8 +69,8 @@ class HSDeviceQt(QObject, HSDevice):
     def get_slit_intercept_max(self):
         return self.slit_intercept_max
 
-    def set_equation_params(self, coeffs_dict: Dict[str, List[float]]):
-        self.bd_coeffs_dict = coeffs_dict
+    def set_equation_params(self, barrel_distortion_params: Dict[str, List[float]]):
+        self.calib_slit_data.barrel_distortion_params = barrel_distortion_params
 
     def set_slit_angle(self, value: float):
         self.calib_slit_data.angle = value

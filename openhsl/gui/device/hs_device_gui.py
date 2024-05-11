@@ -329,6 +329,15 @@ class HSDeviceGUI(QMainWindow):
         self.ui_bdew_equation_table_widget.setAlternatingRowColors(True)
         self.check_ui_bdt_equation_estimate_button_availability()
 
+    def load_barrel_distortion_params(self):
+        barrel_distortion_params = self.hsd.get_equation_params()
+        max_ind = np.max(barrel_distortion_params['powers'])
+        check_list = self.ui_bdew_equation_checkable_header_view.get_check_list()
+        if len(check_list) > max_ind:
+            for idx, coeff in zip(barrel_distortion_params['powers'], barrel_distortion_params['coeffs']):
+                self.ui_bdew_equation_checkable_header_view.set_section_checked(idx, True)
+                self.ui_bdew_equation_table_widget.item(idx, 0).setData(Qt.ItemDataRole.DisplayRole, coeff)
+
     def initialize_texts(self):
         text_font = QFont("Century Gothic", 20, QFont.Weight.Light)
         text_font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)
@@ -420,6 +429,7 @@ class HSDeviceGUI(QMainWindow):
         # TODO add mutex locker
         self.init_after_load_device_settings = True
         self.on_ui_load_slit_image_button_clicked()
+        self.load_barrel_distortion_params()
 
     @staticmethod
     def flush_graphics_scene_data(graphics_scene: QGraphicsScene):
@@ -659,13 +669,13 @@ class HSDeviceGUI(QMainWindow):
     @pyqtSlot()
     def on_ui_bdew_equation_params_changed(self):
         check_list = self.ui_bdew_equation_checkable_header_view.get_check_list()
-        coeffs_dict = {'powers': [], 'coeffs': []}
+        equation_params = {'center': [], 'powers': [], 'coeffs': []}
         for i in range(len(check_list)):
             if check_list[i]:
-                coeff = self.ui_bdew_equation_table_widget.item(i, 0).data(Qt.ItemDataRole.DisplayRole)
-                coeffs_dict['powers'].append(i)
-                coeffs_dict['coeffs'].append(coeff)
-        self.hsd.set_equation_params(coeffs_dict)
+                coeff = float(self.ui_bdew_equation_table_widget.item(i, 0).data(Qt.ItemDataRole.DisplayRole))
+                equation_params['powers'].append(i)
+                equation_params['coeffs'].append(coeff)
+        self.hsd.set_equation_params(equation_params)
         self.check_ui_bdt_equation_estimate_button_availability()
 
     # Tab 2: wavelengths tab slots
