@@ -655,6 +655,11 @@ QSlider {
 			height: 8px; /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
 			background: $bg-dark-light;
 			margin: 0px 0;
+
+			&:disabled {
+				border: 1px solid $bg-dark;
+				background-color: $bg-disabled;
+			}
 		}
 	}
 
@@ -671,6 +676,10 @@ QSlider {
 				background-color: $bg-hover;
 				border-color: $fg-text;
 			}
+
+			&:disabled {
+				background-color: $bg-disabled;
+			}
 		}
 	}
 
@@ -679,6 +688,11 @@ QSlider {
 			border: 1px solid $bg-dark;
 			border-radius: 4px;
 			background-color: $bg-contrast;
+
+			&:disabled {
+				border: 1px solid $bg-border;
+				background-color: $bg-disabled;
+			}
 		}
 	}
 }
@@ -698,6 +712,11 @@ QSpinBox, QDoubleSpinBox {
 	selection-background-color: $bg-hover;
 	selection-color: $fg-text-selected;
 
+	&:disabled {
+		background-color: $bg-disabled;
+		color: $fg-text-disabled;
+	}
+
 	&::up-button {
 		image: url(icons:caret-up-fill.svg);
 		subcontrol-origin: border;
@@ -716,6 +735,11 @@ QSpinBox, QDoubleSpinBox {
 		&:pressed {
 			image: url(icons:caret-up-fill-pressed.svg);
 			background-color: $bg-pressed;
+		}
+
+		&:disabled {
+			image: url(icons:caret-up-fill-pressed.svg);
+			background-color: $bg-disabled;
 		}
 	}
 
@@ -737,6 +761,11 @@ QSpinBox, QDoubleSpinBox {
 		&:pressed {
 			image: url(icons:caret-down-fill-pressed.svg);
 			background-color: $bg-pressed;
+		}
+
+		&:disabled {
+			image: url(icons:caret-down-fill-pressed.svg);
+			background-color: $bg-disabled;
 		}
 	}
 }

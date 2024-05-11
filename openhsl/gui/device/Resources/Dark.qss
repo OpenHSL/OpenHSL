@@ -578,6 +578,11 @@ QSlider::groove:horizontal {
   margin: 0px 0;
 }
 
+QSlider::groove:horizontal:disabled {
+  border: 1px solid #2e2f30;
+  background-color: #535455;
+}
+
 QSlider::handle:horizontal {
   background: #2e2f30;
   border: 1px solid #9b9b9b;
@@ -593,10 +598,19 @@ QSlider::handle:horizontal:hover {
   border-color: #d0d0d0;
 }
 
+QSlider::handle:horizontal:disabled {
+  background-color: #535455;
+}
+
 QSlider::sub-page:horizontal {
   border: 1px solid #2e2f30;
   border-radius: 4px;
   background-color: #cc870f;
+}
+
+QSlider::sub-page:horizontal:disabled {
+  border: 1px solid #9b9b9b;
+  background-color: #535455;
 }
 
 /****************************************
@@ -610,6 +624,11 @@ QSpinBox, QDoubleSpinBox {
   min-height: 19px;
   selection-background-color: #654321;
   selection-color: white;
+}
+
+QSpinBox:disabled, QDoubleSpinBox:disabled {
+  background-color: #535455;
+  color: #9b9b9b;
 }
 
 QSpinBox::up-button, QDoubleSpinBox::up-button {
@@ -633,6 +652,11 @@ QSpinBox::up-button:pressed, QDoubleSpinBox::up-button:pressed {
   background-color: #2e2f30;
 }
 
+QSpinBox::up-button:disabled, QDoubleSpinBox::up-button:disabled {
+  image: url(icons:caret-up-fill-pressed.svg);
+  background-color: #535455;
+}
+
 QSpinBox::down-button, QDoubleSpinBox::down-button {
   image: url(icons:caret-down-fill.svg);
   subcontrol-origin: border;
@@ -652,6 +676,11 @@ QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {
 QSpinBox::down-button:pressed, QDoubleSpinBox::down-button:pressed {
   image: url(icons:caret-down-fill-pressed.svg);
   background-color: #2e2f30;
+}
+
+QSpinBox::down-button:disabled, QDoubleSpinBox::down-button:disabled {
+  image: url(icons:caret-down-fill-pressed.svg);
+  background-color: #535455;
 }
 
 /****************************************
