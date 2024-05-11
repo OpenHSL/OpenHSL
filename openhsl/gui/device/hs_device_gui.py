@@ -576,6 +576,7 @@ class HSDeviceGUI(QMainWindow):
             self.threshold_bd_slit_image.emit()
         else:
             self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.bdt_slit_image_qt))
+        self.draw_bd_slit_data()
 
     @pyqtSlot(int)
     def on_ui_bdt_slit_image_threshold_value_horizontal_slider_value_changed(self, value: int):
@@ -604,6 +605,7 @@ class HSDeviceGUI(QMainWindow):
             self.ui_bdt_slit_image_threshold_value_checkbox.setChecked(False)
         else:
             self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.bdt_slit_image_qt))
+        self.draw_bd_slit_data()
 
     @pyqtSlot(QImage)
     def on_receive_bd_slit_image_rotated(self, image_qt: QImage):
@@ -690,7 +692,10 @@ class HSDeviceGUI(QMainWindow):
             for p in self.bdt_spectrum_corners:
                 polygon.append(QPointF(p[1], p[0]))
             self.bdt_graphics_spectrum_polygon_item.setPolygon(polygon)
-            self.bdt_graphics_scene.addItem(self.bdt_graphics_spectrum_polygon_item)
+            if self.ui_bdt_spectrum_edges_checkbox.isChecked():
+                self.bdt_graphics_scene.addItem(self.bdt_graphics_spectrum_polygon_item)
+            elif not self.bdt_graphics_marquee_area_rect_item.rect().isEmpty():
+                self.bdt_graphics_scene.addItem(self.bdt_graphics_marquee_area_rect_item)
         else:
             self.bdt_graphics_scene.addItem(self.bdt_graphics_marquee_area_rect_item)
 
