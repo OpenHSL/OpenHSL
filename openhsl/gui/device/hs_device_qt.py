@@ -107,6 +107,14 @@ class HSDeviceQt(QObject, HSDevice):
 
         self.adjust_slit_intercept_range.emit(self.slit_intercept_min, self.slit_intercept_max)
 
+    def is_equation_data_enough(self):
+        enough = False
+        if self.calib_slit_data.barrel_distortion_params is not None and self.bd_corners is not None:
+            enough = len(self.calib_slit_data.barrel_distortion_params['powers']) > 0 and \
+                     len(self.calib_slit_data.barrel_distortion_params['coeffs']) > 0 and \
+                     len(self.bd_corners) > 0
+        return enough
+
     @pyqtSlot(str)
     def on_read_slit_image(self, path: str):
         self.slit_image = cv.imread(path, cv.IMREAD_ANYCOLOR)
