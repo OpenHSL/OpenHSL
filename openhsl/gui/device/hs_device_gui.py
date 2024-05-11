@@ -289,6 +289,11 @@ class HSDeviceGUI(QMainWindow):
         checkbox_stylesheet = hsd_gui_utils.parse_qss_by_class_name(self.stylesheet, 'QCheckBox')
         self.ui_bdew_equation_checkable_header_view.checkbox_stylesheet = checkbox_stylesheet
         self.ui_bdew_equation_table_widget.setVerticalHeader(self.ui_bdew_equation_checkable_header_view)
+        self.ui_bdew_equation_checkable_header_view.checked_section_count_changed.connect(
+            self.on_ui_bdew_equation_params_changed,
+            Qt.ConnectionType.QueuedConnection)
+        self.ui_bdew_equation_table_widget.cellChanged.connect(self.on_ui_bdew_equation_params_changed,
+                                                               Qt.ConnectionType.QueuedConnection)
         self.fill_bdew()
 
     def fill_bdew(self):
@@ -629,6 +634,17 @@ class HSDeviceGUI(QMainWindow):
     def on_ui_bdew_polynomial_degree_spinbox_value_changed(self, value: int):
         self.ui_bdew_equation_table_widget.clear()
         self.fill_bdew()
+
+    @pyqtSlot()
+    def on_ui_bdew_equation_params_changed(self):
+        check_list = self.ui_bdew_equation_checkable_header_view.get_check_list()
+        coeffs_dict = {'powers': [], 'coeffs': []}
+        for i in range(len(check_list)):
+            if check_list[i]:
+                coeff = self.ui_bdew_equation_table_widget.item(i, 0).data(Qt.ItemDataRole.DisplayRole)
+                coeffs_dict['powers'].append(i)
+                coeffs_dict['coeffs'].append(coeff)
+        self.hsd.set_equation_params(coeffs_dict)
 
     # Tab 2: wavelengths tab slots
 

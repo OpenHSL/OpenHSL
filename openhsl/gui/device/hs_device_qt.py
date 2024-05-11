@@ -3,7 +3,7 @@ import cv2 as cv
 import numpy as np
 from PyQt6.QtCore import QObject, QRectF, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QImage
-from typing import Optional
+from typing import Dict, List, Optional
 from openhsl.build.hs_device import HSDevice, HSCalibrationWavelengthData
 import openhsl.build.hs_image_utils as hsiutils
 import openhsl.gui.device.utils as utils
@@ -44,6 +44,7 @@ class HSDeviceQt(QObject, HSDevice):
         self.bd_slit_image_edged_roi: Optional[np.ndarray] = None
         self.bd_sobel_kernel_size = 5
         self.bd_corners: Optional[np.ndarray] = None
+        self.bd_coeffs_dict: Optional[Dict[str, List[float]]] = None
 
         # Current wavelength
         self.wl_slit_image: Optional[np.ndarray] = None
@@ -64,6 +65,9 @@ class HSDeviceQt(QObject, HSDevice):
 
     def get_slit_intercept_max(self):
         return self.slit_intercept_max
+
+    def set_equation_params(self, coeffs_dict: Dict[str, List[float]]):
+        self.bd_coeffs_dict = coeffs_dict
 
     def set_slit_angle(self, value: float):
         self.calib_slit_data.angle = value

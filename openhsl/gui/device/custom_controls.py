@@ -6,6 +6,8 @@ import openhsl.gui.device.utils as hsd_gui_utils
 
 
 class CheckableLatexHeaderView(QHeaderView):
+    checked_section_count_changed = pyqtSignal()
+
     def __init__(self, orientation: Qt.Orientation, parent: QWidget = None):
         super().__init__(orientation, parent)
 
@@ -22,6 +24,7 @@ class CheckableLatexHeaderView(QHeaderView):
         self.checkbox_list.clear()
         self.checkbox_rect_list.clear()
         self.pixmaps.clear()
+        self.checked_section_count_changed.emit()
 
     def generate_latex_labels(self, latex_labels: List[str], font_size: int, color: str):
         for label in latex_labels:
@@ -90,6 +93,7 @@ class CheckableLatexHeaderView(QHeaderView):
             if self.checkbox_rect_list[idx].contains(event.pos()):
                 self.check_list[idx] = not self.check_list[idx]
                 self.updateSection(idx)
+                self.checked_section_count_changed.emit()
         super().mousePressEvent(event)
 
     @pyqtSlot(int, int)
@@ -109,6 +113,7 @@ class CheckableLatexHeaderView(QHeaderView):
             self.checkbox_list = self.checkbox_list[0:new_count]
             self.checkbox_rect_list = self.checkbox_rect_list[0:new_count]
             self.pixmaps = self.pixmaps[0:new_count]
+        self.checked_section_count_changed.emit()
 
 
 class HSGraphicsView(QGraphicsView):
