@@ -1,12 +1,14 @@
 import cv2 as cv
+import matplotlib as mpl
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import numpy as np
 from PyQt6.QtCore import QRect
 from PyQt6.QtGui import QImage, QPixmap
+from PyQt6.QtWidgets import QApplication
 import re
 import sass
-from typing import Dict, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 
 def compile_scss_into_qss(scss_file_path: str, qss_file_path: str, output_style='expanded'):
@@ -66,12 +68,26 @@ def find_corners(image: np.ndarray):
     return top_left, top_right, bottom_right, bottom_left
 
 
+def latex_to_file(path: str, latex_expression: str, color: str, font_size: int = None) -> None:
+    image = latex_to_image(latex_expression, color, font_size)
+    image.save(path, 'png', 100)
+
+
 # https://stackoverflow.com/a/32085761
-def latex_to_pixmap(latex_expression: str, font_size: int, color: str) -> QPixmap:
+def latex_to_image(latex_expression: str, color: str, font_size: int = None) -> QImage:
+    font = QApplication.font()
+    mpl.rcParams['mathtext.fontset'] = 'custom'
+    mpl.rcParams['mathtext.rm'] = font.family()
+    mpl.rcParams['mathtext.it'] = f'{font.family()}:italic'
+    mpl.rcParams['mathtext.bf'] = f'{font.family()}:bold'
+    # matplotlib.rcParams['font.family'] = 'Segoe UI'
     fig = Figure()
     fig.patch.set_facecolor('none')
     fig.set_canvas(FigureCanvasAgg(fig))
     renderer = fig.canvas.get_renderer()
+
+    if font_size is None:
+        font_size = font.pointSize()
 
     ax = fig.add_axes([0, 0, 1, 1])
     ax.axis('off')
@@ -90,9 +106,8 @@ def latex_to_pixmap(latex_expression: str, font_size: int, color: str) -> QPixma
 
     buf, size = fig.canvas.print_to_buffer()
     image = QImage.rgbSwapped(QImage(buf, size[0], size[1], QImage.Format.Format_ARGB32))
-    pixmap = QPixmap(image)
 
-    return pixmap
+    return image
 
 
 def parse_qss_by_class_name(qss_string: str, class_name: str) -> str:

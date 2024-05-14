@@ -112,6 +112,7 @@ class HSDeviceQt(QObject, HSDevice):
         if self.calib_slit_data.barrel_distortion_params is not None and self.bd_corners is not None:
             enough = len(self.calib_slit_data.barrel_distortion_params['powers']) > 0 and \
                      len(self.calib_slit_data.barrel_distortion_params['coeffs']) > 0 and \
+                     len(self.calib_slit_data.barrel_distortion_params['factors']) > 0 and \
                      len(self.bd_corners) > 0
         return enough
 

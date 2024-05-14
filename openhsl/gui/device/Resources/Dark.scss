@@ -846,7 +846,7 @@ QTabBar {
  *            QTableWidget              *
  ****************************************/
 
-QTableWidget {
+QTableWidget, QTableView {
 	background-color: $bg-dark;
 	color: $fg-text;
 

@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Optional
 
 
-# TODO rename to path_exists
 def path_exists(path: str) -> bool:
     return Path(path).exists()
 
@@ -21,6 +20,11 @@ def get_current_time(time_format_str="%H:%M:%S") -> str:
 
 def key_exists_in_dict(dict_var: dict, key: str) -> bool:
     return key in dict_var
+
+
+def get_absolute_file_path(path: str) -> str:
+    p = Path(path)
+    return str(p.absolute())
 
 
 def get_file_complete_name(path: str) -> str:

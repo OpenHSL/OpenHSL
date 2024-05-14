@@ -748,31 +748,31 @@ QTabBar::tab:only-one {
 /****************************************
  *            QTableWidget              *
  ****************************************/
-QTableWidget {
+QTableWidget, QTableView {
   background-color: #2e2f30;
   color: #d0d0d0;
 }
 
-QTableWidget::item {
+QTableWidget::item, QTableView::item {
   background-color: #5b5c5d;
   color: #d0d0d0;
   border: none;
 }
 
-QTableWidget::item:alternate {
+QTableWidget::item:alternate, QTableView::item:alternate {
   background-color: #6f6f71;
 }
 
-QTableWidget::item:hover {
+QTableWidget::item:hover, QTableView::item:hover {
   background: #654321;
 }
 
-QTableWidget::item:selected {
+QTableWidget::item:selected, QTableView::item:selected {
   background: #48494a;
   color: white;
 }
 
-QTableWidget QTableCornerButton::section {
+QTableWidget QTableCornerButton::section, QTableView QTableCornerButton::section {
   background-color: #404142;
   color: #d0d0d0;
   border: 1px solid #2e2f30;

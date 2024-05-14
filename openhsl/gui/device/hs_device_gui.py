@@ -1,20 +1,23 @@
 import copy
 import ctypes
 import json
+import matplotlib as mpl
 import sys
 
 import numpy as np
 from PyQt6.QtCore import Qt, QDir, QEvent, QLineF, QObject, QPointF, QRect, QRectF, QSignalMapper, QSize, QThread, \
-    QTimer, pyqtSignal, pyqtSlot
-from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap, QPolygonF
+    QTimer, pyqtSignal, pyqtSlot, QModelIndex
+from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap, \
+    QPolygonF, QStandardItemModel
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
     QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsRectItem, \
     QGraphicsTextItem, QGraphicsScene, QGraphicsView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QMessageBox, \
-    QPushButton, QSlider, QSpinBox, QTableWidget, QTableWidgetItem, QToolBar, QToolButton, QWidget
+    QPushButton, QSlider, QSpinBox, QTableView, QTableWidget, QTableWidgetItem, QToolBar, QToolButton, QWidget
 from PyQt6 import uic
 from typing import Any, Dict, List, Optional
 from openhsl.build.hs_device import HSDevice, HSDeviceType, HSCalibrationSlitData, HSCalibrationWavelengthData
-from openhsl.gui.device.custom_controls import CheckableLatexHeaderView, HSGraphicsView
+from openhsl.gui.device.custom_controls import EquationParamsTableHeaderViewHorizontal, \
+    EquationParamsTableHeaderViewVertical, EquationParamsTableModel, EquationParamsTableItem, HSGraphicsView
 from openhsl.gui.device.hs_device_qt import HSDeviceQt
 import openhsl.gui.device.utils as hsd_gui_utils
 import openhsl.build.utils as utils
@@ -99,9 +102,11 @@ class HSDeviceGUI(QMainWindow):
         self.ui_bdt_equation_estimate_button: QPushButton = \
             self.findChild(QPushButton, 'bdtEquationEstimate_pushButton')
         # BDT: Barrel distortion equation window
-        self.ui_bdew_equation_table_widget: QTableWidget = self.bdew.findChild(QTableWidget, 'equation_tableWidget')
+        self.ui_bdew_equation_table_view: QTableView = self.bdew.findChild(QTableView, 'equation_tableView')
+        self.ui_bdew_equation_table_view_model: EquationParamsTableModel = None
         self.ui_bdew_polynomial_degree_spinbox: QSpinBox = self.bdew.findChild(QSpinBox, 'polynomialDegree_spinBox')
-        self.ui_bdew_equation_checkable_header_view: Optional[CheckableLatexHeaderView] = None
+        self.ui_bdew_equation_header_view_vertical: Optional[EquationParamsTableHeaderViewVertical] = None
+        self.ui_bdew_equation_header_view_horizontal: Optional[EquationParamsTableHeaderViewHorizontal] = None
         # Wavelengths tab
         self.ui_wavelength_table_widget: QTableWidget = self.findChild(QTableWidget, 'wavelength_tableWidget')
         # Settings tab
@@ -179,6 +184,7 @@ class HSDeviceGUI(QMainWindow):
         self.bdt_graphics_marquee_area_rect_item = QGraphicsRectItem()
         self.bdt_graphics_spectrum_polygon_item = QGraphicsPolygonItem()
         self.bdt_slit_image_qt: Optional[QImage] = None
+        self.bdt_slit_image_rotated_qt: Optional[QImage] = None
         self.bdt_spectrum_corners: Optional[np.ndarray] = None
 
         # TODO add mutex locker
@@ -196,10 +202,57 @@ class HSDeviceGUI(QMainWindow):
         self.settings_name = 'hs_device_gui_settings.json'
         self.settings_dict = self.initialize_settings_dict()
 
+        self.latex_pixmap_color = '#d0d0d0'
+        self.latex_pixmap_selected_color = '#d0d0d0'
+        self.latex_font_size = None
+
         self.prepare_ui()
         # self.installEventFilter(self)
 
+    def render_latex_images(self):
+        dir_path = utils.get_absolute_file_path(QDir.searchPaths('icons_gen')[0])
+        mpl_ver = int(mpl.__version__.replace(".", ""))
+        poly_deg = self.ui_bdew_polynomial_degree_spinbox.maximum()
+
+        # Equation table labels
+        image = QImage(f'icons_gen:bdet-header-vert-{poly_deg}.png')
+
+        if image.rect().isEmpty():
+            latex_labels = ["$1$"]
+            latex_labels_selected = ["$\mathbf{1}$"]
+
+            latex_bf = [r'$\bf{r}^{\bf{', r'}}$']
+
+            if mpl_ver >= 380:
+                latex_bf = [r'$\mathbfit{r}^{\bf{', r'}}$']
+
+            for i in range(1, poly_deg + 1):
+                latex_labels.append(f"$r^{{{i}}}$")
+                latex_labels_selected.append(latex_bf[0] + f'{i}' + latex_bf[1])
+
+            for i in range(len(latex_labels)):
+                hsd_gui_utils.latex_to_file(f'{dir_path}/bdet-header-vert-{i}.png',
+                                            latex_labels[i], self.latex_pixmap_color, self.latex_font_size)
+                hsd_gui_utils.latex_to_file(f'{dir_path}/bdet-header-vert-selected-{i}.png',
+                                            latex_labels_selected[i], self.latex_pixmap_color, self.latex_font_size)
+
+        image = QImage('icons_gen:bdet-header-hor-0.png')
+
+        if image.rect().isEmpty():
+            latex_labels = [r'$\mathrm{Coefficient} \; k$', r'$\mathrm{Factor} \; 10^x$']
+            latex_labels_selected = [r'$\mathbf{Coefficient} \; \mathbf{k}$', r'$\mathbf{Factor} \; \mathbf{10^x}$']
+
+            if mpl_ver >= 380:
+                hhl_bold = [r'$\mathbf{Coefficient} \; \mathbfit{k}$', r'$\mathbf{Factor} \; \mathbf{10^x}$']
+
+            for i in range(len(latex_labels)):
+                hsd_gui_utils.latex_to_file(f'{dir_path}/bdet-header-hor-{i}.png',
+                                            latex_labels[i], self.latex_pixmap_color, self.latex_font_size)
+                hsd_gui_utils.latex_to_file(f'{dir_path}/bdet-header-hor-selected-{i}.png',
+                                            latex_labels_selected[i], self.latex_pixmap_color, self.latex_font_size)
+
     def prepare_ui(self):
+        self.render_latex_images()
         self.fill_device_type_combobox()
         self.fill_wavelength_table_widget()
         # TODO maybe add default zeros
@@ -290,53 +343,48 @@ class HSDeviceGUI(QMainWindow):
         self.ui_bdt_spectrum_edges_checkbox.setEnabled(False)
         self.ui_bdt_equation_estimate_button.setEnabled(False)
 
-        self.bdew.setWindowModality(Qt.WindowModality.ApplicationModal)
-        self.ui_bdew_equation_table_widget.setMouseTracking(True)
-        self.ui_bdew_equation_checkable_header_view = CheckableLatexHeaderView(Qt.Orientation.Vertical,
-                                                                               self.ui_bdew_equation_table_widget)
-        self.ui_bdew_equation_checkable_header_view.setProperty('id', 'checkable')
-        self.ui_bdew_equation_checkable_header_view.setHighlightSections(True)
+        self.ui_bdew_equation_table_view_model = EquationParamsTableModel()
+        self.ui_bdew_equation_table_view.setModel(self.ui_bdew_equation_table_view_model)
+        self.ui_bdew_equation_table_view.setMouseTracking(True)
+        self.ui_bdew_equation_header_view_horizontal = \
+            EquationParamsTableHeaderViewHorizontal(Qt.Orientation.Horizontal, self.ui_bdew_equation_table_view)
+        self.ui_bdew_equation_header_view_horizontal.setHighlightSections(True)
+        self.ui_bdew_equation_table_view.setHorizontalHeader(self.ui_bdew_equation_header_view_horizontal)
+        self.ui_bdew_equation_header_view_vertical = \
+            EquationParamsTableHeaderViewVertical(Qt.Orientation.Vertical, self.ui_bdew_equation_table_view)
+        self.ui_bdew_equation_header_view_vertical.setProperty('id', 'checkable')
+        self.ui_bdew_equation_header_view_vertical.setHighlightSections(True)
         checkbox_stylesheet = hsd_gui_utils.parse_qss_by_class_name(self.stylesheet, 'QCheckBox')
-        self.ui_bdew_equation_checkable_header_view.checkbox_stylesheet = checkbox_stylesheet
-        self.ui_bdew_equation_table_widget.setVerticalHeader(self.ui_bdew_equation_checkable_header_view)
-        self.ui_bdew_equation_checkable_header_view.checked_section_count_changed.connect(
-            self.on_ui_bdew_equation_params_changed,
-            Qt.ConnectionType.QueuedConnection)
-        self.ui_bdew_equation_table_widget.cellChanged.connect(self.on_ui_bdew_equation_params_changed,
-                                                               Qt.ConnectionType.QueuedConnection)
+        self.ui_bdew_equation_header_view_vertical.checkbox_stylesheet = checkbox_stylesheet
+        self.ui_bdew_equation_table_view.setVerticalHeader(self.ui_bdew_equation_header_view_vertical)
+        self.ui_bdew_equation_header_view_vertical.checked_section_count_changed.connect(
+            self.on_ui_bdew_equation_params_changed, Qt.ConnectionType.QueuedConnection)
+        self.ui_bdew_equation_table_view_model.dataChanged[QModelIndex, QModelIndex, "QList<int>"].connect(
+            self.on_ui_bdew_equation_table_view_data_changed)
         self.fill_bdew()
 
     def fill_bdew(self):
-        self.ui_bdew_equation_checkable_header_view.clear_data()
+        self.ui_bdew_equation_header_view_vertical.clear_data()
         poly_deg = self.ui_bdew_polynomial_degree_spinbox.value()
-        self.ui_bdew_equation_table_widget.setColumnCount(1)
-        self.ui_bdew_equation_table_widget.setRowCount(poly_deg + 1)
-        vhl = ["$1$"]
+        ept_model = self.ui_bdew_equation_table_view.model()
+        ept_model.insertRows(0, poly_deg + 1)
 
-        for i in range(poly_deg + 1):
-            vhl.append(f"$r^{{{i + 1}}}$")
-            twi = QTableWidgetItem(f"{1}")
-            twi.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.ui_bdew_equation_table_widget.setItem(i, 0, twi)
-
-        self.ui_bdew_equation_checkable_header_view.generate_latex_labels(vhl, 10, '#d0d0d0')
-        self.ui_bdew_equation_table_widget.setVerticalHeaderLabels([''] * len(vhl))
-
-        self.ui_bdew_equation_table_widget.setHorizontalHeaderLabels(['Coefficient'])
-        self.ui_bdew_equation_table_widget.horizontalHeader().setMinimumHeight(22)
-        self.ui_bdew_equation_table_widget.horizontalHeader().resizeSection(0, 200)
-        self.ui_bdew_equation_table_widget.horizontalHeader().setStretchLastSection(True)
-        self.ui_bdew_equation_table_widget.setAlternatingRowColors(True)
+        self.ui_bdew_equation_table_view.horizontalHeader().setMinimumHeight(22)
+        self.ui_bdew_equation_table_view.horizontalHeader().resizeSection(0, 210)
+        self.ui_bdew_equation_table_view.horizontalHeader().setStretchLastSection(True)
+        self.ui_bdew_equation_table_view.setAlternatingRowColors(True)
         self.check_ui_bdt_equation_estimate_button_availability()
 
     def load_barrel_distortion_params(self):
         barrel_distortion_params = self.hsd.get_equation_params()
-        max_ind = np.max(barrel_distortion_params['powers'])
-        check_list = self.ui_bdew_equation_checkable_header_view.get_check_list()
-        if len(check_list) > max_ind:
-            for idx, coeff in zip(barrel_distortion_params['powers'], barrel_distortion_params['coeffs']):
-                self.ui_bdew_equation_checkable_header_view.set_section_checked(idx, True)
-                self.ui_bdew_equation_table_widget.item(idx, 0).setData(Qt.ItemDataRole.DisplayRole, coeff)
+        ept_model: EquationParamsTableModel = self.ui_bdew_equation_table_view.model()
+        params = [barrel_distortion_params['powers'], barrel_distortion_params['coeffs'],
+                  barrel_distortion_params['factors']]
+        poly_deg = self.ui_bdew_polynomial_degree_spinbox.value()
+        ept_model.load_data_from_list(params, poly_deg + 1)
+
+        for idx in barrel_distortion_params['powers']:
+            self.ui_bdew_equation_header_view_vertical.set_section_checked(idx, True)
 
     def initialize_texts(self):
         text_font = QFont("Century Gothic", 20, QFont.Weight.Light)
@@ -610,7 +658,10 @@ class HSDeviceGUI(QMainWindow):
         if checked:
             self.threshold_bd_slit_image.emit()
         else:
-            self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.bdt_slit_image_qt))
+            image_qt = self.bdt_slit_image_qt
+            if self.ui_bdt_apply_rotation_checkbox.isChecked():
+                image_qt = self.bdt_slit_image_rotated_qt
+            self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
         self.draw_bd_slit_data()
 
     @pyqtSlot(int)
@@ -644,7 +695,8 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot(QImage)
     def on_receive_bd_slit_image_rotated(self, image_qt: QImage):
-        self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
+        self.bdt_slit_image_rotated_qt = image_qt.copy()
+        self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.bdt_slit_image_rotated_qt))
 
     @pyqtSlot(QImage)
     def on_receive_bd_slit_image_thresholded(self, image_qt: QImage):
@@ -663,19 +715,27 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot(int)
     def on_ui_bdew_polynomial_degree_spinbox_value_changed(self, value: int):
-        self.ui_bdew_equation_table_widget.clear()
+        self.ui_bdew_equation_table_view.model().clear()
         self.fill_bdew()
+
+    @pyqtSlot(QModelIndex, QModelIndex, "QList<int>")
+    def on_ui_bdew_equation_table_view_data_changed(self, top_left, bottom_right, roles):
+        self.on_ui_bdew_equation_params_changed()
 
     @pyqtSlot()
     def on_ui_bdew_equation_params_changed(self):
-        check_list = self.ui_bdew_equation_checkable_header_view.get_check_list()
-        equation_params = {'center': [], 'powers': [], 'coeffs': []}
+        check_list = self.ui_bdew_equation_header_view_vertical.get_check_list()
+        equation_params = {'center': [], 'powers': [], 'coeffs': [], 'factors': []}
+        model: EquationParamsTableModel = self.ui_bdew_equation_table_view.model()
         for i in range(len(check_list)):
             if check_list[i]:
-                coeff = float(self.ui_bdew_equation_table_widget.item(i, 0).data(Qt.ItemDataRole.DisplayRole))
+                coeff = float(model.data(model.index(i, 0), Qt.ItemDataRole.DisplayRole))
+                factor = float(model.data(model.index(i, 1), Qt.ItemDataRole.DisplayRole))
                 equation_params['powers'].append(i)
                 equation_params['coeffs'].append(coeff)
-        self.hsd.set_equation_params(equation_params)
+                equation_params['factors'].append(factor)
+        if len(equation_params['powers']) > 0:
+            self.hsd.set_equation_params(equation_params)
         self.check_ui_bdt_equation_estimate_button_availability()
 
     # Tab 2: wavelengths tab slots
@@ -799,6 +859,7 @@ class HSDeviceGUI(QMainWindow):
         return super(HSDeviceGUI, self).eventFilter(obj, event)
 
     def closeEvent(self, event):
+        self.bdew.close()
         self.t_hsd.exit()
         self.save_settings()
         event.accept()
@@ -829,6 +890,7 @@ def main():
     hsd_gui_utils.compile_scss_into_qss("Resources/Dark.scss", "Resources/Dark.qss")
 
     QDir.addSearchPath('icons', './Resources/Images/')
+    QDir.addSearchPath('icons_gen', './Resources/Images/Generated/')
     QDir.addSearchPath('resources', './Resources/')
     app = QApplication(sys.argv)
     # app.setAttribute(Qt.ApplicationAttribute.AA_Use96Dpi)

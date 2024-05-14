@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>420</width>
     <height>400</height>
    </rect>
   </property>
@@ -14,9 +14,6 @@
    <string>Barrel distortion equation</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <widget class="QTableWidget" name="equation_tableWidget"/>
-   </item>
    <item row="1" column="0">
     <layout class="QGridLayout" name="gridLayout_2">
      <item row="0" column="0">
@@ -31,8 +28,11 @@
        <property name="minimum">
         <number>1</number>
        </property>
+       <property name="maximum">
+        <number>10</number>
+       </property>
        <property name="value">
-        <number>13</number>
+        <number>10</number>
        </property>
       </widget>
      </item>
@@ -50,6 +50,9 @@
       </spacer>
      </item>
     </layout>
+   </item>
+   <item row="0" column="0">
+    <widget class="QTableView" name="equation_tableView"/>
    </item>
   </layout>
  </widget>
