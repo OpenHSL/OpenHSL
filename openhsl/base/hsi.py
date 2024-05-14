@@ -90,6 +90,10 @@ class HSImage:
         self.data = self.data / coefficients[None, None, :]
     # ------------------------------------------------------------------------------------------------------------------
 
+    def flip_wavelengths(self):
+        self.data = np.flip(self.data, axis=2)
+    # ------------------------------------------------------------------------------------------------------------------
+
     def to_spectral_list(self):
         """
         Converts HSI to list of spectrals (as ravel)
