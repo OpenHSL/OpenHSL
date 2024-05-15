@@ -236,14 +236,16 @@ class HSDeviceGUI(QMainWindow):
                 hsd_gui_utils.latex_to_file(f'{dir_path}/bdet-header-vert-selected-{i}.png',
                                             latex_labels_selected[i], self.latex_pixmap_color, self.latex_font_size)
 
-        image = QImage('icons_gen:bdet-header-hor-0.png')
+        image = QImage('icons_gen:bdet-header-hor-1.png')
 
         if image.rect().isEmpty():
             latex_labels = [r'$\mathrm{Coefficient} \; k$', r'$\mathrm{Factor} \; 10^x$']
-            latex_labels_selected = [r'$\mathbf{Coefficient} \; \mathbf{k}$', r'$\mathbf{Factor} \; \mathbf{10^x}$']
+            latex_labels_selected = [r'$\mathbf{Coefficient} \; \mathbf{k}$',
+                                     r'$\mathbf{Factor} \; \mathbf{10^x}$']
 
             if mpl_ver >= 380:
-                hhl_bold = [r'$\mathbf{Coefficient} \; \mathbfit{k}$', r'$\mathbf{Factor} \; \mathbf{10^x}$']
+                latex_labels_selected = [r'$\mathbf{Coefficient} \; \mathbfit{k}$',
+                                         r'$\mathbf{Factor} \; \mathbf{10^\mathbfit{x}}$']
 
             for i in range(len(latex_labels)):
                 hsd_gui_utils.latex_to_file(f'{dir_path}/bdet-header-hor-{i}.png',
