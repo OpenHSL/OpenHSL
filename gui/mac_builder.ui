@@ -127,20 +127,6 @@
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="check_barrel_dist_norm">
-               <property name="text">
-                <string>Barrel Distortion Normalize</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="check_wavelengths">
-               <property name="text">
-                <string>Flip Wavelengths</string>
-               </property>
-              </widget>
-             </item>
-             <item>
               <widget class="QCheckBox" name="telemetry_requiared">
                <property name="text">
                 <string>Use Telemetry File</string>
@@ -178,36 +164,6 @@
                 <property name="bottomMargin">
                  <number>0</number>
                 </property>
-                <item>
-                 <widget class="QCheckBox" name="save_wavelengths_checkbox">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="text">
-                   <string>Save Wevelengths</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="check_roi">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="text">
-                   <string>ROI</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="check_light_norm">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="text">
-                   <string>Light Normalization</string>
-                  </property>
-                 </widget>
-                </item>
                </layout>
               </widget>
              </item>

@@ -11,13 +11,10 @@ from gui.mac_builder_gui import Ui_MainWindow
 from PyQt5.QtCore import QThread, QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
 from openhsl.build.builder import HSBuilder
-from openhsl.hsi import HSImage
-from openhsl.utils import hsi_to_rgb
-
-from pprint import pprint
+from openhsl.base.hsi import HSImage
+from openhsl.base.hsi import hsi_to_rgb
 
 
-# ic.disable()
 class Worker(QObject):
     meta_data = Signal(dict)
 
@@ -29,12 +26,8 @@ class Worker(QObject):
                             path_to_gps=meta["telemetry"],
                             path_to_metadata=meta["metadata"])
 
-            hsb.build(principal_slices=meta["principal_slices"],
-                      norm_rotation=meta["norm_rotation"],
-                      flip_wavelengths=meta["flip_wavelength"],
-                      roi=meta["roi"],
-                      light_norm=meta["light_normalize"],
-                      barrel_dist_norm=meta["barrel_distortion_normalize"])
+            hsb.build(norm_rotation=meta["norm_rotation"])
+
             meta["date"], meta["time"] = get_date_time()
             meta["hsi"] = hsb.get_hsi()
 
@@ -92,15 +85,6 @@ class MainWindow(CIU):
                                               self.ui.check_high_contast.isChecked(),
                                               self.ui.spinBox.value(),
                                               self.ui.image_label))
-
-        self.ui.metadata_checkbox.stateChanged.connect(
-            lambda: self.change_state_btn_cause_checkbox(self.ui.save_wavelengths_checkbox))
-
-        self.ui.metadata_checkbox.stateChanged.connect(
-            lambda: self.change_state_btn_cause_checkbox(self.ui.check_roi))
-
-        self.ui.metadata_checkbox.stateChanged.connect(
-            lambda: self.change_state_btn_cause_checkbox(self.ui.check_light_norm))
 
         self.ui.view_box.currentIndexChanged.connect(self.view_changed)
 
@@ -171,14 +155,9 @@ class MainWindow(CIU):
         if file_name:
             meta = {"data": file_name,
                     "norm_rotation": self.ui.check_norm_rotation.isChecked(),
-                    "barrel_distortion_normalize": self.ui.check_barrel_dist_norm.isChecked(),
-                    "light_normalize": self.ui.check_light_norm.isChecked(),
-                    "roi": True if self.ui.check_roi.isChecked() else self.ui.check_roi.isChecked(),
-                    "flip_wavelength": self.ui.check_wavelengths.isChecked(),
                     "data_type": self.ui.data_type_box.currentText(),
                     "metadata": None,
-                    "telemetry": None,
-                    "principal_slices": False}
+                    "telemetry": None}
 
             if self.ui.metadata_checkbox.isChecked():
                 file_name, _ = QFileDialog.getOpenFileName(self,
@@ -223,17 +202,12 @@ class MainWindow(CIU):
         if item:
             item = item.text()
             hsi = self.hsis[item]["hsi"]
-            ### IT's a HARDCODE SHIT!!!!!!!!!!!!!
-            import numpy as np
-            hsi.wavelengths = np.linspace(320, 920, 103)
-            ### IT"S A HARDCODE SHIT END!!!!!!!!!!!
-            self.current_hsi = hsi
 
+            self.current_hsi = hsi
             self.ui.view_box.removeItem(1)
 
             if len(hsi.wavelengths) == hsi.data.shape[2]:
                 self.ui.view_box.addItem("RGB")
-
 
             self.current_image = hsi.data
             self.ui.spinBox.setValue(0)

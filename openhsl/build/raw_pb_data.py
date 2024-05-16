@@ -5,13 +5,23 @@ import re
 
 from pathlib import Path
 from PIL import Image
-from typing import Tuple
+from typing import Tuple, List, Union
 
-from openhsl.utils import dir_exists, load_data
 
 SUPPORTED_VIDEO_FORMATS = ("mp4", "avi")
 SUPPORTED_IMG_FORMATS = ("jpg", "png", "bmp")
 SUPPORTED_FORMATS = SUPPORTED_VIDEO_FORMATS + SUPPORTED_IMG_FORMATS
+
+
+def dir_exists(path: str) -> bool:
+    return Path(path).exists()
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def load_data(path: str,
+              exts: Union[List, Tuple]) -> List:
+    return [str(p) for p in Path(path).glob("*") if p.suffix[1:] in exts]
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class RawImagesData:
@@ -195,18 +205,17 @@ class RawCsvData:
             
     """
     def __init__(self, path_to_csv: str, video_name: str):
-        Path(path_to_csv)
         self.video_name = str(video_name).split("_")[-1].split(".")[0]
         self.current_step = 0
 
-        def if_video_not_in_df(df: pd.DataFrame, video_name: str):
+        def if_video_not_in_df(df: pd.DataFrame, v_name: str):
             x = df.loc[(df['cam_ID'] == 'Hypercam start point')]
             x = x["timing"]
             if video_name not in x.values:
-                raise ValueError(f"Video with name {video_name} not found in {path_to_csv} file")
+                raise ValueError(f"Video with name {v_name} not found in {path_to_csv} file")
 
-        def process_df(path_to_csv: str) -> Tuple[pd.DataFrame, list]:
-            df = pd.read_csv(path_to_csv, sep=";")
+        def process_df(path_csv: str) -> Tuple[pd.DataFrame, list]:
+            df = pd.read_csv(path_csv, sep=";")
             if_video_not_in_df(df, self.video_name)
             df = df.fillna(method="ffill")
             df = df[df["timing"] == self.video_name]
@@ -227,33 +236,3 @@ class RawCsvData:
     
     def __len__(self):
         return len(self.df)
-
-
-class RawMatData:
-
-    def __init__(self, path_to_mat: str):
-        self.path_to_mat = path_to_mat
-
-    def __iter__(self):
-        pass
-
-    def __next__(self):
-        pass
-
-    def __len__(self):
-        pass
-
-
-class RawTiffData:
-    # TODO may be realize with GDAL?
-    def __init__(self, path_to_tiff: str):
-        self.path_to_tiff = path_to_tiff
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        pass
-
-    def __len__(self):
-        pass
