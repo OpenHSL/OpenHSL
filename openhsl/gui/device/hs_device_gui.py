@@ -118,6 +118,9 @@ class HSDeviceGUI(QMainWindow):
             self.findChild(QPushButton, 'deviceSettingsSave_pushButton')
 
         # Signal and slot connections
+        # Main window
+        self.ui_file_open_action.triggered.connect(self.on_ui_file_open_action_triggered)
+        self.ui_file_exit_action.triggered.connect(self.on_ui_file_exit_action_triggered)
         # Slit angle tab
         self.ui_slit_image_threshold_value_checkbox.clicked.connect(
             self.on_ui_slit_image_threshold_value_checkbox_clicked)
@@ -553,6 +556,23 @@ class HSDeviceGUI(QMainWindow):
         self.load_settings()
 
     # Main window slots
+
+    @pyqtSlot()
+    def on_ui_file_open_action_triggered(self):
+        file_path, _filter = QFileDialog.getOpenFileName(self, "Choose file", "",
+                                                         "Metadata file (*.json)")
+        if file_path != "":
+            self.device_settings_path = file_path
+            self.ui_device_settings_path_line_edit.setText(self.device_settings_path)
+            self.last_device_settings_path = self.device_settings_path
+            self.recent_device_settings_path_list.append(self.last_device_settings_path)
+            self.recent_device_settings_path_list = list(set(self.recent_device_settings_path_list))
+            self.fill_recent_devices_menu()
+            self.load_device_settings()
+
+    @pyqtSlot()
+    def on_ui_file_exit_action_triggered(self):
+        self.close()
 
     @pyqtSlot(str)
     def on_ui_recent_device_settings_action_triggered(self, path: str):
