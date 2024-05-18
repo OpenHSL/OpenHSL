@@ -46,6 +46,7 @@ class MainWindow(CIU):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.hsis = {}
+        self.current_item = None
         self.pixel_color = None
         self.current_pixel = None
         self.current_hsi = None
@@ -69,6 +70,7 @@ class MainWindow(CIU):
         self.ui.delete_hsi.clicked.connect(self.delete_hsi_from_hsi_Qlist)
         self.ui.import_hsi.clicked.connect(self.import_hsi)
         self.ui.white_point_btn.clicked.connect(self.set_white_point)
+        self.ui.rotate_btn.clicked.connect(self.rotate_current_hsi)
 
         # OHTER INTERACT
         self.ui.horizontalSlider.valueChanged.connect(
@@ -198,10 +200,13 @@ class MainWindow(CIU):
         self.ui.build_file_btn.setEnabled(True)
         self.ui.build_dir_btn.setEnabled(True)
 
-    def show_local_hsi(self):
-        item = self.ui.hsi_Qlist.currentItem()
-        if item:
+    def show_local_hsi(self,
+                       item=False):
+        if not item:
+            item = self.ui.hsi_Qlist.currentItem()
             item = item.text()
+        if item:
+            self.current_item = item
             hsi = self.hsis[item]["hsi"]
 
             self.current_hsi = hsi
@@ -280,15 +285,8 @@ class MainWindow(CIU):
                 elif ext == ".bmp":
                     hsi.save_to_images(file_name, format="bmp")
 
-                print(meta)
                 if "metadata" in meta:
                     shutil.copy(meta["metadata"], f"{dir}/hsi_metainfo.json")
-                # if meta["metadata"] is not None and self.ui.save_wavelengths_checkbox.isChecked():
-                #     meta_name = f"{dir}/hsi_metainfo.json"
-                #     with open(meta["metadata"], 'r') as json_file:
-                #         data = json.load(json_file)
-                #         data = {"wavelengths": data["wavelengths"]}
-                #     save_json_dict(data, meta_name)
 
     def delete_hsi_from_hsi_Qlist(self):
         item = self.ui.hsi_Qlist.currentItem()
@@ -296,6 +294,14 @@ class MainWindow(CIU):
             item = item.text()
             del self.hsis[item]
             self.ui.hsi_Qlist.takeItem(self.ui.hsi_Qlist.currentRow())
+
+    def rotate_current_hsi(self):
+        if self.current_hsi is None: return
+        item = self.current_item
+
+        self.hsis[item]["hsi"].rot90()
+        self.current_hsi = self.hsis[item]["hsi"]
+        self.show_local_hsi(item)
 
 
 if __name__ == "__main__":

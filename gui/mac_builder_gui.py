@@ -165,7 +165,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 861, 771))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 861, 766))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout_9 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_9.setObjectName("verticalLayout_9")
@@ -196,6 +196,9 @@ class Ui_MainWindow(object):
         self.spinBox = QtWidgets.QSpinBox(self.frame_3)
         self.spinBox.setObjectName("spinBox")
         self.horizontalLayout_4.addWidget(self.spinBox)
+        self.rotate_btn = QtWidgets.QPushButton(self.frame_3)
+        self.rotate_btn.setObjectName("rotate_btn")
+        self.horizontalLayout_4.addWidget(self.rotate_btn)
         self.check_high_contast = QtWidgets.QCheckBox(self.frame_3)
         self.check_high_contast.setObjectName("check_high_contast")
         self.horizontalLayout_4.addWidget(self.check_high_contast)
@@ -222,6 +225,7 @@ class Ui_MainWindow(object):
         self.show_btn.setText(_translate("MainWindow", "Show"))
         self.delete_hsi.setText(_translate("MainWindow", "Delete"))
         self.view_box.setItemText(0, _translate("MainWindow", "layers"))
+        self.rotate_btn.setText(_translate("MainWindow", "Rotate"))
         self.check_high_contast.setText(_translate("MainWindow", "High Contast"))
 from pyqtgraph import PlotWidget
 
