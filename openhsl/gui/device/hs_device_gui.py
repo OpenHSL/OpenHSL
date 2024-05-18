@@ -382,14 +382,15 @@ class HSDeviceGUI(QMainWindow):
 
     def load_barrel_distortion_params(self):
         barrel_distortion_params = self.hsd.get_equation_params()
-        ept_model: EquationParamsTableModel = self.ui_bdew_equation_table_view.model()
-        params = [barrel_distortion_params['powers'], barrel_distortion_params['coeffs'],
-                  barrel_distortion_params['factors']]
-        poly_deg = self.ui_bdew_polynomial_degree_spinbox.value()
-        ept_model.load_data_from_list(params, poly_deg + 1)
+        if barrel_distortion_params is not None:
+            ept_model: EquationParamsTableModel = self.ui_bdew_equation_table_view.model()
+            params = [barrel_distortion_params['powers'], barrel_distortion_params['coeffs'],
+                      barrel_distortion_params['factors']]
+            poly_deg = self.ui_bdew_polynomial_degree_spinbox.value()
+            ept_model.load_data_from_list(params, poly_deg + 1)
 
-        for idx in barrel_distortion_params['powers']:
-            self.ui_bdew_equation_header_view_vertical.set_section_checked(idx, True)
+            for idx in barrel_distortion_params['powers']:
+                self.ui_bdew_equation_header_view_vertical.set_section_checked(idx, True)
 
     def initialize_texts(self):
         text_font = QFont("Century Gothic", 20, QFont.Weight.Light)
