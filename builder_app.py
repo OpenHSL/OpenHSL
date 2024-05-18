@@ -1,3 +1,4 @@
+import shutil
 import sys
 import json
 from copy import deepcopy
@@ -240,7 +241,7 @@ class MainWindow(CIU):
         if item:
             item = item.text()
             hsi = self.hsis[item]["hsi"]
-            meta = self.hsis[item]
+            meta = deepcopy(self.hsis[item])
             del meta["hsi"]
             file_name, _ = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "",
                                                        "(*.npy);;(*.mat);;(*.h5);;(*.png);;(*.jpg);;(*.jpeg);;(*.tiff);;(*.bmp)",
@@ -279,12 +280,15 @@ class MainWindow(CIU):
                 elif ext == ".bmp":
                     hsi.save_to_images(file_name, format="bmp")
 
-                if meta["metadata"] is not None and self.ui.save_wavelengths_checkbox.isChecked():
-                    meta_name = f"{dir}/hsi_metainfo.json"
-                    with open(meta["metadata"], 'r') as json_file:
-                        data = json.load(json_file)
-                        data = {"wavelengths": data["wavelengths"]}
-                    save_json_dict(data, meta_name)
+                print(meta)
+                if "metadata" in meta:
+                    shutil.copy(meta["metadata"], f"{dir}/hsi_metainfo.json")
+                # if meta["metadata"] is not None and self.ui.save_wavelengths_checkbox.isChecked():
+                #     meta_name = f"{dir}/hsi_metainfo.json"
+                #     with open(meta["metadata"], 'r') as json_file:
+                #         data = json.load(json_file)
+                #         data = {"wavelengths": data["wavelengths"]}
+                #     save_json_dict(data, meta_name)
 
     def delete_hsi_from_hsi_Qlist(self):
         item = self.ui.hsi_Qlist.currentItem()
