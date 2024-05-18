@@ -204,7 +204,8 @@ class MainWindow(CIU):
                        item=False):
         if not item:
             item = self.ui.hsi_Qlist.currentItem()
-            item = item.text()
+            if item:
+                item = item.text()
         if item:
             self.current_item = item
             hsi = self.hsis[item]["hsi"]
@@ -212,7 +213,7 @@ class MainWindow(CIU):
             self.current_hsi = hsi
             self.ui.view_box.removeItem(1)
 
-            if len(hsi.wavelengths) == hsi.data.shape[2]:
+            if hsi.wavelengths is not None and len(hsi.wavelengths) == hsi.data.shape[2]:
                 self.ui.view_box.addItem("RGB")
 
             self.current_image = hsi.data
