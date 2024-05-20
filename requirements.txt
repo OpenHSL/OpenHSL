@@ -25,3 +25,4 @@ torchaudio
 torchvision
 torcheval
 libsass
+discorpy

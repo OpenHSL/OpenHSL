@@ -1,4 +1,7 @@
+import copy
+
 import cv2 as cv
+import discorpy.post.postprocessing as post
 import matplotlib as mpl
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -11,61 +14,64 @@ import sass
 from typing import Dict, List, Optional, Tuple, Union
 
 
+def apply_barrel_distortion(image_in: np.ndarray, coeffs: np.ndarray, powers: np.ndarray, factors: np.ndarray,
+                            center_xy: Optional[np.ndarray] = None, line_step: int = 40, line_val: float = 0.25
+                            ) -> np.ndarray:
+    image_src = image_in.astype(np.float32) / 255.0
+    height, width = image_src.shape[0:2]
+    xcenter = width // 2
+    ycenter = height // 2
+
+    if center_xy is not None:
+        xcenter, ycenter = center_xy
+
+    # Create a line-pattern image
+    image_grid = np.zeros((height, width), dtype=np.float32)
+    for i in range(50, height - 50, line_step):
+        image_grid[i - 1:i + 1] = line_val
+    for i in range(50, width - 50, line_step):
+        image_grid[:, i - 1:i + 1] = line_val
+
+    pad = max(width // 2, height // 2)  # Need padding as lines are shrunk after warping.
+    image_grid_padded = np.pad(image_grid, pad, mode='edge')
+
+    # Prepare powers and coeffs arrays
+    j = 0
+    powers_prep = []
+    coeffs_prep = []
+    factors_prep = np.array([10 ** f for f in factors])
+    for i in range(powers[-1] + 1):
+        if i in powers:
+            powers_prep.append(factors_prep[j])
+            coeffs_prep.append(coeffs[j])
+            j += 1
+        else:
+            powers_prep.append(0)
+            coeffs_prep.append(0)
+    powers_prep = np.array(powers_prep)
+    coeffs_prep = np.array(coeffs_prep)
+
+    list_ffact = powers_prep * coeffs_prep
+    image_grid_warped = post.unwarp_image_backward(image_grid_padded, xcenter + pad, ycenter + pad, list_ffact)
+    image_grid_warped = image_grid_warped[pad:pad + height, pad:pad + width]
+    image_in_grid_warped = copy.deepcopy(image_src)
+
+    if len(image_src.shape) == 3:
+        for i in range(3):
+            image_in_grid_warped[:, :, i] = image_in_grid_warped[:, :, i] + 0.5 * image_grid_warped
+        image_in_grid_warped[image_in_grid_warped > 1] = 1
+    else:
+        image_in_grid_warped = image_src + 0.5 * image_grid_warped
+
+    image_in_grid_warped = (image_in_grid_warped * 255).astype(np.uint8)
+
+    return image_in_grid_warped
+
+
 def compile_scss_into_qss(scss_file_path: str, qss_file_path: str, output_style='expanded'):
     qss_str = sass.compile(filename=scss_file_path, output_style=output_style)
     with open(qss_file_path, 'w') as f:
         f.write(qss_str)
-
-
-def detect_corners(image: np.ndarray, roi: np.ndarray, sobel_kernel_size: int):
-    image_t_gray = image
-    ry, rx, rh, rw = roi
-
-    if len(image.shape) == 3:
-        image_t_gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
-
-    image_sobel_x = np.abs(cv.Sobel(image_t_gray, cv.CV_64F, 1, 0, ksize=sobel_kernel_size))
-    image_sobel_y = np.abs(cv.Sobel(image_t_gray, cv.CV_64F, 0, 1, ksize=sobel_kernel_size))
-    image_sobel_xy = image_sobel_x + image_sobel_y
-
-    image_edged = image_sobel_xy
-    tl, tr, br, bl = find_corners(image_edged[ry:ry + rh, rx:rx + rw])
-
-    for p in [tl, tr, br, bl]:
-        p += [ry, rx]
-
-    return image_edged, [tl, tr, br, bl]
-
-
-def estimate_barrel_distortion_equation(image: np.ndarray, xy_center: Tuple[int, int], roi_rect: QRect,
-                                        equation_dict: Dict[str, Dict[str, float]]):
-    list_power = np.asarray([10 ** equation_dict['power'][f'{p}'] for p in range(len(equation_dict['power']))])
-    list_coef = equation_dict['coef']
-    h, w = image.shape[0:2]
-    x_center, y_center = xy_center
-
-
-def find_corners(image: np.ndarray):
-    h, w = image.shape[0:2]
-    top_left = [0, 0]
-    top_right = [0, w]
-    bottom_right = [h, w]
-    bottom_left = [h, 0]
-    coords = np.argwhere(image)
-
-    idx = np.argmin(np.linalg.norm(coords - top_left, axis=1))
-    top_left = coords[idx]
-
-    idx = np.argmin(np.linalg.norm(coords - top_right, axis=1))
-    top_right = coords[idx]
-
-    idx = np.argmin(np.linalg.norm(coords - bottom_right, axis=1))
-    bottom_right = coords[idx]
-
-    idx = np.argmin(np.linalg.norm(coords - bottom_left, axis=1))
-    bottom_left = coords[idx]
-
-    return top_left, top_right, bottom_right, bottom_left
 
 
 def latex_to_file(path: str, latex_expression: str, color: str, font_size: int = None) -> None:

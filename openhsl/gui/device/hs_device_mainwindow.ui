@@ -230,6 +230,13 @@
        <layout class="QGridLayout" name="gridLayout_11">
         <item row="1" column="0">
          <layout class="QGridLayout" name="gridLayout_10">
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="bdtDistortionGrid_checkBox">
+            <property name="text">
+             <string>Distortion grid</string>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="0">
            <widget class="QCheckBox" name="bdtApplyRotation_checkBox">
             <property name="text">
@@ -238,39 +245,32 @@
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QCheckBox" name="bdtSlitImageThresholdValue_checkBox">
+           <widget class="QCheckBox" name="bdtSlitImageContrastValue_checkBox">
             <property name="text">
-             <string>Threshold</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QSlider" name="bdtSlitImageThresholdValue_horizontalSlider">
-            <property name="maximum">
-             <number>255</number>
-            </property>
-            <property name="value">
-             <number>40</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
+             <string>Contrast</string>
             </property>
            </widget>
           </item>
           <item row="1" column="2">
-           <widget class="QSpinBox" name="bdtSlitImageThresholdValue_spinBox">
+           <widget class="QSpinBox" name="bdtSlitImageContrastValue_spinBox">
             <property name="maximum">
-             <number>255</number>
+             <number>50</number>
             </property>
             <property name="value">
-             <number>40</number>
+             <number>2</number>
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
-           <widget class="QCheckBox" name="bdtSpectrumEdges_checkBox">
-            <property name="text">
-             <string>Spectrum edges</string>
+          <item row="1" column="1">
+           <widget class="QSlider" name="bdtSlitImageContrastValue_horizontalSlider">
+            <property name="maximum">
+             <number>50</number>
+            </property>
+            <property name="value">
+             <number>2</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
@@ -308,9 +308,22 @@
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="bdtEquationEstimate_pushButton">
+           <widget class="QPushButton" name="bdtGetSlitCenter_pushButton">
             <property name="text">
-             <string>Estimate</string>
+             <string>Get slit center</string>
+            </property>
+            <property name="id" stdset="0">
+             <string>big</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="bdtUndistortImage_pushButton">
+            <property name="text">
+             <string>Undistort image</string>
+            </property>
+            <property name="id" stdset="0">
+             <string>big</string>
             </property>
            </widget>
           </item>

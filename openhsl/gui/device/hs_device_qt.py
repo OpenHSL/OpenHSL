@@ -16,8 +16,9 @@ class HSDeviceQt(QObject, HSDevice):
     adjust_slit_angle_range = pyqtSignal(float, float)
     adjust_slit_intercept_range = pyqtSignal(float, float)
     send_bd_slit_image_rotated = pyqtSignal(QImage)
-    send_bd_slit_image_thresholded = pyqtSignal(QImage)
-    send_bd_slit_image_edged = pyqtSignal(QImage, np.ndarray)
+    send_bd_slit_image_contrasted = pyqtSignal(QImage)
+    send_bd_distortion_grid_image = pyqtSignal(QImage)
+    send_bd_undistorted_slit_image = pyqtSignal(QImage)
 
     # send_slit_angle = pyqtSignal(float)
     # send_slit_offset = pyqtSignal(float)
@@ -39,12 +40,8 @@ class HSDeviceQt(QObject, HSDevice):
 
         self.slit_image_rotated: Optional[np.ndarray] = None
         self.slit_image_rotated_rgb: Optional[np.ndarray] = None
-        self.bd_threshold_value = 40
-        self.bd_slit_image_edged: Optional[np.ndarray] = None
-        self.bd_slit_image_edged_roi: Optional[np.ndarray] = None
-        self.bd_sobel_kernel_size = 5
-        self.bd_corners: Optional[np.ndarray] = None
-        self.bd_coeffs_dict: Optional[Dict[str, List[float]]] = None
+        self.bd_contrast_value = 2
+        self.bd_slit_contrasted: Optional[np.ndarray] = None
 
         # Current wavelength
         self.wl_slit_image: Optional[np.ndarray] = None
@@ -53,9 +50,6 @@ class HSDeviceQt(QObject, HSDevice):
 
     def get_equation_params(self) -> Dict[str, List[float]]:
         return self.calib_slit_data.barrel_distortion_params
-
-    def get_spectrum_corners(self):
-        return copy.deepcopy(self.bd_corners)
 
     def get_slit_angle_min(self):
         return self.slit_angle_min
@@ -109,11 +103,10 @@ class HSDeviceQt(QObject, HSDevice):
 
     def is_equation_data_enough(self):
         enough = False
-        if self.calib_slit_data.barrel_distortion_params is not None and self.bd_corners is not None:
+        if self.calib_slit_data.barrel_distortion_params is not None:
             enough = len(self.calib_slit_data.barrel_distortion_params['powers']) > 0 and \
                      len(self.calib_slit_data.barrel_distortion_params['coeffs']) > 0 and \
-                     len(self.calib_slit_data.barrel_distortion_params['factors']) > 0 and \
-                     len(self.bd_corners) > 0
+                     len(self.calib_slit_data.barrel_distortion_params['factors']) > 0
         return enough
 
     @pyqtSlot(str)
@@ -169,24 +162,41 @@ class HSDeviceQt(QObject, HSDevice):
         self.send_bd_slit_image_rotated.emit(slit_image_rotated_qt.copy())
 
     @pyqtSlot()
-    def on_threshold_bd_slit_image(self):
-        image_thresholded = hsiutils.threshold_image(copy.deepcopy(self.slit_image_rotated_rgb),
-                                                     self.bd_threshold_value, 255, self.threshold_type)
-        image_thresholded_qt = QImage(image_thresholded, image_thresholded.shape[1], image_thresholded.shape[0],
-                                      QImage.Format.Format_RGB888)
-        self.send_bd_slit_image_thresholded.emit(image_thresholded_qt.copy())
+    def on_contrast_bd_slit_image(self):
+        self.bd_slit_contrasted = hsiutils.contrast_image(copy.deepcopy(self.slit_image_rotated_rgb), self.bd_contrast_value)
+        image_contrasted_qt = QImage(self.bd_slit_contrasted,
+                                     self.bd_slit_contrasted.shape[1], self.bd_slit_contrasted.shape[0],
+                                     QImage.Format.Format_RGB888)
+        self.send_bd_slit_image_contrasted.emit(image_contrasted_qt.copy())
 
-    @pyqtSlot(QRectF)
-    def on_edge_bd_slit_image(self, rect: QRectF):
-        self.bd_slit_image_edged_roi = np.rint([rect.topLeft().y(), rect.topLeft().x(),
-                                                rect.height(), rect.width()]).astype(int)
-        image_thresholded = hsiutils.threshold_image(copy.deepcopy(self.slit_image_rotated_rgb),
-                                                     self.bd_threshold_value, 255, self.threshold_type)
-        image_edged, self.bd_corners = utils.detect_corners(image_thresholded, self.bd_slit_image_edged_roi,
-                                                            self.bd_sobel_kernel_size)
-        self.bd_corners = np.array(self.bd_corners)
-        image_edged = cv.cvtColor(image_edged.astype(np.float32), cv.COLOR_GRAY2RGB)
-        image_edged[image_edged > 0] = 1
-        image_edged = (image_edged * 255.0).astype(np.uint8)
-        image_edged_qt = QImage(image_edged, image_edged.shape[1], image_edged.shape[0], QImage.Format.Format_RGB888)
-        self.send_bd_slit_image_edged.emit(image_edged_qt.copy(), self.bd_corners)
+    @pyqtSlot(bool)
+    def on_draw_distortion_grid(self, contrasted: bool = False):
+        factors = np.array(self.calib_slit_data.barrel_distortion_params['factors'])
+        coeffs = np.array(self.calib_slit_data.barrel_distortion_params['coeffs'])
+        powers = np.array(self.calib_slit_data.barrel_distortion_params['powers'])
+        image = self.slit_image_rotated_rgb
+        if contrasted:
+            image = self.bd_slit_contrasted
+        image_with_distortion_grid = utils.apply_barrel_distortion(copy.deepcopy(image), coeffs, powers, factors)
+        image_with_distortion_grid_qt = QImage(image_with_distortion_grid,
+                                               image_with_distortion_grid.shape[1], image_with_distortion_grid.shape[0],
+                                               QImage.Format.Format_RGB888)
+        self.send_bd_distortion_grid_image.emit(image_with_distortion_grid_qt.copy())
+
+    @pyqtSlot(bool)
+    def on_undistort_slit_image(self, contrasted: bool = False):
+        factors = np.array(self.calib_slit_data.barrel_distortion_params['factors'])
+        coeffs = np.array(self.calib_slit_data.barrel_distortion_params['coeffs'])
+        powers = np.array(self.calib_slit_data.barrel_distortion_params['powers'])
+        center_xy = np.array(self.calib_slit_data.barrel_distortion_params['center'])
+        image = self.slit_image_rotated_rgb
+        if contrasted:
+            image = self.bd_slit_contrasted
+        undistortion_coeffs = \
+            list(hsiutils.compute_undistortion_coeffs(coeffs, powers, factors, image.shape, center_xy))
+        self.calib_slit_data.barrel_distortion_params['undistortion_coeffs'] = undistortion_coeffs
+        image_undistorted = hsiutils.undistort_image(image, undistortion_coeffs, list(center_xy))
+        image_undistorted_qt = QImage(image_undistorted,
+                                      image_undistorted.shape[1], image_undistorted.shape[0],
+                                      QImage.Format.Format_RGB888)
+        self.send_bd_undistorted_slit_image.emit(image_undistorted_qt.copy())
