@@ -32,6 +32,7 @@ class HSDeviceGUI(QMainWindow):
     contrast_bd_slit_image = pyqtSignal()
     draw_distortion_grid = pyqtSignal(bool)
     undistort_slit_image = pyqtSignal(bool)
+    compute_bd_slit_center = pyqtSignal(QRectF, int)
 
     def __init__(self):
         super(HSDeviceGUI, self).__init__()
@@ -105,6 +106,9 @@ class HSDeviceGUI(QMainWindow):
         # BDT: Barrel distortion equation window
         self.ui_bdew_equation_table_view: QTableView = self.bdew.findChild(QTableView, 'equation_tableView')
         self.ui_bdew_equation_table_view_model: EquationParamsTableModel = None
+        self.ui_bdew_center_x_spinbox: QSpinBox = self.bdew.findChild(QSpinBox, 'centerX_spinBox')
+        self.ui_bdew_center_y_spinbox: QSpinBox = self.bdew.findChild(QSpinBox, 'centerY_spinBox')
+        self.ui_bdew_grid_tile_size_spinbox: QSpinBox = self.bdew.findChild(QSpinBox, 'gridTileSize_spinBox')
         self.ui_bdew_polynomial_degree_spinbox: QSpinBox = self.bdew.findChild(QSpinBox, 'polynomialDegree_spinBox')
         self.ui_bdew_equation_header_view_vertical: Optional[EquationParamsTableHeaderViewVertical] = None
         self.ui_bdew_equation_header_view_horizontal: Optional[EquationParamsTableHeaderViewHorizontal] = None
@@ -168,8 +172,14 @@ class HSDeviceGUI(QMainWindow):
                                                         Qt.ConnectionType.QueuedConnection)
         self.ui_bdt_equation_set_button.clicked.connect(self.on_ui_bdt_equation_set_button_clicked)
         self.ui_bdt_get_slit_center_button.clicked.connect(self.on_ui_bdt_get_slit_center_button_clicked)
-        self.ui_bdew_polynomial_degree_spinbox.valueChanged.connect(
-            self.on_ui_bdew_polynomial_degree_spinbox_value_changed)
+        self.compute_bd_slit_center.connect(self.hsd.on_compute_bd_slit_center, Qt.ConnectionType.QueuedConnection)
+        self.hsd.send_bd_slit_center.connect(self.on_receive_bd_slit_center, Qt.ConnectionType.QueuedConnection)
+        self.ui_bdew_center_x_spinbox.editingFinished.connect(self.on_ui_bdew_center_x_spinbox_editing_finished)
+        self.ui_bdew_center_y_spinbox.editingFinished.connect(self.on_ui_bdew_center_y_spinbox_editing_finished)
+        self.ui_bdew_grid_tile_size_spinbox.editingFinished.connect(
+            self.on_ui_bdew_grid_tile_size_spinbox_editing_finished)
+        self.ui_bdew_polynomial_degree_spinbox.editingFinished.connect(
+            self.on_ui_bdew_polynomial_degree_spinbox_editing_finished)
         self.ui_bdt_undistort_image_button.clicked.connect(self.on_ui_bdt_undistort_image_button_clicked)
         self.undistort_slit_image.connect(self.hsd.on_undistort_slit_image, Qt.ConnectionType.QueuedConnection)
         # Settings tab
@@ -191,8 +201,11 @@ class HSDeviceGUI(QMainWindow):
         self.bdt_graphics_scene = QGraphicsScene(self)
         self.bdt_graphics_pixmap_item = QGraphicsPixmapItem()
         self.bdt_graphics_marquee_area_rect_item = QGraphicsRectItem()
+        self.bdt_graphics_center_x_line_item = QGraphicsLineItem()
+        self.bdt_graphics_center_y_line_item = QGraphicsLineItem()
         self.bdt_slit_image_qt: Optional[QImage] = None
         self.bdt_slit_image_rotated_qt: Optional[QImage] = None
+        self.bdt_slit_image_contrasted_qt: Optional[QImage] = None
 
         # TODO add mutex locker
         # TODO List[bool], for each tab different val?
@@ -332,6 +345,12 @@ class HSDeviceGUI(QMainWindow):
         self.bdt_graphics_marquee_area_rect_item.setBrush(brush_marquee)
         self.bdt_graphics_marquee_area_rect_item.setOpacity(0.5)
 
+        self.bdt_graphics_center_x_line_item.setPen(dashed_pen_slit)
+        self.bdt_graphics_center_x_line_item.setOpacity(0.25)
+
+        self.bdt_graphics_center_y_line_item.setPen(dashed_pen_slit)
+        self.bdt_graphics_center_y_line_item.setOpacity(0.25)
+
         self.ui_slit_image_threshold_value_checkbox.setEnabled(False)
         self.ui_slit_image_threshold_value_horizontal_slider.setEnabled(False)
         self.ui_slit_image_threshold_value_spinbox.setEnabled(False)
@@ -349,6 +368,9 @@ class HSDeviceGUI(QMainWindow):
         self.ui_bdt_get_slit_center_button.setEnabled(False)
         self.ui_bdt_undistort_image_button.setEnabled(False)
 
+        self.ui_bdew_center_x_spinbox.setEnabled(False)
+        self.ui_bdew_center_y_spinbox.setEnabled(False)
+        self.ui_bdew_grid_tile_size_spinbox.setEnabled(False)
         self.ui_bdew_equation_table_view_model = EquationParamsTableModel()
         self.ui_bdew_equation_table_view.setModel(self.ui_bdew_equation_table_view_model)
         self.ui_bdew_equation_table_view.setMouseTracking(True)
@@ -392,6 +414,16 @@ class HSDeviceGUI(QMainWindow):
 
             for idx in barrel_distortion_params['powers']:
                 self.ui_bdew_equation_header_view_vertical.set_section_checked(idx, True)
+            if barrel_distortion_params['center'] is not None:
+                center_xy = barrel_distortion_params['center']
+                if len(center_xy) == 2:
+                    center_x, center_y = center_xy
+                    if center_x > 0 and center_y > 0:
+                        self.ui_bdew_center_x_spinbox.setValue(center_x)
+                        self.ui_bdew_center_y_spinbox.setValue(center_y)
+        self.ui_bdew_center_x_spinbox.setEnabled(True)
+        self.ui_bdew_center_y_spinbox.setEnabled(True)
+        self.ui_bdew_grid_tile_size_spinbox.setEnabled(True)
 
     def initialize_texts(self):
         text_font = QFont("Century Gothic", 20, QFont.Weight.Light)
@@ -463,6 +495,9 @@ class HSDeviceGUI(QMainWindow):
         self.device_settings_dict["generation_date"] = utils.get_current_date()
         self.device_settings_dict["generation_time"] = utils.get_current_time()
         self.device_settings_dict["slit_image_path"] = self.slit_image_path
+        self.device_settings_dict["slit_threshold_value"] = self.ui_slit_image_threshold_value_spinbox.value()
+        self.device_settings_dict["bdt_contrast_value"] = self.ui_bdt_slit_image_contrast_value_spinbox.value()
+        self.device_settings_dict["bdt_grid_tile_size"] = self.ui_bdew_grid_tile_size_spinbox.value()
         self.device_settings_dict["device_metadata"] = self.hsd.to_dict()
         utils.save_dict_to_json(self.device_settings_dict, self.device_settings_path)
 
@@ -475,6 +510,19 @@ class HSDeviceGUI(QMainWindow):
             else:
                 self.slit_image_path = ""
                 self.ui_slit_image_path_line_edit.setText(self.slit_image_path)
+            if utils.key_exists_in_dict(self.device_settings_dict, "slit_threshold_value"):
+                slit_threshold_value = self.device_settings_dict["slit_threshold_value"]
+                self.ui_slit_image_threshold_value_horizontal_slider.setValue(slit_threshold_value)
+                self.ui_slit_image_threshold_value_spinbox.setValue(slit_threshold_value)
+            if utils.key_exists_in_dict(self.device_settings_dict, "bdt_contrast_value"):
+                bdt_contrast_value = self.device_settings_dict["bdt_contrast_value"]
+                self.ui_bdt_slit_image_contrast_value_horizontal_slider.setValue(bdt_contrast_value)
+                self.ui_bdt_slit_image_contrast_value_spinbox.setValue(bdt_contrast_value)
+                self.hsd.set_contrast_value(bdt_contrast_value)
+            if utils.key_exists_in_dict(self.device_settings_dict, "bdt_grid_tile_size"):
+                bdt_grid_tile_size = self.device_settings_dict["bdt_grid_tile_size"]
+                self.ui_bdew_grid_tile_size_spinbox.setValue(bdt_grid_tile_size)
+                self.hsd.set_grid_tile_size(bdt_grid_tile_size)
             if utils.key_exists_in_dict(self.device_settings_dict, "device_metadata"):
                 device_data_dict = self.device_settings_dict["device_metadata"]
                 self.hsd.load_dict(device_data_dict)
@@ -523,6 +571,7 @@ class HSDeviceGUI(QMainWindow):
             self.on_compute_slit_angle_finished()
             self.ui_bdt_apply_rotation_checkbox.setChecked(True)
             self.on_ui_bdt_apply_rotation_checkbox_clicked(True)
+            self.draw_bd_slit_data()
 
     @pyqtSlot(QImage)
     def receive_slit_preview_image(self, image_qt: QImage):
@@ -689,7 +738,7 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot(int)
     def on_ui_bdt_slit_image_contrast_value_horizontal_slider_value_changed(self, value: int):
-        self.hsd.bd_contrast_value = value
+        self.hsd.set_contrast_value(value)
         self.ui_bdt_slit_image_contrast_value_spinbox.setValue(value)
 
         if self.ui_bdt_slit_image_contrast_value_checkbox.isChecked():
@@ -697,7 +746,7 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot(int)
     def on_ui_bdt_slit_image_contrast_value_spinbox_value_changed(self, value: int):
-        self.hsd.bd_contrast_value = value
+        self.hsd.set_contrast_value(value)
         self.ui_bdt_slit_image_contrast_value_spinbox.setValue(value)
 
         if self.ui_bdt_slit_image_contrast_value_checkbox.isChecked():
@@ -706,10 +755,14 @@ class HSDeviceGUI(QMainWindow):
     @pyqtSlot(bool)
     def on_ui_bdt_distortion_grid_checkbox_clicked(self, checked: bool):
         if checked:
-            self.draw_distortion_grid.emit(self.ui_bdt_slit_image_contrast_value_checkbox.isChecked())
-            self.ui_bdt_slit_image_contrast_value_checkbox.setChecked(False)
+            self.redraw_distortion_grid()
         else:
-            self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.bdt_slit_image_qt))
+            image_qt = self.bdt_slit_image_qt
+            if self.ui_bdt_slit_image_contrast_value_checkbox.isChecked():
+                image_qt = self.bdt_slit_image_contrasted_qt
+            elif self.ui_bdt_apply_rotation_checkbox.isChecked():
+                image_qt = self.bdt_slit_image_rotated_qt
+            self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
 
     @pyqtSlot()
     def on_ui_bdt_undistort_image_button_clicked(self):
@@ -722,7 +775,8 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot(QImage)
     def on_receive_bd_slit_image_contrasted(self, image_qt: QImage):
-        self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
+        self.bdt_slit_image_contrasted_qt = image_qt.copy()
+        self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.bdt_slit_image_contrasted_qt))
 
     @pyqtSlot(QImage)
     def on_receive_bd_distortion_grid_image(self, image_qt: QImage):
@@ -740,12 +794,47 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot()
     def on_ui_bdt_get_slit_center_button_clicked(self):
-        pass
+        threshold_value = self.ui_slit_image_threshold_value_spinbox.value()
+        self.compute_bd_slit_center.emit(self.bdt_graphics_marquee_area_rect_item.rect(), threshold_value)
 
-    @pyqtSlot(int)
-    def on_ui_bdew_polynomial_degree_spinbox_value_changed(self, value: int):
-        self.ui_bdew_equation_table_view.model().clear()
-        self.fill_bdew()
+    @pyqtSlot(int, int)
+    def on_receive_bd_slit_center(self, center_x: int, center_y: int):
+        self.ui_bdew_center_x_spinbox.setValue(center_x)
+        self.ui_bdew_center_y_spinbox.setValue(center_y)
+        self.draw_bd_slit_data()
+
+    @pyqtSlot()
+    def on_ui_bdew_center_x_spinbox_editing_finished(self):
+        center_x = self.ui_bdew_center_x_spinbox.value()
+        center_y = self.ui_bdew_center_y_spinbox.value()
+        if center_x > 0 and center_y > 0:
+            self.hsd.set_center(center_x, center_y)
+            self.draw_bd_slit_data()
+            self.redraw_distortion_grid()
+
+    @pyqtSlot()
+    def on_ui_bdew_center_y_spinbox_editing_finished(self):
+        center_x = self.ui_bdew_center_x_spinbox.value()
+        center_y = self.ui_bdew_center_y_spinbox.value()
+        if center_x > 0 and center_y > 0:
+            self.hsd.set_center(center_x, center_y)
+            self.draw_bd_slit_data()
+            self.redraw_distortion_grid()
+
+    @pyqtSlot()
+    def on_ui_bdew_grid_tile_size_spinbox_editing_finished(self):
+        value = self.ui_bdew_grid_tile_size_spinbox.value()
+        self.hsd.set_grid_tile_size(value)
+        self.redraw_distortion_grid()
+
+    @pyqtSlot()
+    def on_ui_bdew_polynomial_degree_spinbox_editing_finished(self):
+        self.ui_bdt_distortion_grid_checkbox.setChecked(False)
+        self.on_ui_bdt_distortion_grid_checkbox_clicked(False)
+        poly_deg = self.ui_bdew_polynomial_degree_spinbox.value()
+        if self.ui_bdew_equation_table_view.model().rowCount() != poly_deg + 1:
+            self.ui_bdew_equation_table_view.model().clear()
+            self.fill_bdew()
 
     @pyqtSlot(QModelIndex, QModelIndex, "QList<int>")
     def on_ui_bdew_equation_table_view_data_changed(self, top_left, bottom_right, roles):
@@ -764,7 +853,12 @@ class HSDeviceGUI(QMainWindow):
                 equation_params['coeffs'].append(coeff)
                 equation_params['factors'].append(factor)
         if len(equation_params['powers']) > 0:
+            ep_dev = self.hsd.get_equation_params()
+            if ep_dev is not None:
+                equation_params['center'] = ep_dev['center']
             self.hsd.set_equation_params(equation_params)
+            if self.ui_bdt_distortion_grid_checkbox.isChecked():
+                self.draw_distortion_grid.emit(self.ui_bdt_slit_image_contrast_value_checkbox.isChecked())
         self.check_ui_bdt_undistort_image_button_availability()
 
     # Tab 2: wavelengths tab slots
@@ -830,6 +924,29 @@ class HSDeviceGUI(QMainWindow):
         self.slit_graphics_roi_rect_item.setRect(QRectF(x, y, w, h))
         self.slit_angle_graphics_scene.addItem(self.slit_graphics_line_item)
         self.slit_angle_graphics_scene.addItem(self.slit_graphics_roi_rect_item)
+
+    def draw_bd_slit_data(self):
+        self.bdt_graphics_scene.removeItem(self.bdt_graphics_marquee_area_rect_item)
+        self.bdt_graphics_scene.removeItem(self.bdt_graphics_center_x_line_item)
+        self.bdt_graphics_scene.removeItem(self.bdt_graphics_center_y_line_item)
+
+        if self.hsd.is_center_defined():
+            center_x = self.ui_bdew_center_x_spinbox.value()
+            center_y = self.ui_bdew_center_y_spinbox.value()
+            self.bdt_graphics_center_x_line_item.setLine(
+                QLineF(2, center_y, self.bdt_graphics_pixmap_item.boundingRect().width() - 3, center_y))
+            self.bdt_graphics_center_y_line_item.setLine(
+                QLineF(center_x, 2, center_x, self.bdt_graphics_pixmap_item.boundingRect().height() - 3))
+            self.bdt_graphics_scene.addItem(self.bdt_graphics_center_x_line_item)
+            self.bdt_graphics_scene.addItem(self.bdt_graphics_center_y_line_item)
+        elif not self.bdt_graphics_marquee_area_rect_item.rect().isEmpty():
+            if not self.ui_bdt_slit_image_contrast_value_checkbox.isChecked() or \
+                    not self.ui_bdt_distortion_grid_checkbox.isChecked():
+                self.bdt_graphics_scene.addItem(self.bdt_graphics_marquee_area_rect_item)
+
+    def redraw_distortion_grid(self):
+        if self.ui_bdt_distortion_grid_checkbox.isChecked():
+            self.draw_distortion_grid.emit(self.ui_bdt_slit_image_contrast_value_checkbox.isChecked())
 
     def eventFilter(self, obj, event):
         # if obj == self.ui_slit_angle_graphics_view:

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>420</width>
-    <height>400</height>
+    <height>500</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,14 +16,55 @@
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0">
     <layout class="QGridLayout" name="gridLayout_2">
-     <item row="0" column="0">
+     <item row="3" column="0">
       <widget class="QLabel" name="polynomialDegree_label">
        <property name="text">
         <string>The degree of polynomial</string>
        </property>
       </widget>
      </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="centerX_label">
+       <property name="text">
+        <string>Center X</string>
+       </property>
+      </widget>
+     </item>
      <item row="0" column="1">
+      <widget class="QSpinBox" name="centerX_spinBox">
+       <property name="maximum">
+        <number>2048</number>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QSpinBox" name="centerY_spinBox">
+       <property name="maximum">
+        <number>2048</number>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="centerY_label">
+       <property name="text">
+        <string>Center Y</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="2">
+      <spacer name="horizontalSpacer_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="3" column="1">
       <widget class="QSpinBox" name="polynomialDegree_spinBox">
        <property name="minimum">
         <number>1</number>
@@ -36,18 +77,22 @@
        </property>
       </widget>
      </item>
-     <item row="0" column="2">
-      <spacer name="horizontalSpacer_3">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+     <item row="2" column="0">
+      <widget class="QLabel" name="gridTileSize_label">
+       <property name="text">
+        <string>Grid tile size</string>
        </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QSpinBox" name="gridTileSize_spinBox">
+       <property name="maximum">
+        <number>100</number>
        </property>
-      </spacer>
+       <property name="value">
+        <number>40</number>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

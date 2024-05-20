@@ -19,6 +19,7 @@ class HSDeviceQt(QObject, HSDevice):
     send_bd_slit_image_contrasted = pyqtSignal(QImage)
     send_bd_distortion_grid_image = pyqtSignal(QImage)
     send_bd_undistorted_slit_image = pyqtSignal(QImage)
+    send_bd_slit_center = pyqtSignal(int, int)
 
     # send_slit_angle = pyqtSignal(float)
     # send_slit_offset = pyqtSignal(float)
@@ -42,6 +43,7 @@ class HSDeviceQt(QObject, HSDevice):
         self.slit_image_rotated_rgb: Optional[np.ndarray] = None
         self.bd_contrast_value = 2
         self.bd_slit_contrasted: Optional[np.ndarray] = None
+        self.bd_grid_tile_size = 40
 
         # Current wavelength
         self.wl_slit_image: Optional[np.ndarray] = None
@@ -63,8 +65,17 @@ class HSDeviceQt(QObject, HSDevice):
     def get_slit_intercept_max(self):
         return self.slit_intercept_max
 
+    def set_center(self, center_x: int, center_y: int):
+        self.calib_slit_data.barrel_distortion_params['center'] = [center_x, center_y]
+
+    def set_contrast_value(self, value: float):
+        self.bd_contrast_value = value
+
     def set_equation_params(self, barrel_distortion_params: Dict[str, List[float]]):
         self.calib_slit_data.barrel_distortion_params = barrel_distortion_params
+
+    def set_grid_tile_size(self, value: int):
+        self.bd_grid_tile_size = value
 
     def set_slit_angle(self, value: float):
         self.calib_slit_data.angle = value
@@ -101,7 +112,16 @@ class HSDeviceQt(QObject, HSDevice):
 
         self.adjust_slit_intercept_range.emit(self.slit_intercept_min, self.slit_intercept_max)
 
-    def is_equation_data_enough(self):
+    def is_center_defined(self) -> bool:
+        defined = False
+        if self.calib_slit_data.barrel_distortion_params is not None:
+            center_xy = self.calib_slit_data.barrel_distortion_params['center']
+            if center_xy is not None:
+                if len(center_xy) == 2:
+                    defined = True
+        return defined
+
+    def is_equation_data_enough(self) -> bool:
         enough = False
         if self.calib_slit_data.barrel_distortion_params is not None:
             enough = len(self.calib_slit_data.barrel_distortion_params['powers']) > 0 and \
@@ -174,10 +194,13 @@ class HSDeviceQt(QObject, HSDevice):
         factors = np.array(self.calib_slit_data.barrel_distortion_params['factors'])
         coeffs = np.array(self.calib_slit_data.barrel_distortion_params['coeffs'])
         powers = np.array(self.calib_slit_data.barrel_distortion_params['powers'])
+        center_xy = np.array(self.calib_slit_data.barrel_distortion_params['center'])
         image = self.slit_image_rotated_rgb
         if contrasted:
             image = self.bd_slit_contrasted
-        image_with_distortion_grid = utils.apply_barrel_distortion(copy.deepcopy(image), coeffs, powers, factors)
+        image_with_distortion_grid = utils.apply_barrel_distortion(copy.deepcopy(image),
+                                                                   coeffs, powers, factors, center_xy,
+                                                                   self.bd_grid_tile_size)
         image_with_distortion_grid_qt = QImage(image_with_distortion_grid,
                                                image_with_distortion_grid.shape[1], image_with_distortion_grid.shape[0],
                                                QImage.Format.Format_RGB888)
@@ -200,3 +223,15 @@ class HSDeviceQt(QObject, HSDevice):
                                       image_undistorted.shape[1], image_undistorted.shape[0],
                                       QImage.Format.Format_RGB888)
         self.send_bd_undistorted_slit_image.emit(image_undistorted_qt.copy())
+
+    @pyqtSlot(QRectF, int)
+    def on_compute_bd_slit_center(self, area_rect: QRectF, threshold_value: int):
+        image = copy.deepcopy(self.slit_image_rotated)
+        x, y, w, h = area_rect.topLeft().x(), area_rect.topLeft().y(), area_rect.width(), area_rect.height()
+        x, y, w, h = int(x), int(y), int(w), int(h)
+        image_thresholded = hsiutils.threshold_image(image[y:y + h, x:x + w], threshold_value, 255, self.threshold_type)
+        points = np.argwhere(image_thresholded > 0)
+        center_x = int(points[:, 1].sum() / len(points)) + x
+        center_y = int(points[:, 0].sum() / len(points)) + y
+        self.calib_slit_data.barrel_distortion_params['center'] = [center_x, center_y]
+        self.send_bd_slit_center.emit(center_x, center_y)

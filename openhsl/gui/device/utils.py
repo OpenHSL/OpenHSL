@@ -23,14 +23,23 @@ def apply_barrel_distortion(image_in: np.ndarray, coeffs: np.ndarray, powers: np
     ycenter = height // 2
 
     if center_xy is not None:
-        xcenter, ycenter = center_xy
+        if len(center_xy) == 2:
+            xcenter, ycenter = center_xy
+
+    line_offset_x = 50
+    line_offset_y = 50
+    line_count_x = int(np.ceil((width - 2 * line_offset_x - width // 2 + xcenter) // line_step) // 2)
+    line_count_y = int(np.ceil((height - 2 * line_offset_y - height // 2 + ycenter) // line_step) // 2)
 
     # Create a line-pattern image
     image_grid = np.zeros((height, width), dtype=np.float32)
-    for i in range(50, height - 50, line_step):
-        image_grid[i - 1:i + 1] = line_val
-    for i in range(50, width - 50, line_step):
-        image_grid[:, i - 1:i + 1] = line_val
+
+    for i in range(-line_count_y, line_count_y):
+        y = int(ycenter + i * line_step)
+        image_grid[y - 1:y + 1] = line_val
+    for i in range(-line_count_x, line_count_x):
+        x = int(xcenter + i * line_step)
+        image_grid[:, x - 1:x + 1] = line_val
 
     pad = max(width // 2, height // 2)  # Need padding as lines are shrunk after warping.
     image_grid_padded = np.pad(image_grid, pad, mode='edge')
