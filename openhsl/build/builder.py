@@ -218,18 +218,18 @@ class HSBuilder:
 
         dist_coeff = np.zeros((4, 1), np.float64)
 
-        dist_coeff[0, 0] = barrel_coeffs['k1']
-        dist_coeff[1, 0] = barrel_coeffs['k2']
-        dist_coeff[2, 0] = barrel_coeffs['p1']
-        dist_coeff[3, 0] = barrel_coeffs['p2']
+        dist_coeff[0, 0] = barrel_coeffs.get('k1', None)
+        dist_coeff[1, 0] = barrel_coeffs.get('k2', None)
+        dist_coeff[2, 0] = barrel_coeffs.get('p1', None)
+        dist_coeff[3, 0] = barrel_coeffs.get('p2', None)
         # assume unit matrix for camera
         cam = np.eye(3, dtype=np.float32)
 
         cam[0, 2] = width / 2.0  # define center x
         cam[1, 2] = height / 2.0  # define center y
 
-        cam[0, 0] = barrel_coeffs['focal_length_x']
-        cam[1, 1] = barrel_coeffs['focal_length_y']
+        cam[0, 0] = barrel_coeffs.get('focal_length_x', None)
+        cam[1, 1] = barrel_coeffs.get('focal_length_y', None)
 
         # here the undistortion will be computed
         dst = cv2.undistort(frame, cam, dist_coeff)

@@ -235,6 +235,11 @@ class HSImage:
              path_to_data: str,
              key=None,
              img_format=None):
+
+        pth = os.path.dirname(path_to_data)
+        if not os.path.exists(pth):
+            os.mkdir(pth)
+
         if os.path.isdir(path_to_data):
             self.save_to_images(path_to_dir=path_to_data, img_format=img_format)
         elif path_to_data.endswith('.mat'):
