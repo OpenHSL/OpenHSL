@@ -1,28 +1,23 @@
 # Importing base types
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
+from openhsl.base.hsi import HSImage
+from openhsl.base.hs_mask import HSMask
 
 #  Importing networks
-from openhsl.models.ssftt import SSFTT
-from openhsl.models.fcnn import FCNN
-# from openhsl.models.hsicnn_luo import HSICNN
-from openhsl.models.nm3dcnn import NM3DCNN
-from openhsl.models.hsicnn_luo import HSICNN as Luo
-from openhsl.models.m1dcnn import M1DCNN
-# from openhsl.models.m3dcnn_sharma import M3DCNN as Sharma
-# from openhsl.models.m3dcnn_hamida import M3DCNN as Hamida
-from openhsl.models.m3dcnn_he import M3DCNN as He
-#from openhsl.models.ss3dftt import SSFTT
-from openhsl.models.m3dcnn_li import M3DCNN as Li
-from openhsl.models.tf2dcnn import TF2DCNN
+from openhsl.nn.models.ssftt import SSFTT
+from openhsl.nn.models.nm3dcnn import NM3DCNN
+from openhsl.nn.models.m1dcnn import M1DCNN
+from openhsl.nn.models.m3dcnn_li import M3DCNN as Li
+from openhsl.nn.models.tf2dcnn import TF2DCNN
 
 # import support tools
-from openhsl.utils import draw_fit_plots, draw_colored_mask
+from openhsl.base.hs_mask import draw_colored_mask
+from openhsl.nn.models.utils import draw_fit_plots
 from sklearn.metrics import classification_report
 from matplotlib import pyplot as plt
+from openhsl.nn.data.utils import HyperStandardScaler
 
 # import pca wrapper for hsi
-from openhsl.data.utils import apply_pca
+from openhsl.nn.data.utils import apply_pca
 
 
 #hsi_path = '../demo_data/corn_1.mat'
@@ -42,8 +37,13 @@ mask = HSMask()
 hsi.load(path_to_data=hsi_path, key=hsi_key)
 mask.load(path_to_data=mask_path, key=mask_key)
 
-hsi_pca = hsi.data
-#hsi_pca, _ = apply_pca(hsi.data, 40)
+scaler = HyperStandardScaler()
+
+hsi.data = scaler.fit_transform(hsi.data)
+
+#hsi_pca = hsi.data
+
+hsi_pca, _ = apply_pca(hsi.data, 30)
 
 optimizer_params = {
     "learning_rate": 0.1,
@@ -51,8 +51,8 @@ optimizer_params = {
 }
 
 scheduler_params = {
-    "step_size": 5,
-    "gamma": 0.5
+    "step_size": 2,
+    "gamma": 0.2
 }
 
 augmentation_params = {
@@ -62,7 +62,7 @@ augmentation_params = {
 }
 
 fit_params = {
-    "epochs": 10,
+    "epochs": 20,
     "train_sample_percentage": 0.1,
     "dataloader_mode": "fixed",
     "wandb_vis": False,
@@ -78,13 +78,13 @@ cnn = M1DCNN(n_classes=mask.n_classes,
 
 # cnn.init_wandb()
 
-cnn.fit(X=hsi,  # or hsi
+cnn.fit(X=hsi_pca,  # or hsi
         y=mask.get_2d(),
         fit_params=fit_params)
 
 draw_fit_plots(model=cnn)
 
-pred = cnn.predict(X=hsi,  # or hsi
+pred = cnn.predict(X=hsi_pca,  # or hsi
                    y=mask,
                    batch_size=100)
 
@@ -98,3 +98,4 @@ draw_colored_mask(mask=mask,
                   stack_type='h')
 
 print(classification_report(pred.flatten(), mask.get_2d().flatten()))
+
