@@ -9,9 +9,11 @@ from openhsl.base.hsi import HSImage
 from openhsl.build.builder import HSBuilder
 
 
-path_to_metadata = "../microscope_build_metadata.json"
+path_to_micro_metadata = "../microscope_build_metadata.json"
+path_to_simple_metadata = "../build_metadata.json"
+path_to_uav_metadata = "../uav_build_metadata.json"
 path_to_copter_data = "../test_data/builder/copter"
-path_to_copter_metadata = "../test_data/builder/copter/gps_2021-03-30.csv"
+path_to_copter_gps = "../test_data/builder/copter/gps_2021-03-30.csv"
 path_to_rail_data = "../test_data/builder/imgs"
 path_to_rotary_data = "../test_data/builder/video/rec_2022-06-06-12-24-02.avi"
 not_valid_path = "incorrect_path"
@@ -63,6 +65,7 @@ def return_rotary_sample():
     return hsi
 
 
+# TODO must update that
 @pytest.fixture
 def return_copter_sample():
     hsi = HSImage()
@@ -70,11 +73,12 @@ def return_copter_sample():
     return hsi
 
 
+# TODO must update that
 def test_normal_rail(return_rail_sample):
     hsb = HSBuilder(path_to_data=path_to_rail_data,
-                    path_to_metadata=path_to_metadata,
+                    path_to_metadata=path_to_micro_metadata,
                     data_type="images")
-    hsb.build(roi=True, norm_rotation=True, principal_slices=250)
+    hsb.build(norm_rotation=True)
     hsi = hsb.get_hsi()
 
     # dimension check
@@ -88,6 +92,7 @@ def test_normal_rail(return_rail_sample):
 
 def test_normal_rotary(return_rotary_sample):
     hsb = HSBuilder(path_to_data=path_to_rotary_data,
+                    path_to_metadata=path_to_simple_metadata,
                     data_type="video")
     hsb.build(principal_slices=250)
     hsi = hsb.get_hsi()
@@ -103,7 +108,8 @@ def test_normal_rotary(return_rotary_sample):
 
 def test_normal_copter(return_copter_sample):
     hsb = HSBuilder(path_to_data=path_to_copter_data,
-                    path_to_gps=path_to_copter_metadata,
+                    path_to_gps=path_to_copter_gps,
+                    path_to_metadata=path_to_uav_metadata,
                     data_type="video")
     hsb.build(principal_slices=40)
     hsi = hsb.get_hsi()
@@ -135,7 +141,7 @@ def test_incorrect_type_data():
 def test_incorrect_type_metadata():
     with pytest.raises(TypeError):
         hsb = HSBuilder(path_to_data=path_to_copter_data,
-                        path_to_gps=[path_to_copter_metadata],
+                        path_to_gps=[path_to_copter_gps],
                         data_type="video")
         print(hsb.path_to_metadata)
 
@@ -177,14 +183,10 @@ def test_rail_with_metadata():
 
 def test_all_flags_for_rail():
     hsb = HSBuilder(path_to_data=path_to_rail_data,
-                    path_to_metadata=path_to_metadata,
+                    path_to_metadata=path_to_micro_metadata,
                     data_type="images")
     hsb.build(principal_slices=250,
-              norm_rotation=True,
-              barrel_dist_norm=True,
-              light_norm=True,
-              roi=True,
-              flip_wavelengths=True)
+              norm_rotation=True)
 
     hsi = hsb.get_hsi()
     # dimension check
