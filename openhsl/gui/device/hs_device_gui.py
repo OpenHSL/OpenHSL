@@ -37,16 +37,16 @@ class HSDeviceGUI(QMainWindow):
     def __init__(self):
         super(HSDeviceGUI, self).__init__()
         uic.loadUi('hs_device_mainwindow.ui', self)
-        self.setWindowIcon(QIcon("icons:openhsl.svg"))
+        self.setWindowIcon(QIcon("icons:OpenHSL_logo.png"))
 
         # Workaround for taskbar icon in Windows
         # See: https://stackoverflow.com/a/1552105
-        openhsl_id = 'locus.openhsl.hs_device_gui.0.0.1'  # arbitrary string
+        openhsl_id = 'locus.openhsl.hs_device_gui.1.0.0'  # arbitrary string
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(openhsl_id)
 
         self.bdew = QWidget()
         uic.loadUi('bd_equation_form.ui', self.bdew)
-        self.bdew.setWindowIcon(QIcon("icons:openhsl.svg"))
+        self.bdew.setWindowIcon(QIcon("icons:OpenHSL_logo.png"))
 
         qss_path = "./Resources/Dark.qss"
         # qss_path = "./Resources/Grey.qss"
@@ -762,7 +762,8 @@ class HSDeviceGUI(QMainWindow):
                 image_qt = self.bdt_slit_image_contrasted_qt
             elif self.ui_bdt_apply_rotation_checkbox.isChecked():
                 image_qt = self.bdt_slit_image_rotated_qt
-            self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
+            if image_qt is not None:
+                self.bdt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(image_qt))
 
     @pyqtSlot()
     def on_ui_bdt_undistort_image_button_clicked(self):
