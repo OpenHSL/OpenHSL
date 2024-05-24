@@ -1,15 +1,40 @@
-import numpy as np
-from openhsl.hsi import HSImage
-from openhsl.build.raw_pb_data import RawData
-from openhsl.build.uav_builder import build_hypercube_by_videos
-from typing import Optional, Dict
-from openhsl.utils import gaussian
-
 import cv2
 import json
 import math
-from tqdm import tqdm
+import numpy as np
+
 from sklearn.linear_model import LinearRegression
+from tqdm import tqdm
+from typing import Dict, Optional
+
+from openhsl.base.hsi import HSImage
+from openhsl.build.raw_pb_data import RawData
+from openhsl.build.uav_builder import build_hypercube_by_videos
+
+
+def gaussian(length: int,
+             mean: float,
+             std: float) -> np.ndarray:
+    """
+    gaussian(length, mean, std)
+
+        Returns gaussian 1D-kernel
+
+        Parameters
+        ----------
+        length: int
+            gaussian 1D-Kernel length
+        mean: float
+            "height" of gaussian
+        std:
+            "slope" of gaussian
+        Returns
+        -------
+            np.ndarray
+
+    """
+    return np.exp(-((np.arange(0, length) - mean) ** 2) / 2.0 / (std ** 2)) / math.sqrt(2.0 * math.pi) / std
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class HSBuilder:
@@ -63,10 +88,16 @@ class HSBuilder:
         self.path_to_gps = path_to_gps
         self.path_to_metadata = path_to_metadata
 
+        self.hsi: Optional[HSImage] = None
+
+        self.roi_coords = None
+        self.light_coeff = None
+        self.wavelengths = None
+        self.barrel_distortion_coefficients = None
+
         if self.path_to_metadata:
             self.__get_metainfo()
 
-        self.hsi: Optional[HSImage] = None
         self.frame_iterator = RawData(path_to_data=path_to_data, 
                                       type_data=data_type,
                                       path_to_gps=path_to_gps)
@@ -77,11 +108,13 @@ class HSBuilder:
     def __get_metainfo(self):
         with open(self.path_to_metadata) as f:
             d = json.load(f)
+
         self.roi_coords = d.get('roi', None)
         self.light_coeff = np.array(d.get('light_norm', None))
+        self.wavelengths = d.get('wavelengths', None)
+        self.barrel_distortion_coefficients = d.get('barrel_distortion_coefficients', None)
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO move?
     @staticmethod
     def __norm_frame_camera_illumination(frame: np.ndarray,
                                          light_coeff: np.ndarray) -> np.ndarray:
@@ -108,10 +141,8 @@ class HSBuilder:
                             f'light shape is: {light_coeff.shape}\n')
 
         return np.multiply(frame.astype("uint8"), light_coeff).astype("uint8")
-        #return np.multiply(frame, light_coeff) * np.tile(frame[frame.shape[0] // 2, :], (np.shape(frame)[0], 1))
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO move?
     @staticmethod
     def __get_slit_angle(frame: np.ndarray) -> float:
         """
@@ -136,7 +167,6 @@ class HSBuilder:
         return ang
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO move?
     @staticmethod
     def __norm_rotation_frame(frame: np.ndarray) -> np.ndarray:
         """
@@ -165,9 +195,8 @@ class HSBuilder:
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO implementation will move into device
     @staticmethod
-    def __norm_barrel_distortion(frame: np.ndarray) -> np.ndarray:
+    def __norm_barrel_distortion(frame: np.ndarray, barrel_coeffs) -> np.ndarray:
         """
         __norm_barrel_distortion(frame)
 
@@ -185,35 +214,32 @@ class HSBuilder:
         width = frame.shape[1]
         height = frame.shape[0]
 
-        distCoeff = np.zeros((4, 1), np.float64)
-        # TODO: replace by device features! IT'S HARDCODED
-        k1 = -1.4e-5  # negative to remove barrel distortion
-        k2 = 0.0
-        p1 = 0.0
-        p2 = 0.0
+        dist_coeff = np.zeros((4, 1), np.float64)
 
-        distCoeff[0, 0] = k1
-        distCoeff[1, 0] = k2
-        distCoeff[2, 0] = p1
-        distCoeff[3, 0] = p2
+        dist_coeff[0, 0] = barrel_coeffs['k1']
+        dist_coeff[1, 0] = barrel_coeffs['k2']
+        dist_coeff[2, 0] = barrel_coeffs['p1']
+        dist_coeff[3, 0] = barrel_coeffs['p2']
         # assume unit matrix for camera
         cam = np.eye(3, dtype=np.float32)
 
         cam[0, 2] = width / 2.0  # define center x
         cam[1, 2] = height / 2.0  # define center y
-        # TODO remake hardcoded values!
-        cam[0, 0] = 10.  # define focal length x
-        cam[1, 1] = 10.  # define focal length y
+
+        cam[0, 0] = barrel_coeffs['focal_length_x']
+        cam[1, 1] = barrel_coeffs['focal_length_y']
 
         # here the undistortion will be computed
-        dst = cv2.undistort(frame, cam, distCoeff)
+        dst = cv2.undistort(frame, cam, dist_coeff)
+
         return dst
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
     def __norm_frame_camera_geometry(frame: np.ndarray,
                                      norm_rotation=False,
-                                     barrel_dist_norm=False) -> np.ndarray:
+                                     barrel_dist_norm=False,
+                                     barrel_coeffs=None) -> np.ndarray:
         """
         Normalizes geometric distortions on frame:
             - rotation
@@ -231,12 +257,12 @@ class HSBuilder:
         if norm_rotation:
             frame = HSBuilder.__norm_rotation_frame(frame=frame)
         if barrel_dist_norm:
-            frame = HSBuilder.__norm_barrel_distortion(frame=frame)
+            frame = HSBuilder.__norm_barrel_distortion(frame=frame,
+                                                       barrel_coeffs=barrel_coeffs)
 
         return frame
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO implementation will move into device
     @staticmethod
     def get_roi(frame: np.ndarray, roi_coords: Dict) -> np.ndarray:
         """
@@ -261,7 +287,6 @@ class HSBuilder:
         return frame[up_bound: down_bound, left_bound_spectrum: right_bound_spectrum]
     # ------------------------------------------------------------------------------------------------------------------
 
-    # TODO rename
     @staticmethod
     def __principal_slices(frame: np.ndarray,
                            nums_bands: int) -> np.ndarray:
@@ -298,16 +323,6 @@ class HSBuilder:
         return ans
     # ------------------------------------------------------------------------------------------------------------------
 
-    @staticmethod
-    def load_light_coeff(path_to_file):
-        light_coeff = cv2.imread(path_to_file, 0)
-        #light_coeff = HSBuilder.__norm_frame_camera_geometry(light_coeff,
-        #                                                     norm_rotation=norm_rotation,
-        #                                                     barrel_dist_norm=barrel_dist_norm)
-        light_coeff = HSBuilder.get_roi(frame=light_coeff)
-        return 1.0 / (light_coeff / np.max(light_coeff))
-    # ------------------------------------------------------------------------------------------------------------------
-
     def build(self,
               principal_slices=False,
               norm_rotation=False,
@@ -318,12 +333,6 @@ class HSBuilder:
         """
             Creates HSI from device-data
         """
-
-        #if light_norm:
-        #    light_coeff = HSBuilder.load_light_coeff(path_to_file='./test_data/builder/micro_light_source.png')
-        #else:
-        #    light_coeff = None
-
         preproc_frames = []
         for frame in tqdm(self.frame_iterator,
                           total=len(self.frame_iterator),
@@ -331,7 +340,8 @@ class HSBuilder:
                           colour='blue'):
             frame = self.__norm_frame_camera_geometry(frame=frame,
                                                       norm_rotation=norm_rotation,
-                                                      barrel_dist_norm=barrel_dist_norm)
+                                                      barrel_dist_norm=barrel_dist_norm,
+                                                      barrel_coeffs=self.barrel_distortion_coefficients)
             if roi:
                 frame = HSBuilder.get_roi(frame=frame, roi_coords=self.roi_coords)
             if light_norm:
@@ -349,7 +359,11 @@ class HSBuilder:
                                              self.files)
         if flip_wavelengths:
             data = np.flip(data, axis=2)
-        self.hsi = HSImage(hsi=data, wavelengths=None)
+
+        if np.any(self.wavelengths):
+            self.hsi = HSImage(hsi=data, wavelengths=self.wavelengths)
+        else:
+            self.hsi = HSImage(hsi=data, wavelengths=None)
     # ------------------------------------------------------------------------------------------------------------------
 
     def get_hsi(self) -> HSImage:
@@ -361,8 +375,5 @@ class HSBuilder:
             Builded from source hsi object
 
         """
-        try:
-            return self.hsi
-        except:
-            pass
+        return self.hsi
     # ------------------------------------------------------------------------------------------------------------------

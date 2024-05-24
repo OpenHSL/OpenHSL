@@ -1,45 +1,75 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import os
 import sys
 import torch
 import torch.nn as nn
-from tqdm import trange
-import numpy as np
+import tensorflow as tf
+
+from copy import deepcopy
+from keras.callbacks import Callback
 from sklearn.metrics import classification_report, confusion_matrix
-import matplotlib.pyplot as plt
+from tqdm import trange
 
-from PyQt5.QtWidgets import (QApplication, QFileDialog)
-from PyQt5.QtGui import QFont
 from PyQt5.QtCore import QThread, QObject, pyqtSignal as Signal, pyqtSlot as Slot
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import (QApplication, QFileDialog)
 
+from gui.common_gui import CIU
+from gui.mac_trainer_gui import Ui_MainWindow
 from gui.utils import (get_file_name, get_file_extension, get_date_time, create_dir_if_not_exist,
                        request_keys_from_h5_file, request_keys_from_mat_file,
                        get_gpu_info)
-from gui.common_gui import CIU
-from gui.mac_trainer_gui import Ui_MainWindow
 
-from openhsl.hsi import HSImage
-from openhsl.hs_mask import HSMask
-from openhsl.data.dataset import get_dataset
-from openhsl.data.torch_dataloader import create_torch_loader
-from openhsl.models.model import train_one_epoch, val_one_epoch, get_optimizer, get_scheduler
-from openhsl.data.utils import get_palette, convert_to_color_, sample_gt
+import openhsl.nn.data.utils as hsl_utils
+from openhsl.base.hsi import HSImage
+from openhsl.base.hs_mask import HSMask, get_palette, convert_to_color
+from openhsl.nn.data.tf_dataloader import get_train_val_gens
+from openhsl.nn.data.torch_dataloader import create_torch_loader
+from openhsl.nn.data.utils import get_dataset, sample_gt, apply_pca
+from openhsl.nn.models.model import train_one_epoch, val_one_epoch, get_optimizer, get_scheduler
+from openhsl.nn.models.utils import get_mean_weights
 
-from openhsl.models.ssftt import SSFTT
-from openhsl.models.m1dcnn import M1DCNN
-from openhsl.models.m3dcnn_li import M3DCNN as LI
-from openhsl.models.nm3dcnn import NM3DCNN
-
-# from openhsl.models.tf2dcnn import TF2DCNN
-
+from openhsl.nn.models.ssftt import SSFTT
+from openhsl.nn.models.m1dcnn import M1DCNN
+from openhsl.nn.models.m3dcnn_li import M3DCNN as LI
+from openhsl.nn.models.nm3dcnn import NM3DCNN
+from openhsl.nn.models.tf2dcnn import TF2DCNN
 
 models_dict = {
     "M1DCNN": M1DCNN,
     "M3DCNN_li": LI,
     "NM3DCNN": NM3DCNN,
     "SSFTT": SSFTT,
-    # "TF2DCNN": TF2DCNN
+    "TF2DCNN": TF2DCNN
 }
 
 stop_train = False
+
+tf_train_params = {}
+
+
+class SendStatsCallback(Callback):
+
+    def __init__(self, signal):
+        super().__init__()
+        self.signal = signal
+
+    def on_epoch_end(self, epoch, logs=None):
+        global tf_train_params
+        tf_train_params['loss'] = logs['loss']
+        tf_train_params['val_loss'] = logs['val_loss']
+
+        tf_train_params['accuracy'] = logs['accuracy']
+        tf_train_params['val_accuracy'] = logs['val_accuracy']
+
+        self.signal.emit({"epoch": epoch + 1,
+                          "val_loss": logs['val_loss'],
+                          "train_loss": logs['loss'],
+                          "val_acc": logs['val_accuracy'],
+                          "train_acc": logs['accuracy'],
+                          "model": "TF2DCNN",
+                          "run_name": "TF2DCNN"})
 
 
 class InferenceWorker(QObject):
@@ -75,72 +105,122 @@ class TrainWorker(QObject):
     def do_train(self, fits):
         global stop_train
         try:
-            net = fits["model"](n_bands=fits["hsi"].data.shape[-1],
-                                n_classes=fits["mask"].n_classes,
-                                path_to_weights=fits["weights"],
-                                device=fits["device"])
+            if fits["model"].__name__ != 'TF2DCNN':
+                net = fits["model"](n_bands=fits["hsi"].data.shape[-1],
+                                    n_classes=fits["mask"].n_classes,
+                                    path_to_weights=fits["weights"],
+                                    device=fits["device"])
 
-            net.hyperparams["batch_size"] = fits["fit_params"]["batch_size"]
-            img, gt = get_dataset(fits["hsi"], fits["mask"])
-            train_gt, _ = sample_gt(gt=gt,
-                                    train_size=fits["fit_params"]['train_sample_percentage'],
-                                    mode=fits["fit_params"]['dataloader_mode'],
-                                    msg='train_val/test')
+                net.hyperparams["batch_size"] = fits["fit_params"]["batch_size"]
+                img, gt = get_dataset(fits["hsi"], fits["mask"])
+                train_gt, _ = sample_gt(gt=gt,
+                                        train_size=fits["fit_params"]['train_sample_percentage'],
+                                        mode=fits["fit_params"]['dataloader_mode'],
+                                        msg='train_val/test')
 
-            train_gt, val_gt = sample_gt(gt=train_gt,
-                                         train_size=0.9,
-                                         mode=fits["fit_params"]['dataloader_mode'],
-                                         msg='train/val')
+                train_gt, val_gt = sample_gt(gt=train_gt,
+                                             train_size=0.9,
+                                             mode=fits["fit_params"]['dataloader_mode'],
+                                             msg='train/val')
 
-            train_data_loader = create_torch_loader(img,
-                                                    train_gt,
-                                                    net.hyperparams,
-                                                    shuffle=True)
+                train_data_loader = create_torch_loader(img,
+                                                        train_gt,
+                                                        net.hyperparams,
+                                                        shuffle=True)
 
-            val_data_loader = create_torch_loader(img,
-                                                  val_gt,
-                                                  net.hyperparams)
+                val_data_loader = create_torch_loader(img,
+                                                      val_gt,
+                                                      net.hyperparams)
 
-            criterion = nn.CrossEntropyLoss(weight=net.hyperparams.get("weights", None))
-            optimizer = get_optimizer(net=net.model,
-                                      optimizer_type='SGD',
-                                      optimizer_params=fits["optimizer_params"])
+                criterion = nn.CrossEntropyLoss(weight=net.hyperparams.get("weights", None))
+                optimizer = get_optimizer(net=net.model,
+                                          optimizer_type='SGD',
+                                          optimizer_params=fits["optimizer_params"])
 
-            scheduler = get_scheduler(scheduler_type=fits["fit_params"]['scheduler_type'],
-                                      optimizer=optimizer,
-                                      scheduler_params=fits["scheduler_params"])
+                scheduler = get_scheduler(scheduler_type=fits["fit_params"]['scheduler_type'],
+                                          optimizer=optimizer,
+                                          scheduler_params=fits["scheduler_params"])
 
-            device = net.hyperparams['device']
-            net.model.to(device)
-            for e in trange(fits["fit_params"]['epochs']):
-                temp_train = train_one_epoch(net=net.model,
+                device = net.hyperparams['device']
+                net.model.to(device)
+                for e in trange(fits["fit_params"]['epochs']):
+                    temp_train = train_one_epoch(net=net.model,
+                                                 criterion=criterion,
+                                                 data_loader=train_data_loader,
+                                                 optimizer=optimizer,
+                                                 device=device)
+                    if scheduler is not None:
+                        scheduler.step()
+
+                    temp_val = val_one_epoch(net=net.model,
                                              criterion=criterion,
-                                             data_loader=train_data_loader,
-                                             optimizer=optimizer,
+                                             data_loader=val_data_loader,
                                              device=device)
-                if scheduler is not None:
-                    scheduler.step()
 
-                temp_val = val_one_epoch(net=net.model,
-                                         criterion=criterion,
-                                         data_loader=val_data_loader,
-                                         device=device)
+                    self.progress_signal.emit({"epoch": e + 1,
+                                               "val_loss": temp_val[1],
+                                               "train_loss": temp_train['avg_train_loss'],
+                                               "val_acc": temp_val[0],
+                                               "train_acc": temp_train['train_acc'],
+                                               "model": net,
+                                               "run_name": fits["run_name"]})
 
-                self.progress_signal.emit({"epoch": e + 1,
-                                           "val_loss": temp_val[1],
-                                           "train_loss": temp_train['avg_train_loss'],
-                                           "val_acc": temp_val[0],
-                                           "train_acc": temp_train['train_acc'],
+                    if stop_train:
+                        stop_train = False
+                        break
+
+                self.progress_signal.emit({"end": True,
                                            "model": net,
                                            "run_name": fits["run_name"]})
 
-                if stop_train:
-                    stop_train = False
-                    break
+            else:
+                net = fits["model"](n_bands=fits["hsi"].data.shape[-1],
+                                    n_classes=fits["mask"].n_classes,
+                                    path_to_weights=fits["weights"],
+                                    device=fits["device"])
+                img, gt = get_dataset(fits["hsi"], fits["mask"])
 
-            self.progress_signal.emit({"end": True,
-                                       "model": net,
-                                       "run_name": fits["run_name"]})
+                train_generator, val_generator = get_train_val_gens(X=img,
+                                                                    y=gt,
+                                                                    train_sample_percentage=fits["fit_params"][
+                                                                        'train_sample_percentage'],
+                                                                    patch_size=5)
+
+                types = (tf.float32, tf.int32)
+                shapes = ((net.hyperparams['n_bands'],
+                           net.hyperparams['patch_size'],
+                           net.hyperparams['patch_size']),
+                          (net.hyperparams['n_classes'],))
+
+                ds_train = tf.data.Dataset.from_generator(lambda: train_generator, types, shapes)
+                ds_train = ds_train.batch(fits["fit_params"]["batch_size"]).repeat()
+                ds_val = tf.data.Dataset.from_generator(lambda: val_generator, types, shapes)
+                ds_val = ds_val.batch(fits["fit_params"]["batch_size"]).repeat()
+
+                steps = len(train_generator) / fits["fit_params"]["batch_size"]
+                val_steps = len(val_generator) / fits["fit_params"]["batch_size"]
+
+                checkpoint_filepath = './checkpoints/tf2dcnn/'
+
+                if not os.path.exists(checkpoint_filepath):
+                    os.makedirs(checkpoint_filepath)
+
+                # add visualisations via callbacks
+                callbacks = list()
+
+                callbacks.append(SendStatsCallback(self.progress_signal))
+
+                history = net.model.fit(ds_train,
+                                        validation_data=ds_val,
+                                        validation_steps=val_steps,
+                                        validation_batch_size=fits["fit_params"]['batch_size'],
+                                        batch_size=fits["fit_params"]['batch_size'],
+                                        epochs=fits["fit_params"]['epochs'],
+                                        steps_per_epoch=steps,
+                                        verbose=1,
+                                        callbacks=callbacks)
+
+                net.model.save(f'{checkpoint_filepath}/weights.h5')
 
         except Exception as e:
             self.progress_signal.emit({"error": str(e)})
@@ -161,6 +241,9 @@ class MainWindow(CIU):
         self.current_key = None
         self.imported_weights = {}
         self.show()
+
+        # set list of models as multiple selection
+        self.ui.list_of_models.setSelectionMode(self.ui.list_of_models.MultiSelection)
 
         devices = get_gpu_info()
         self.devices_dict = {"cpu": "cpu"}
@@ -228,6 +311,7 @@ class MainWindow(CIU):
         self.ui.stop_train_btn.clicked.connect(self.stop_train)
         self.ui.start_inference_btn.clicked.connect(self.start_inference)
         self.ui.estimate_btn.clicked.connect(self.estimate)
+        self.ui.get_average_btn.clicked.connect(self.get_average)
 
         # OTHER INTERACT
         self.ui.horizontalSlider.valueChanged.connect(
@@ -249,12 +333,27 @@ class MainWindow(CIU):
         self.ui.image_view_box.currentIndexChanged.connect(self.view_changed)
         self.ui.cm_slider.valueChanged.connect(self.update_cm)
 
+    def get_average(self):
+        items = self.ui.list_of_models.selectedItems()
+        if len(items) > 1:
+            try:
+                weights = [self.imported_weights[item.text()] for item in items]
+                weights = [torch.load(weight, map_location="cpu") for weight in weights]
+                mean_weights = get_mean_weights(weights)
+                time = get_date_time()
+                name = f"mean_weights_{time[0]}_{time[1]}"
+                torch.save(mean_weights, f"checkpoints/{name}.pth")
+                self.imported_weights[name] = f"checkpoints/{name}.pth"
+                self.stack_str_in_QListWidget(self.ui.list_of_models, name)
+            except Exception as e:
+                self.show_error(str(e))
+
     def import_weights(self):
         file_name, _ = QFileDialog.getOpenFileName(self,
-                                                    "Select a weight file",
-                                                    "",
-                                                    "(*.pth);;(*.pt)",
-                                                    options=QFileDialog.Options())
+                                                   "Select a weight file",
+                                                   "",
+                                                   "(*.pth);;(*.pt);;(*.h5)",
+                                                   options=QFileDialog.Options())
         if file_name:
             name = get_file_name(file_name)
             self.stack_str_in_QListWidget(self.ui.list_of_models, name)
@@ -264,7 +363,7 @@ class MainWindow(CIU):
         file_name, _ = QFileDialog.getOpenFileName(self,
                                                    "Select a video file",
                                                    "",
-                                                   "(*.npy);;(*.mat);;(*.tiff);;(*.h5)",
+                                                   "(*.mat);;(*.npy);;(*.tiff);;(*.h5)",
                                                    options=QFileDialog.Options())
         if file_name:
             ext = get_file_extension(file_name)
@@ -273,15 +372,15 @@ class MainWindow(CIU):
             if ext == ".mat":
                 keys = request_keys_from_mat_file(file_name)
                 key = self.show_dialog_with_choice(keys, "Select a key", "Keys:")
-                if not key: return
+                if not key:
+                    return
                 hsi.load_from_mat(file_name, key)
-
             elif ext == ".h5":
                 keys = request_keys_from_h5_file(file_name)
                 key = self.show_dialog_with_choice(keys, "Select a key", "Keys:")
-                if not key: return
+                if not key:
+                    return
                 hsi.load_from_h5(file_name, key)
-
             elif ext == ".npy":
                 hsi.load_from_npy(file_name)
             elif ext == ".tiff":
@@ -346,8 +445,8 @@ class MainWindow(CIU):
 
     def show_mask(self):
         if self.current_mask is not None:
-            self.current_image = convert_to_color_(self.current_mask.get_2d(),
-                                                   self.current_data[self.current_key]["palette"])
+            self.current_image = convert_to_color(self.current_mask.get_2d(),
+                                                  self.current_data[self.current_key]["palette"])
             self.update_current_image(self.ui.horizontalSlider.value(),
                                       self.ui.highcontast_check.isChecked(),
                                       self.ui.spin_channels.value(),
@@ -355,8 +454,8 @@ class MainWindow(CIU):
 
     def show_predict(self):
         if self.current_predict is not None:
-            self.current_image = convert_to_color_(self.current_predict,
-                                                   self.current_data[self.current_key]["palette"])
+            self.current_image = convert_to_color(self.current_predict,
+                                                  self.current_data[self.current_key]["palette"])
             self.update_current_image(self.ui.horizontalSlider.value(),
                                       self.ui.highcontast_check.isChecked(),
                                       self.ui.spin_channels.value(),
@@ -428,14 +527,14 @@ class MainWindow(CIU):
             if self.current_data[item]["mask"]:
                 self.current_test_mask = self.current_data[item]["mask"]
                 mask_array = self.current_test_mask.get_2d()
-                mask_array = convert_to_color_(mask_array, self.current_data[item]["palette"])
+                mask_array = convert_to_color(mask_array, self.current_data[item]["palette"])
                 self.set_image_to_label(image=mask_array,
                                         image_label=self.ui.mask_test_icon,
                                         scale_factor=20)
 
             if isinstance(self.current_data[item]["predict"], np.ndarray):
                 self.current_test_predict = self.current_data[item]["predict"]
-                mask_array = convert_to_color_(self.current_test_predict, self.current_data[item]["palette"])
+                mask_array = convert_to_color(self.current_test_predict, self.current_data[item]["palette"])
                 self.set_image_to_label(image=mask_array,
                                         image_label=self.ui.predict_test_icon,
                                         scale_factor=20)
@@ -450,7 +549,7 @@ class MainWindow(CIU):
                 mid = self.current_train_hsi.data.shape[2] // 2
                 self.current_train_mask = self.current_data[item]["mask"]
                 mask_array = self.current_train_mask.get_2d()
-                mask_array = convert_to_color_(mask_array, self.current_data[item]["palette"])
+                mask_array = convert_to_color(mask_array, self.current_data[item]["palette"])
                 self.set_image_to_label(image=self.current_data[item]['hsi'].data,
                                         image_label=self.ui.hsi_icon_label,
                                         scale_factor=20,
@@ -470,11 +569,11 @@ class MainWindow(CIU):
             self.ui.learning_progressbar.setValue(0)
             self.ui.learning_progressbar.setMaximum(int(self.ui.epochs_edit.text()))
 
-            self.g_val_accs = []
-            self.g_train_accs = []
-            self.g_epochs = []
-            self.g_val_losses = []
-            self.g_train_losses = []
+            self.g_val_accs = list()
+            self.g_train_accs = list()
+            self.g_epochs = list()
+            self.g_val_losses = list()
+            self.g_train_losses = list()
 
             if self.ui.need_load_weight_checkBox.isChecked():
                 item = self.ui.list_of_models.currentItem()
@@ -509,7 +608,16 @@ class MainWindow(CIU):
             start_time = get_date_time()
             run_name = f"{self.ui.choose_model_for_train.currentText()}_{start_time[0]}_{start_time[1]}"
 
-            fits = {"hsi": self.current_train_hsi,
+            hsi = deepcopy(self.current_train_hsi)
+
+            scaler = getattr(hsl_utils, self.ui.scaler_edit.currentText())
+            scaler = scaler(per=self.ui.per_edit.currentText())
+            hsi.data = scaler.fit_transform(hsi.data)
+
+            if self.ui.apply_pca_check.isChecked():
+                hsi.data, _ = apply_pca(hsi.data, int(self.ui.pca_value_edit.text()))
+
+            fits = {"hsi": hsi,
                     "mask": self.current_train_mask,
                     "model": models_dict[str(self.ui.choose_model_for_train.currentText())],
                     "device": self.devices_dict[str(self.ui.device_box2.currentText())],
@@ -541,15 +649,14 @@ class MainWindow(CIU):
             self.ui.graphics_acc_view.plot(self.g_epochs, self.g_train_accs, pen='g', name='Train Accuracy')
             self.ui.learning_progressbar.setValue(data["epoch"])
 
-            net = data["model"]
-            torch.save(net.model.state_dict(), f"checkpoints/{data['run_name']}.pth")
+            if data["model"] != "TF2DCNN":
+                net = data["model"]
+                torch.save(net.model.state_dict(), f"checkpoints/{data['run_name']}.pth")
 
-            if data["run_name"] not in self.imported_weights:
-                self.stack_str_in_QListWidget(self.ui.list_of_models, data["run_name"])
+                if data["run_name"] not in self.imported_weights:
+                    self.stack_str_in_QListWidget(self.ui.list_of_models, data["run_name"])
 
-            self.imported_weights[data["run_name"]] = f"checkpoints/{data['run_name']}.pth"
-
-
+                self.imported_weights[data["run_name"]] = f"checkpoints/{data['run_name']}.pth"
 
         if "end" in data:
             self.ui.start_learning_btn.setEnabled(True)
@@ -570,7 +677,17 @@ class MainWindow(CIU):
         item = self.ui.list_of_models.currentItem()
         if self.current_test_hsi and item:
             weight_path = self.imported_weights[item.text()]
-            fits = {"hsi": self.current_test_hsi,
+
+            hsi = deepcopy(self.current_test_hsi)
+
+            scaler = getattr(hsl_utils, self.ui.scaler_inf_edit.currentText())
+            scaler = scaler(per=self.ui.per_inf_edit.currentText())
+            hsi.data = scaler.fit_transform(hsi.data)
+
+            if self.ui.pca_inf_check.isChecked():
+                hsi.data, _ = apply_pca(hsi.data, int(self.ui.edit_inf_pca_value.text()))
+
+            fits = {"hsi": hsi,
                     "weights": weight_path,
                     "device": str(self.ui.device_box.currentText()),
                     "model": models_dict[str(self.ui.choose_model_for_inference.currentText())]}
@@ -585,7 +702,8 @@ class MainWindow(CIU):
         elif "predict" in data:
             self.current_test_predict = data["predict"]
             self.current_data[self.current_test_key]["predict"] = self.current_test_predict
-            mask_array = convert_to_color_(self.current_test_predict, self.current_data[self.current_test_key]["palette"])
+            mask_array = convert_to_color(self.current_test_predict,
+                                          self.current_data[self.current_test_key]["palette"])
             self.set_image_to_label(image=mask_array,
                                     image_label=self.ui.predict_test_icon,
                                     scale_factor=20)
@@ -613,7 +731,8 @@ class MainWindow(CIU):
 
     def update_cm(self):
         if self.current_confusion_matrix is not None:
-            self.set_image_to_label(self.current_confusion_matrix, self.ui.cm_matrix_label, int(self.ui.cm_slider.value()))
+            self.set_image_to_label(self.current_confusion_matrix, self.ui.cm_matrix_label,
+                                    int(self.ui.cm_slider.value()))
 
     def update_metrics(self, report):
         self.ui.accuracy_label.setText(str(report["accuracy"]))
