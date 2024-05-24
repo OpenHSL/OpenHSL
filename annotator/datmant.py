@@ -48,7 +48,7 @@ MARK_COLOR_DEFECT_DEFAULT = QColor(0, 0, 255, 99)
 HELPER_COLOR = QColor(0,0,0,99)
 
 # Some paths
-COLOR_DEF_PATH = "annotator/defs/color_defs.csv"
+COLOR_DEF_PATH = "../annotator/defs/color_defs.csv"
 
 
 # Color definitions window
