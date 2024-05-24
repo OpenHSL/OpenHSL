@@ -94,6 +94,7 @@ class HSBuilder:
         self.light_coeff = None
         self.wavelengths = None
         self.barrel_distortion_coefficients = None
+        self.flip_wavelengths = None
 
         if self.path_to_metadata:
             self.__get_metainfo()
@@ -113,6 +114,7 @@ class HSBuilder:
         self.light_coeff = np.array(d.get('light_norm', None))
         self.wavelengths = d.get('wavelengths', None)
         self.barrel_distortion_coefficients = d.get('barrel_distortion_coefficients', None)
+        self.flip_wavelengths = d.get('flip_wavelengths', False)
     # ------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
@@ -216,18 +218,18 @@ class HSBuilder:
 
         dist_coeff = np.zeros((4, 1), np.float64)
 
-        dist_coeff[0, 0] = barrel_coeffs['k1']
-        dist_coeff[1, 0] = barrel_coeffs['k2']
-        dist_coeff[2, 0] = barrel_coeffs['p1']
-        dist_coeff[3, 0] = barrel_coeffs['p2']
+        dist_coeff[0, 0] = barrel_coeffs.get('k1', None)
+        dist_coeff[1, 0] = barrel_coeffs.get('k2', None)
+        dist_coeff[2, 0] = barrel_coeffs.get('p1', None)
+        dist_coeff[3, 0] = barrel_coeffs.get('p2', None)
         # assume unit matrix for camera
         cam = np.eye(3, dtype=np.float32)
 
         cam[0, 2] = width / 2.0  # define center x
         cam[1, 2] = height / 2.0  # define center y
 
-        cam[0, 0] = barrel_coeffs['focal_length_x']
-        cam[1, 1] = barrel_coeffs['focal_length_y']
+        cam[0, 0] = barrel_coeffs.get('focal_length_x', None)
+        cam[1, 1] = barrel_coeffs.get('focal_length_y', None)
 
         # here the undistortion will be computed
         dst = cv2.undistort(frame, cam, dist_coeff)
@@ -238,7 +240,6 @@ class HSBuilder:
     @staticmethod
     def __norm_frame_camera_geometry(frame: np.ndarray,
                                      norm_rotation=False,
-                                     barrel_dist_norm=False,
                                      barrel_coeffs=None) -> np.ndarray:
         """
         Normalizes geometric distortions on frame:
@@ -256,7 +257,7 @@ class HSBuilder:
         """
         if norm_rotation:
             frame = HSBuilder.__norm_rotation_frame(frame=frame)
-        if barrel_dist_norm:
+        if barrel_coeffs is not None:
             frame = HSBuilder.__norm_barrel_distortion(frame=frame,
                                                        barrel_coeffs=barrel_coeffs)
 
@@ -325,14 +326,11 @@ class HSBuilder:
 
     def build(self,
               principal_slices=False,
-              norm_rotation=False,
-              barrel_dist_norm=False,
-              light_norm=False,
-              roi=False,
-              flip_wavelengths=False):
+              norm_rotation=False):
         """
             Creates HSI from device-data
         """
+
         preproc_frames = []
         for frame in tqdm(self.frame_iterator,
                           total=len(self.frame_iterator),
@@ -340,16 +338,18 @@ class HSBuilder:
                           colour='blue'):
             frame = self.__norm_frame_camera_geometry(frame=frame,
                                                       norm_rotation=norm_rotation,
-                                                      barrel_dist_norm=barrel_dist_norm,
                                                       barrel_coeffs=self.barrel_distortion_coefficients)
-            if roi:
+            if np.any(self.roi_coords):
                 frame = HSBuilder.get_roi(frame=frame, roi_coords=self.roi_coords)
-            if light_norm:
+
+            if np.any(self.light_coeff):
                 frame = self.__norm_frame_camera_illumination(frame=frame, light_coeff=self.light_coeff)
+
             if principal_slices:
                 frame = self.__principal_slices(frame.T, principal_slices)
             else:
                 frame = frame.T
+
             preproc_frames.append(frame)
             
         data = np.array(preproc_frames)
@@ -357,13 +357,14 @@ class HSBuilder:
             data = build_hypercube_by_videos(data.astype("uint8"), 
                                              self.path_to_gps,
                                              self.files)
-        if flip_wavelengths:
-            data = np.flip(data, axis=2)
 
         if np.any(self.wavelengths):
             self.hsi = HSImage(hsi=data, wavelengths=self.wavelengths)
         else:
             self.hsi = HSImage(hsi=data, wavelengths=None)
+
+        if self.flip_wavelengths:
+            self.hsi.flip_wavelengths()
     # ------------------------------------------------------------------------------------------------------------------
 
     def get_hsi(self) -> HSImage:

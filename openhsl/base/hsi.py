@@ -90,6 +90,10 @@ class HSImage:
         self.data = self.data / coefficients[None, None, :]
     # ------------------------------------------------------------------------------------------------------------------
 
+    def flip_wavelengths(self):
+        self.data = np.flip(self.data, axis=2)
+    # ------------------------------------------------------------------------------------------------------------------
+
     def to_spectral_list(self):
         """
         Converts HSI to list of spectrals (as ravel)
@@ -231,6 +235,11 @@ class HSImage:
              path_to_data: str,
              key=None,
              img_format=None):
+
+        pth = os.path.dirname(path_to_data)
+        if not os.path.exists(pth):
+            os.mkdir(pth)
+
         if os.path.isdir(path_to_data):
             self.save_to_images(path_to_dir=path_to_data, img_format=img_format)
         elif path_to_data.endswith('.mat'):

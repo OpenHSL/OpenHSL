@@ -126,7 +126,7 @@ class HSMask:
         self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
     # ------------------------------------------------------------------------------------------------------------------
 
-    def add_void_layer(self, pos: int):
+    def add_void_layer(self, pos: int, shape=None):
         """
         add_void_layer(pos)
             adds filled by zeros layer in mask by index
@@ -135,9 +135,12 @@ class HSMask:
             pos: int
                 layer position for adding
         """
-        tmp_list = list(np.transpose(self.data, (2, 0, 1)))
-        tmp_list.insert(pos, np.zeros(self.data.shape[:-1], dtype="uint8"))
-        self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
+        if np.any(self.data):
+            tmp_list = list(np.transpose(self.data, (2, 0, 1)))
+            tmp_list.insert(pos, np.zeros(self.data.shape[:-1], dtype="uint8"))
+            self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
+        else:
+            self.data = np.transpose(np.array([np.zeros(shape)]), (1, 2, 0))
     # ------------------------------------------------------------------------------------------------------------------
 
     def add_completed_layer(self, pos: int, layer: np.ndarray):
@@ -370,7 +373,12 @@ class HSMask:
 
     def save(self,
              path_to_file: str,
-             key: str = 'img'):
+             key: Optional[str] = 'img'):
+
+        pth = os.path.dirname(path_to_file)
+        if not os.path.exists(pth):
+            os.mkdir(pth)
+
         if path_to_file.endswith('.mat'):
             self.save_to_mat(path_to_file=path_to_file, mat_key=key)
         elif path_to_file.endswith('.h5'):
@@ -491,10 +499,7 @@ class HSMask:
         path_to_save_file: str
             Path to file
         """
-        g = self.data[:, :, 0]
-        g = g.astype(np.uint8)
-        img = Image.fromarray(g)
-        #img = img.convert("L")
+        img = Image.fromarray(self.data[:, :, 0])
         img.save(path_to_save_file)
         self.save_class_info(path_to_save_file)
     # ------------------------------------------------------------------------------------------------------------------

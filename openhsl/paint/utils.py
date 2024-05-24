@@ -42,12 +42,13 @@ def ANDVI(hsi: HSImage):
                   plant_mask: np.ndarray):
         plant = img[plant_mask == 1]
         soil = img[plant_mask == 0]
-        return ttest_ind(plant[: 150], soil[: 150]) #
+        return ttest_ind(plant[: 150], soil[: 150])
 
     p_v = []
     for i in trange(98, 148):
         mask = ndi(hsi.data, 97, i, 148, 250)
-        p_v.append(np.mean(get_ttest(hsi.data, mask)[1]))
+        mean_ttest = np.mean(get_ttest(hsi.data, mask)[1])
+        p_v.append(mean_ttest)
     res_red_right = int(np.argmin(np.log(p_v)))
     print(f'right border of red is {res_red_right + 97}\'s band')
     return ndi(hsi.data, 97, res_red_right + 97, 148, 250)
