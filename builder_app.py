@@ -1,19 +1,19 @@
-import json
+import shutil
 import sys
-
+import json
 from copy import deepcopy
-
-from PyQt5.QtCore import QThread, QObject, pyqtSignal as Signal, pyqtSlot as Slot
 from PyQt5.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit
 
-from gui.common_gui import CIU
-from gui.mac_builder_gui import Ui_MainWindow
 from gui.utils import (get_date_time, save_json_dict, create_dir_if_not_exist,
-                       get_file_directory, get_file_extension, get_file_name,
-                       request_keys_from_mat_file, request_keys_from_h5_file)
+                       get_file_directory, get_file_extension, get_file_name)
+from gui.common_gui import CIU
+from gui.utils import request_keys_from_mat_file, request_keys_from_h5_file
+from gui.mac_builder_gui import Ui_MainWindow
+from PyQt5.QtCore import QThread, QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
-from openhsl.base.hsi import HSImage, hsi_to_rgb
 from openhsl.build.builder import HSBuilder
+from openhsl.base.hsi import HSImage
+from openhsl.base.hsi import hsi_to_rgb
 
 
 class Worker(QObject):
@@ -27,12 +27,8 @@ class Worker(QObject):
                             path_to_gps=meta["telemetry"],
                             path_to_metadata=meta["metadata"])
 
-            hsb.build(principal_slices=meta["principal_slices"],
-                      norm_rotation=meta["norm_rotation"],
-                      flip_wavelengths=meta["flip_wavelength"],
-                      roi=meta["roi"],
-                      light_norm=meta["light_normalize"],
-                      barrel_dist_norm=meta["barrel_distortion_normalize"])
+            hsb.build(norm_rotation=meta["norm_rotation"])
+
             meta["date"], meta["time"] = get_date_time()
             meta["hsi"] = hsb.get_hsi()
 
@@ -50,6 +46,7 @@ class MainWindow(CIU):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.hsis = {}
+        self.current_item = None
         self.pixel_color = None
         self.current_pixel = None
         self.current_hsi = None
@@ -73,6 +70,7 @@ class MainWindow(CIU):
         self.ui.delete_hsi.clicked.connect(self.delete_hsi_from_hsi_Qlist)
         self.ui.import_hsi.clicked.connect(self.import_hsi)
         self.ui.white_point_btn.clicked.connect(self.set_white_point)
+        self.ui.rotate_btn.clicked.connect(self.rotate_current_hsi)
 
         # OHTER INTERACT
         self.ui.horizontalSlider.valueChanged.connect(
@@ -90,15 +88,6 @@ class MainWindow(CIU):
                                               self.ui.check_high_contast.isChecked(),
                                               self.ui.spinBox.value(),
                                               self.ui.image_label))
-
-        self.ui.metadata_checkbox.stateChanged.connect(
-            lambda: self.change_state_btn_cause_checkbox(self.ui.save_wavelengths_checkbox))
-
-        self.ui.metadata_checkbox.stateChanged.connect(
-            lambda: self.change_state_btn_cause_checkbox(self.ui.check_roi))
-
-        self.ui.metadata_checkbox.stateChanged.connect(
-            lambda: self.change_state_btn_cause_checkbox(self.ui.check_light_norm))
 
         self.ui.view_box.currentIndexChanged.connect(self.view_changed)
 
@@ -169,14 +158,9 @@ class MainWindow(CIU):
         if file_name:
             meta = {"data": file_name,
                     "norm_rotation": self.ui.check_norm_rotation.isChecked(),
-                    "barrel_distortion_normalize": self.ui.check_barrel_dist_norm.isChecked(),
-                    "light_normalize": self.ui.check_light_norm.isChecked(),
-                    "roi": True if self.ui.check_roi.isChecked() else self.ui.check_roi.isChecked(),
-                    "flip_wavelength": self.ui.check_wavelengths.isChecked(),
                     "data_type": self.ui.data_type_box.currentText(),
                     "metadata": None,
-                    "telemetry": None,
-                    "principal_slices": False}
+                    "telemetry": None}
 
             if self.ui.metadata_checkbox.isChecked():
                 file_name, _ = QFileDialog.getOpenFileName(self,
@@ -216,22 +200,21 @@ class MainWindow(CIU):
         self.ui.build_file_btn.setEnabled(True)
         self.ui.build_dir_btn.setEnabled(True)
 
-    def show_local_hsi(self):
-        item = self.ui.hsi_Qlist.currentItem()
+    def show_local_hsi(self,
+                       item=False):
+        if not item:
+            item = self.ui.hsi_Qlist.currentItem()
+            if item:
+                item = item.text()
         if item:
-            item = item.text()
+            self.current_item = item
             hsi = self.hsis[item]["hsi"]
-            ### IT's a HARDCODE SHIT!!!!!!!!!!!!!
-            import numpy as np
-            hsi.wavelengths = np.linspace(320, 920, 103)
-            ### IT"S A HARDCODE SHIT END!!!!!!!!!!!
-            self.current_hsi = hsi
 
+            self.current_hsi = hsi
             self.ui.view_box.removeItem(1)
 
-            if len(hsi.wavelengths) == hsi.data.shape[2]:
+            if hsi.wavelengths is not None and len(hsi.wavelengths) == hsi.data.shape[2]:
                 self.ui.view_box.addItem("RGB")
-
 
             self.current_image = hsi.data
             self.ui.spinBox.setValue(0)
@@ -264,7 +247,7 @@ class MainWindow(CIU):
         if item:
             item = item.text()
             hsi = self.hsis[item]["hsi"]
-            meta = self.hsis[item]
+            meta = deepcopy(self.hsis[item])
             del meta["hsi"]
             file_name, _ = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "",
                                                        "(*.npy);;(*.mat);;(*.h5);;(*.png);;(*.jpg);;(*.jpeg);;(*.tiff);;(*.bmp)",
@@ -303,12 +286,8 @@ class MainWindow(CIU):
                 elif ext == ".bmp":
                     hsi.save_to_images(file_name, format="bmp")
 
-                if meta["metadata"] is not None and self.ui.save_wavelengths_checkbox.isChecked():
-                    meta_name = f"{dir}/hsi_metainfo.json"
-                    with open(meta["metadata"], 'r') as json_file:
-                        data = json.load(json_file)
-                        data = {"wavelengths": data["wavelengths"]}
-                    save_json_dict(data, meta_name)
+                if "metadata" in meta:
+                    shutil.copy(meta["metadata"], f"{dir}/hsi_metainfo.json")
 
     def delete_hsi_from_hsi_Qlist(self):
         item = self.ui.hsi_Qlist.currentItem()
@@ -316,6 +295,14 @@ class MainWindow(CIU):
             item = item.text()
             del self.hsis[item]
             self.ui.hsi_Qlist.takeItem(self.ui.hsi_Qlist.currentRow())
+
+    def rotate_current_hsi(self):
+        if self.current_hsi is None: return
+        item = self.current_item
+
+        self.hsis[item]["hsi"].rot90()
+        self.current_hsi = self.hsis[item]["hsi"]
+        self.show_local_hsi(item)
 
 
 if __name__ == "__main__":

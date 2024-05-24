@@ -99,6 +99,7 @@ class HSBuilder:
         if self.path_to_metadata:
             self.__get_metainfo()
 
+        self.hsi: Optional[HSImage] = None
         self.frame_iterator = RawData(path_to_data=path_to_data, 
                                       type_data=data_type,
                                       path_to_gps=path_to_gps)
@@ -257,7 +258,7 @@ class HSBuilder:
         """
         if norm_rotation:
             frame = HSBuilder.__norm_rotation_frame(frame=frame)
-        if barrel_coeffs is not None:
+        if barrel_coeffs is not None and barrel_coeffs is not False:
             frame = HSBuilder.__norm_barrel_distortion(frame=frame,
                                                        barrel_coeffs=barrel_coeffs)
 
