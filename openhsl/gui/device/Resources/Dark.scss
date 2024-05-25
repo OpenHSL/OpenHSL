@@ -351,6 +351,19 @@ QMenuBar {
 	}
 }
 
+/****************************************
+ *             QMessageBox              *
+ ****************************************/
+
+QMessageBox {
+	background-color: $bg-dark;
+	color: $fg-text;
+
+	//QLabel#qt_msgbox_label{
+	//	min-width: 100px;
+	//}
+}
+
 QPushButton {
 	background-color: $bg-button;
 	border: 1px solid gray;
@@ -467,19 +480,6 @@ QPushButton {
 		padding-left: 6px;
 		padding-right: 6px;
 	}
-}
-
-/****************************************
- *             QMessageBox              *
- ****************************************/
-
-QMessageBox {
-	background-color: $bg-dark;
-	color: $fg-text;
-
-	//QLabel#qt_msgbox_label{
-	//	min-width: 100px;
-	//}
 }
 
 /****************************************

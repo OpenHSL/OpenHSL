@@ -294,6 +294,14 @@ QMenuBar::item:pressed {
   background: #545556;
 }
 
+/****************************************
+ *             QMessageBox              *
+ ****************************************/
+QMessageBox {
+  background-color: #2e2f30;
+  color: #d0d0d0;
+}
+
 QPushButton {
   background-color: #38393a;
   border: 1px solid gray;
@@ -408,14 +416,6 @@ QPushButton[id="big"] {
   min-height: 32;
   padding-left: 6px;
   padding-right: 6px;
-}
-
-/****************************************
- *             QMessageBox              *
- ****************************************/
-QMessageBox {
-  background-color: #2e2f30;
-  color: #d0d0d0;
 }
 
 /****************************************
