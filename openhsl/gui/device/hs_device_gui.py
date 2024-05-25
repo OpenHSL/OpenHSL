@@ -11,13 +11,15 @@ from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QIm
     QPolygonF, QStandardItemModel
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
     QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsRectItem, \
-    QGraphicsTextItem, QGraphicsScene, QGraphicsView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QMessageBox, \
-    QPushButton, QSlider, QSpinBox, QTableView, QTableWidget, QTableWidgetItem, QToolBar, QToolButton, QWidget
+    QGraphicsTextItem, QGraphicsScene, QGraphicsView, QHeaderView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, \
+    QMessageBox, QPushButton, QSlider, QSpinBox, QTableView, QTableWidget, QTableWidgetItem, QToolBar, QToolButton, \
+    QWidget
 from PyQt6 import uic
 from typing import Any, Dict, List, Optional
 from openhsl.build.hs_device import HSDevice, HSDeviceType, HSCalibrationSlitData, HSCalibrationWavelengthData
 from openhsl.gui.device.custom_controls import EquationParamsTableHeaderViewHorizontal, \
-    EquationParamsTableHeaderViewVertical, EquationParamsTableModel, EquationParamsTableItem, HSGraphicsView
+    EquationParamsTableHeaderViewVertical, EquationParamsTableModel, EquationParamsTableItem, HSGraphicsView, \
+    WavelengthCalibrationTableItem, WavelengthCalibrationTableModel
 from openhsl.gui.device.hs_device_qt import HSDeviceQt
 import openhsl.gui.device.utils as hsd_gui_utils
 import openhsl.build.utils as utils

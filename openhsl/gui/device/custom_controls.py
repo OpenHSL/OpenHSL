@@ -400,3 +400,159 @@ class EquationParamsTableModel(QAbstractTableModel):
             return True
 
         return False
+
+
+class WavelengthCalibrationTableItem:
+    def __init__(self, wavelength: float = 0, wavelength_slit_offset_y: int = 1):
+        self.wavelength = wavelength
+        self.wavelength_slit_offset_y = wavelength_slit_offset_y
+
+    @staticmethod
+    def from_list(cls, params: List):
+        obj = cls()
+        if len(params) == 2:
+            obj.wavelength = params[0]
+            obj.wavelength_slit_offset_y = params[1]
+        return obj
+
+    def get_item(self):
+        return {'wavelength': self.wavelength, 'wavelength_slit_offset_y': self.wavelength_slit_offset_y}
+
+    def get_item_data(self, index: int):
+        value = None
+
+        if index == 0:
+            value = self.wavelength
+        elif index == 1:
+            value = self.wavelength_slit_offset_y
+
+        return value
+
+    def set_item(self, wavelength: float, wavelength_slit_offset_y: int = 1):
+        self.wavelength = wavelength
+        self.wavelength_slit_offset_y = wavelength_slit_offset_y
+
+    def set_item_data(self, index: int, value):
+        if index == 0:
+            self.wavelength = value
+        elif index == 1:
+            self.wavelength_slit_offset_y = value
+
+    def to_list(self):
+        return [self.wavelength, self.wavelength_slit_offset_y]
+
+
+class WavelengthCalibrationTableModel(QAbstractTableModel):
+    def __init__(self, parent: QObject = None):
+        super(WavelengthCalibrationTableModel, self).__init__(parent)
+        self.items: List[WavelengthCalibrationTableItem] = []
+        self.horizontal_header_labels = ['Wavelength', 'Wavelength slit offset Y']
+
+    def clear(self):
+        self.beginRemoveRows(QModelIndex(), 0, self.rowCount() - 1)
+        self.items.clear()
+        self.endRemoveRows()
+
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return 2
+
+    def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
+        if not index.isValid():
+            return None
+
+        row_index = index.row()
+        col_index = index.column()
+
+        v = self.items[row_index].to_list()[col_index]
+
+        if role == Qt.ItemDataRole.TextAlignmentRole:
+            return Qt.AlignmentFlag.AlignCenter
+        elif role in [Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole]:
+            return v
+        else:
+            return None
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlag:
+        return super(WavelengthCalibrationTableModel, self).flags(index) | Qt.ItemFlag.ItemIsEditable
+
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
+        if orientation == Qt.Orientation.Horizontal:
+            if role == Qt.ItemDataRole.DisplayRole:
+                return self.horizontal_header_labels[section]
+        elif orientation == Qt.Orientation.Vertical:
+            if role == Qt.ItemDataRole.TextAlignmentRole:
+                return Qt.AlignmentFlag.AlignCenter
+            elif role == Qt.ItemDataRole.DisplayRole:
+                return section + 1
+        super(WavelengthCalibrationTableModel, self).headerData(section, orientation, role)
+
+    def insertRow(self, row: int, parent: QModelIndex = QModelIndex()) -> bool:
+        if row < 0:
+            row = 0
+
+        self.beginInsertRows(parent, row, row)
+
+        item = WavelengthCalibrationTableItem()
+        self.items.insert(row, item)
+
+        self.endInsertRows()
+
+        return True
+
+    def insertRows(self, row: int, count: int, parent: QModelIndex = QModelIndex()) -> bool:
+        if row < 0:
+            row = 0
+
+        self.beginInsertRows(parent, row, row + count - 1)
+
+        for i in range(count):
+            item = WavelengthCalibrationTableItem()
+            self.items.insert(row + i, item)
+
+        self.endInsertRows()
+
+        return True
+
+    def load_data_from_list(self, data: List[List], row_count: int):
+        if len(self.items) > 0:
+            self.clear()
+        self.insertRows(0, row_count)
+        for i in range(len(data[0])):
+            for j, item_value in enumerate(data[1:]):
+                self.setData(self.index(int(data[0][i]), j), item_value[i])
+
+    def removeRow(self, row: int, parent: QModelIndex = QModelIndex()) -> bool:
+        self.beginRemoveRows(parent, row, row)
+
+        del self.items[row]
+
+        self.endRemoveRows()
+
+        return True
+
+    def removeRows(self, row: int, count: int, parent: QModelIndex = QModelIndex()) -> bool:
+        self.beginRemoveRows(parent, row, row + count - 1)
+
+        remove_indices = set(range(row, row + count))
+        self.items = [i for j, i in enumerate(self.items) if j not in remove_indices]
+
+        self.endRemoveRows()
+
+        return True
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self.items)
+
+    def setData(self, index: QModelIndex, value: Any, role: int = Qt.ItemDataRole.EditRole) -> bool:
+        if not index.isValid():
+            return False
+
+        row_index = index.row()
+        col_index = index.column()
+
+        if role == Qt.ItemDataRole.EditRole:
+            self.items[row_index].set_item_data(col_index, value)
+            self.dataChanged.emit(index, index)
+            return True
+
+        return False
