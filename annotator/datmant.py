@@ -6,7 +6,7 @@ import traceback
 import os
 import numpy as np
 import cv2
-from qimage2ndarray import array2qimage
+from qimage2ndarray import array2qimage, recarray_view
 
 from annotator.lib.tkmask import generate_tk_defects_layer
 from annotator.lib.annotmask import get_sqround_mask  # New mask generation facility (original mask needed)
@@ -31,10 +31,14 @@ from openhsl.paint.utils import ANDVI, ANDI, cluster_hsi
 from scipy.io import loadmat
 import qimage2ndarray
 
+from ui.palette import PaletteGrid, PaletteHorizontal, PaletteVertical
+
+from functools import partial    
+
 # Overall constants
-PUBLISHER = "AlphaControlLab"
-APP_TITLE = "DATM Annotation Tool"
-APP_VERSION = "1.00.2-beta"
+PUBLISHER = "HSI"
+APP_TITLE = "Annotator"
+APP_VERSION = "v.1.3"
 
 # Some configs
 BRUSH_DIAMETER_MIN = 40
@@ -71,8 +75,8 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
     ANNOTATION_MODE_MARKING_DEFECTS = 0
     ANNOTATION_MODE_MARKING_MASK = 1
 
-    ANNOTATION_MODES_BUTTON_TEXT = {ANNOTATION_MODE_MARKING_DEFECTS: "Annotation (on/off)",
-                                    ANNOTATION_MODE_MARKING_MASK: "Annotation (on/off)"}
+    ANNOTATION_MODES_BUTTON_TEXT = {ANNOTATION_MODE_MARKING_DEFECTS: "Hide layers",
+                                    ANNOTATION_MODE_MARKING_MASK: "Hide layers"}
     ANNOTATION_MODES_BUTTON_COLORS = {ANNOTATION_MODE_MARKING_DEFECTS: "blue",
                                       ANNOTATION_MODE_MARKING_MASK: "red"}
 
@@ -170,8 +174,8 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         if self.d_rgb2gray is not None and self.d_gray2rgb is not None:
             self.annotator.d_rgb2gray = self.d_rgb2gray
             self.annotator.d_gray2rgb = self.d_gray2rgb
-        else:
-            raise RuntimeError("Failed to load the color conversion schemes. Annotations cannot be saved.")
+        #else:
+        #    raise RuntimeError("Failed to load the color conversion schemes. Annotations cannot be saved.")
 
         # Set up second window
         self.color_ui = DATMantGUIColorSpec(self)
@@ -202,6 +206,8 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         self.label_class = []      
         self.mask_layers = 0
         self.hsi = None
+        self.hsmask = HSMask()
+        self.key_answer = ""
 
     # Set up those UI elements that depend on config
     def UI_config(self):
@@ -211,12 +217,12 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         # TODO: TEMP: For buttons, use .clicked.connect(self.*), for menu actions .triggered.connect(self.*),
         # TODO: TEMP: for checkboxes use .stateChanged, and for spinners .valueChanged
         self.actionLog.triggered.connect(self.update_show_log)
-        self.actionColor_definitions.triggered.connect(self.open_color_definition_help)
+        #self.actionColor_definitions.triggered.connect(self.open_color_definition_help)
         self.actionProcess_original_mask.triggered.connect(self.process_mask)
         self.actionSave_current_annotations.triggered.connect(self.save_masks)
         
         #lara
-        self.actionLoad.triggered.connect(self.browse_load_mask_directory)
+        #self.actionLoad.triggered.connect(self.browse_load_mask_directory)
 
         # Reload AI-generated mask, if present in the directory
         self.actionAIMask.triggered.connect(self.load_AI_mask)
@@ -227,11 +233,16 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         self.InvertingMask.clicked.connect(self.invert_mask)
         self.btnBrowseImageDir.clicked.connect(self.browse_image_directory)
         self.makemask.clicked.connect(self.load_AI_mask)
+      
+        self.pushButton_2.clicked.connect(self.save_masks)
+        
+        self.add_layer.clicked.connect(self.add_layerclass_to_mask)
+        self.delete_layer.clicked.connect(self.delete_layerclass)
         #self.btnBrowseShp.clicked.connect(self.browse_shp_dir)
         #self.btnPrev.clicked.connect(self.load_prev_image)
         #self.btnNext.clicked.connect(self.load_next_image)
         self.btnMode.clicked.connect(self.annotation_mode_switch)
-
+        self.actionLoadmask.clicked.connect(self.browse_load_mask_directory)
         # Selecting new image from list
         # NB! We depend on this firing on index change, so we remove manual load_image elsewhere
             #self.connect_image_load_on_list_index_change(True)
@@ -508,12 +519,12 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         if self.annotator._overlayHandle is not None:
 
             # Depending on the mode, fill the mask appropriately
-
             # Marking defects
             if self.annotation_mode is self.ANNOTATION_MODE_MARKING_DEFECTS:
                 self.status_bar_message("exporting_layers")
                 self.log("Exporting color layers...")
                 the_new_mask = self.annotator.export_rgb2gray_mask()  # Easy, as this is implemented in annotator
+                #the_new_mask = 255 * np.ones(self.img_shape, dtype=np.uint8)
                 self.status_bar_message("ready")
 
             # Or updating the road edge mask
@@ -691,132 +702,6 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
     # Loads the image
     def load_image(self):
         print(" def load_image() ")
-        
-        '''
-        if not self.initializing: # if not self.initializing and self.dir_has_images:
-            
-            print("load_image func")
-            self.status_bar_message("loading")
-
-            # Process events
-            self.app.processEvents()
-
-            # Get the image from the list
-            img_name = self.lstImages.currentText()
-            img_name_no_ext = img_name.split(".")[0]
-            img_path = self.txtImageDir.text() + os.sep + img_name_no_ext
-            
-            ## l_start
-            #n_int = int(len(self.wavelengths))            
-            #print(str(n_int).zfill(4))            
-            #img_name = "img_" + str(n_int).zfill(4) # МЕНЯЕМ   "img_" + self.txt_HSI_slider.text()  // img_name = self.lstImages.currentText() 
-            ## l_end           
-            
-
-            self.current_img = img_name_no_ext
-            self.current_img_as_listed = img_name
-
-            # Start loading the image
-            self.log("Loading image " + img_name_no_ext)
-
-            # Load the image
-            
-            try:
-                self.log("Drawing defect marks on original image...")
-                
-                print(self.loaded_hsi[:, :, 10])
-                
-                self.current_image=qimage2ndarray.array2qimage(self.loaded_hsi[:, :, 10]) #self.current_image = QImage(img_path + ".PNG")
-                warning = []
-                img_tk = generate_tk_defects_layer(self.txtImageDir.text(), self.txtShpDir.text(),
-                                                    img_name_no_ext, self.tk_colors, warning, log=self.log)
-                self.current_tk = img_tk
-
-                # Check if there were warnings
-                #if warning:
-                #    self.show_info_box("Issues drawing the TK layer",
-                #                       "There was some issue while drawing the TK layer: " + "; ".join(warning) + " " +
-                #                       "Please check the log for details.",
-                #                       QMessageBox.Warning)
-
-            except Exception as e:
-                #self.show_info_box("Error drawing the TK layer",
-                #                   "There was some issue while drawing the TK layer. Please check the log for details.",
-                #                   QMessageBox.Warning)
-                self.actionLoad_marked_image.setChecked(False)
-                self.log("Could not find or load the shapefile data. Will load only the image.")
-                self.log("Additional details about this error: (" + str(e.__class__.__name__) + ") " + str(e))
-                self.current_image=qimage2ndarray.array2qimage(self.loaded_hsi[:, :, 10]) #self.current_image = QImage(img_path + ".PNG")
-                self.curent_tk = None
-
-
-            # Shape of the image
-            h, w = self.current_image.rect().height(), self.current_image.rect().width()
-
-            self.img_shape = (h, w)
-
-            # Load the mask and generate the "helper" mask
-            try:
-                self.current_mask = cv2.imread(img_path + self.MASK_FILE_EXTENSION_PATTERN, cv2.IMREAD_GRAYSCALE)
-                self.current_helper = get_sqround_mask(self.current_mask)
-            except:
-                print("Cannot find the mask file. Please make sure FILENAME.mask.png " +
-                      "files exist in the folder for every image")
-                self.log("Cannot find the mask file. Please make sure FILENAME.mask.png files exist in the folder for every image")
-                self.status_bar_message("no_images")
-                return
-
-            # Set also default annotation mode
-            self.annotation_mode_default()
-
-            # Mask v2 just contains a copy of the default mask
-            img_m = self.current_mask.copy()
-
-            # Add some useful information
-            at_least_something = False
-            if os.path.isfile(img_path + ".cut.mask_v2.png"):
-                # Image has updated defect mask, need to load it instead
-                img_m = cv2.imread(img_path + ".cut.mask_v2.png", cv2.IMREAD_GRAYSCALE)
-                self.log("Detected updated mask, loading it instead of base mask")
-                self.txtImageHasDefectMask.setText("YES")
-                at_least_something = True
-            else:
-                self.txtImageHasDefectMask.setText("NO")
-
-            # No defect marks by default
-            img_d = np.zeros(self.img_shape, dtype=np.uint8)
-            if os.path.isfile(img_path + ".defect.mask.png"):
-                # We need to open the mask
-                img_d = cv2.imread(img_path + ".defect.mask.png", cv2.IMREAD_GRAYSCALE)
-                # And blend in the colors of the overlay
-                self.txtImageStatus.setText("MANUALLY PROCESSED, defect mask found in directory")
-            elif os.path.isfile(img_path + ".predicted_defects.png"):
-                img_d = cv2.imread(img_path + ".predicted_defects.png", cv2.IMREAD_GRAYSCALE)
-                self.txtImageStatus.setText("AUTO PROCESSED, defect mask found in directory")
-            elif at_least_something:
-                self.txtImageStatus.setText("SEEN BEFORE, but there is no defect mask")
-            else:
-                self.txtImageStatus.setText("No info")
-
-            # Update a button state
-            if os.path.isfile(img_path + ".predicted_defects.png"):
-                self.actionAIMask.setEnabled(True)
-            else:
-                self.actionAIMask.setEnabled(False)
-
-            # Now we set up the mutable images. NB! They are not COPIES, but references here
-            self.current_defects = img_d
-            self.current_updated_mask = img_m
-
-            # Once all that is done, we need to update the actual image working area
-            self.update_annotator_view()
-
-            # Need to set focus on the QGraphicsScene so that shortcuts would work immediately
-            self.annotator.setFocus()
-
-            self.status_bar_message("ready")
-            self.log("Done loading image")
-            '''
             
             
     def convertToMaskLeyer(self, boolmask):
@@ -826,6 +711,7 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
     def setmasktocolor(self, ai_mask):
         cind = self.lstDefectsAndColors.currentIndex()
         color = self.cspec[cind]
+        
         the_color = QColor("#63" + color["COLOR_HEXRGB_DATMANT"].split("#")[1])
         self.current_paint = the_color
         self.annotator.brush_fill_color = the_color
@@ -869,6 +755,8 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
             ai_mask = ANDI(self.hsi, area_1, area_2)  # ANDI(self.hsi, area_1, area_2).astype(int)  
             
             self.current_defects = ai_mask
+            print(type(ai_mask), ai_mask.shape, len(ai_mask))
+            
             self.setmasktocolor(self.current_defects)
             print(self.current_defects, "self.current_defects")
 
@@ -923,11 +811,6 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         self.current_defects = ai_mask
         self.setmasktocolor(ai_mask)   
             
-
-
-
-      
-    
     '''        
     def addloadedlayermask(self, mask):
         self.current_mask = qimage2ndarray.array2qimage(mask)
@@ -960,7 +843,7 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         message_box_ok_button_2 = QPushButton("ANDI метод")
         message_box_ok_button_2.clicked.connect(partial(self.onClicked, "ANDI")) 
         
-        message_box_ok_button_3 = QPushButton("cluster_hsi метод")
+        message_box_ok_button_3 = QPushButton("Класстеризация")
         message_box_ok_button_3.clicked.connect(partial(self.onClicked, "cluster_hsi")) 
         
         self.message_box_layout = QVBoxLayout()
@@ -974,22 +857,6 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         
         self.message_box_dialog.show()  
         self.message_box_dialog.exec_()
-        '''        
-
-        #ANDVI, ANDI, cluster_hsi
-            
-        mb = QMessageBox()
-        mb.setWindowTitle("Внимание")
-        mb.setText('Выберите метод для получения маски')
-        
-        mb.addButton('ANDVI', QMessageBox.YesRole)
-        mb.addButton('ANDI', QMessageBox.YesRole)
-        mb.addButton('cluster_hsi', QMessageBox.YesRole)
-        mb.buttonClicked.connect(self.onClicked)
-        
-        mb.exec_()
-        '''
-
 
         '''        
         if directory:
@@ -1048,20 +915,35 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         # Update the current mask
         self.update_mask_from_current_mode()
         
-        save_dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Выберите")
+        file_name = ""
+        default_dir ="/home/"
+        default_filename = os.path.join(default_dir, file_name)
+        files_types = "mat (*.mat);;h5 (*.h5);;tiff (*.tiff);;npy (*.npy);;img (*.png *.bmp)" # "mat File (*.mat *.h5 *.tiff *.npy)" "h5 File (*.mat *.h5 *.tiff *.npy)"
+        filename, _ = QFileDialog.getSaveFileName(
+            self, "Сохранить HSI маску", default_filename, files_types
+        )
+        if filename:
+            print(filename)
+            save_dir = filename
+            save_path_defects = filename
+            save_path_masks = filename
+        
+        #save_dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Выберите")    
+
+        #save_path_defects = save_dir + "/mask_01.png" # save_path_defects = save_dir + self.current_img + ".defect.mask.png"
+        #save_path_masks = save_dir + "/mask_02.png" # save_path_masks = save_dir + self.current_img + ".cut.mask_v2.png"
+        
+        ####
+        
+        #npy = qimage2ndarray.recarray_view(self.current_defects) 
+        #print(npy)
+        self.hsmask.data = self.current_defects
+        self.hsmask.save_to_mat(save_path_masks, self.key_answer)
+        ####
+        #cv2.imwrite(save_path_defects, self.current_defects)
+        #self.log("Saved defect annotations for image ")
 
 
-    
-        #save_dir = self.txtImageDir.text()
-        save_path_defects = save_dir + "/mask_01.png" # save_path_defects = save_dir + self.current_img + ".defect.mask.png"
-        save_path_masks = save_dir + "/mask_02.png" # save_path_masks = save_dir + self.current_img + ".cut.mask_v2.png"
-        print(save_path_masks)
-
-        cv2.imwrite(save_path_defects, self.current_defects)
-        self.log("Saved defect annotations for image ")
-
-        #cv2.imwrite(save_path_masks, self.current_updated_mask)
-        #self.log("Saved updated mask for image ")
 
     # In-GUI console log
     def log(self, line):
@@ -1279,18 +1161,18 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
             print(directory, "directory")           
             
             # find Key for load HSI as .mat or .h5
-            key_answer = ""
+
             if file_type == ".mat":
                 hsi_data = loadmat(file_name_path)
                 for key in hsi_data.keys():
                     if key[1] != "_":
-                        key_answer = key
+                        self.key_answer = key
             elif file_type == ".h5":
                 import h5py
                 hsi_data = h5py.File(file_name_path, 'r')
                 for key in hsi_data.keys():
                     if key[1] != "_":
-                        key_answer = key
+                        self.key_answer = key
                 
             self.hsi = HSImage()
             
@@ -1298,13 +1180,13 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
             print(file_type)
             
             if file_type == ".mat":
-                self.hsi.load_from_mat(path_to_file = file_name_path, mat_key = key_answer)
+                self.hsi.load_from_mat(path_to_file = file_name_path, mat_key = self.key_answer)
             elif file_type == ".tiff":
                 self.hsi.load_from_tiff(path_to_file = file_name_path)
             elif file_type == ".npy":
                 self.hsi.load_from_npy(path_to_file = file_name_path)
             elif file_type == ".h5":
-                self.hsi.load_from_h5(path_to_file = file_name_path, h5_key = key_answer)
+                self.hsi.load_from_h5(path_to_file = file_name_path, h5_key = self.key_answer)
 
             self.loaded_hsi = self.hsi.data #
             self.wavelengths = self.hsi.wavelengths            
@@ -1333,6 +1215,7 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
                 #self.connect_image_load_on_list_index_change(False)
             #self.load_base_mask() #  load_image
             self.update_annotator_view() 
+            self.HSI_slider_update()
             #self.update_mask_view()             
      
                 #self.connect_image_load_on_list_index_change(True)
@@ -1358,7 +1241,7 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
     def browse_load_mask_directory(self):
         
         # open hsi file
-        directory = QtWidgets.QFileDialog.getOpenFileName(self, "Выбери маску", "", "Image Files (*.mat *.h5 *.tiff *.npy)")
+        directory = QtWidgets.QFileDialog.getOpenFileName(self, "Выбери маску", "", "Image Files (*.mat *.h5 *.tiff *.npy *.bmp *.png)")
 
         if directory:
 
@@ -1373,66 +1256,134 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
             directory = file_name_path[:-dot_pos_2]           
             
             # find Key for load mask HSI as .mat or .h5
-            key_answer = ""
+            self.key_answer = ""
             if file_type == ".mat":
                 hsi_data = loadmat(file_name_path)
                 for key in hsi_data.keys():
                     if key[1] != "_":
-                        key_answer = key
+                        self.key_answer = key
             elif file_type == ".h5":
                 import h5py
                 hsi_data = h5py.File(file_name_path, 'r')
                 for key in hsi_data.keys():
                     if key[1] != "_":
-                        key_answer = key
+                        self.key_answer = key
                 
-            hsmask = HSMask()
+            #hsmask = HSMask()
             
             # hsmask            
             print(file_type)
             
             if file_type == ".mat":
-                hsmask.load_from_mat(path_to_data = file_name_path, key = key_answer)
+                self.hsmask.load_from_mat(path_to_data = file_name_path, key = self.key_answer)
             elif file_type == ".tiff":
-                hsmask.load_from_tiff(path_to_data = file_name_path)
+                self.hsmask.load_from_tiff(path_to_data = file_name_path)
             elif file_type == ".npy":
-                hsmask.load_from_npy(path_to_data = file_name_path)
+                self.hsmask.load_from_npy(path_to_data = file_name_path)
             elif file_type == ".h5":
-                hsmask.load_from_h5(path_to_data = file_name_path, key = key_answer)
-            elif file_type == ".h5":
-                hsmask.load_from_image(path_to_data = file_name_path)
+                self.hsmask.load_from_h5(path_to_data = file_name_path, key = self.key_answer)
+            elif file_type == ".png" or ".bmp":
+                self.hsmask.load_from_image(path_to_data = file_name_path)
 
-            self.loaded_hsmask = hsmask.data #
-            self.label_class = hsmask.label_class       
+            self.loaded_hsmask = self.hsmask.data #
+            self.label_class = self.hsmask.label_class       
             a,b,k = self.loaded_hsmask.shape      
             self.mask_layers = k
+            print(self.hsmask.label_class )
             print(a,b,k)
             print(self.label_class, "label_class")     
-   
-              
-            self.current_mask = qimage2ndarray.array2qimage(self.loaded_hsmask[:, :, 0])
-            print(self.current_mask, "self.current_mask")  
-            #self.current_helper = get_sqround_mask(self.current_mask)
-            self.annotator.loadImageFromFile(self.current_mask)
+            print(type(self.loaded_hsmask))
 
+
+            #max_index = self.lstDefectsAndColors.count()-1
+            for i in range(k):
+                
+                # очищаем словарь
+                max_index = self.lstDefectsAndColors.count()-1
+                for ind_d in range(max_index):
+                    self.cspec.pop(ind_d)
+                    self.lstDefectsAndColors.removeItem(ind_d)
+                
+                                                                
+                #устанавливаем цвета по слоям маски
+                colors_arr =(['#410967', '#F4E511', '#6A176E', '#FAC61E','#932567', '#BA3655', '#DC5039', '#F2751A', '#FBA40A', '#F6D542', '#FCFEA4'])
+                     
+                self.add_layer_current_color = colors_arr[i]
+            
+                self.cspec.append({"NAME_LAYER_D": "class", 
+                                    "COLOR_HEXRGB_DATMANT": colors_arr[i]})
+
+                #for col, row in self.cspec:            
+                rgb_val = self.cspec[i]["COLOR_HEXRGB_DATMANT"] #col["COLOR_HEXRGB_DATMANT"]
+                g_val = self.cspec[i]["NAME_LAYER_D"] # col["NAME_LAYER_D"]     
+                print(rgb_val,g_val)
+
+                print("Selected: {}".format(colors_arr[i]))
+                #self.dialog_COLOR.accept()               
+                
+                
+                #### выгружаем слои маски и накладываем друг на друга
+                layer_img = self.loaded_hsmask[:, :, layer_index]
+                print(type(layer_img), layer_img.shape, len(layer_img))
+                
+                self.setmasktocolor(layer_img)
+                
+                self.current_mask = layer_img
+                self.current_defect = self.current_mask
+                layer_index=+1
+                #######
+                
+                
+
+
+
+            
+            '''
+            # layer index
+            layer_index=0
+            for layer_index in range (k):
+                
+                layer_img = self.loaded_hsmask[:, :, layer_index]
+                print(type(layer_img), layer_img.shape, len(layer_img))
+                
+                from matplotlib import pyplot as plt
+                plt.imshow(layer_img)
+                plt.show()
+                
+                self.setmasktocolor(layer_img)
+                
+                self.current_mask = layer_img
+                self.current_defect = self.current_mask
+                layer_index=+1
+            '''
+            
+            #self.current_mask = qimage2ndarray.array2qimage(self.loaded_hsmask[:, :, 0])
+            #print(self.current_mask, "self.current_mask")  
+
+            #self.current_defects = self.current_mask
+            #img = self.QImageToCvMat(self.current_defects)
+            #self.setmasktocolor(img)
+            
             #self.clear_all_annotations()
-            # User-updatable items
-            self.current_defects = None  # Defects mask
-            self.current_updated_mask = None  # Updated mask
-
-            self.annotator.clearAll() # очищаем
+            #self.annotator.clearAll() # очищаем
 
         ###############################################################
             self.check_paths()
             self.store_paths_to_config()        
             self.get_image_files()
 
-            # Disable the index change event, load image, reenable it
-            #self.connect_image_load_on_list_index_change(False)
-            #self.load_image()
-            #self.connect_image_load_on_list_index_change(True)   
-        
-        
+
+    def QImageToCvMat(self,incomingImage):
+        '''  Converts a QImage into an opencv MAT format  '''
+
+        incomingImage = incomingImage.convertToFormat(QtGui.QImage.Format.Format_RGB32)
+
+        width = incomingImage.width()
+        height = incomingImage.height()
+
+        ptr = incomingImage.constBits()
+        arr = np.array(ptr).reshape(height, width, 4)  #  Copies the data
+        return arr        
 
     
     ################ from proj D
@@ -1536,12 +1487,20 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
 
     def read_defect_color_defs(self):  # Read the defect color definitions from the corresponding file
         # Read the file
-        cspec = pd.read_csv(COLOR_DEF_PATH,
-                            delimiter=";", encoding='utf-8')
-        cspec_list = cspec.to_dict('records')
-
+        #cspec = pd.read_csv(COLOR_DEF_PATH,
+        #                    delimiter=";", encoding='utf-8')
+        #cspec_list = cspec.to_dict('records')
+        
+        df = pd.DataFrame({"NAME_LAYER_D": ["class"], # "class"
+                            "COLOR_HEXRGB_DATMANT": ["#006f05"]}) # "#006f05"
+        
+        cspec_list = df.to_dict('records')
+#        cspec_list["NAME_LAYER_D"].extend("class")
+#        cspec_list["COLOR_HEXRGB_DATMANT"].extend("#006f05")
         # Store the list
         self.cspec = cspec_list
+
+
 
     def add_colors_to_list(self):
         if self.cspec is not None:
@@ -1557,29 +1516,34 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
             rgb2g = {}
             tk2rgb = {}
 
+            
             for col in self.cspec:
                 rgb_val = col["COLOR_HEXRGB_DATMANT"].lower()
-                g_val = int(col["COLOR_GSCALE_MAPPING"])
+                #g_val = int(col["COLOR_GSCALE_MAPPING"])
 
-                keys_to_insert = col["COLOR_ABBR_ET"].split(",")
-                for ks in keys_to_insert:
-                    tk2rgb[ks.strip()] = col["COLOR_HEXRGB_TK"]
+                #keys_to_insert = col["COLOR_ABBR_ET"].split(",")
+                #for ks in keys_to_insert:
+                #    tk2rgb[ks.strip()] = col["COLOR_HEXRGB_TK"]
 
                 # Create the icon and populate the list
                 pix = QPixmap(50, 50)
                 pix.fill(QColor(rgb_val))
                 ticon = QIcon(pix)
-                self.lstDefectsAndColors.addItem(ticon, " " + col["COLOR_NAME_EN"] +
-                                                 " | " + col["COLOR_NAME_ET"])
+                #self.lstDefectsAndColors.addItem(ticon, " " + col["COLOR_NAME_EN"] +
+                #                                 " | " + col["COLOR_NAME_ET"])
+                
+                self.lstDefectsAndColors.addItem(ticon, " " + col["NAME_LAYER_D"] +
+                                    " | "  + col["COLOR_HEXRGB_DATMANT"])
 
                 # Fill in necessary dicts
-                g2rgb[g_val] = rgb_val
-                rgb2g[rgb_val] = g_val
+                #g2rgb[g_val] = rgb_val
+                #rgb2g[rgb_val] = g_val
+            
 
             # Set up dicts
-            self.d_rgb2gray = rgb2g
-            self.d_gray2rgb = g2rgb
-            self.tk_colors = tk2rgb
+            #self.d_rgb2gray = rgb2g
+            #self.d_gray2rgb = g2rgb
+            #self.tk_colors = tk2rgb
 
             # Change the brush color
             self.lstDefectsAndColors.currentIndexChanged.connect(self.change_brush_color)
@@ -1594,6 +1558,99 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         self.current_paint = the_color
         self.annotator.brush_fill_color = the_color
 
+    def delete_layerclass(self):        
+        cind = self.lstDefectsAndColors.currentIndex()
+        self.lstDefectsAndColors.removeItem(cind)
+        self.cspec.pop(cind)
+        # удаление с общей маски
+        #self.add_layer_current_color
+
+
+    def show_selected_color(self, c):
+        
+        cind = self.lstDefectsAndColors.currentIndex()
+        color = self.cspec[cind]        
+        
+        self.add_layer_current_color = c
+        
+        self.cspec.append({"NAME_LAYER_D": self.message_name_layer.text(), 
+                            "COLOR_HEXRGB_DATMANT": c})
+        #self.cspec.append({"NAME_LAYER_D": self.message_name_layer.text(), 
+        #                    "COLOR_HEXRGB_DATMANT": c})
+          
+        #for col, row in self.cspec:            
+        rgb_val = self.cspec[cind]["COLOR_HEXRGB_DATMANT"] #col["COLOR_HEXRGB_DATMANT"]
+        g_val = self.cspec[cind]["NAME_LAYER_D"] # col["NAME_LAYER_D"]     
+        print(rgb_val,g_val)
+
+        print("Selected: {}".format(c))
+        print(self.message_name_layer.text())
+        self.dialog_COLOR.accept() 
+
+        
+    def add_layerclass_to_mask(self):        
+
+
+        self.dialog_COLOR = QDialog(self , Qt.Window | Qt.WindowStaysOnTopHint) #  self , Qt.Window | Qt.WindowStaysOnTopHint
+        #message_box_dialog.setModal(True)
+        self.dialog_COLOR.setWindowTitle("Параметры генерации")
+        self.dialog_COLOR.resize(300, 150)
+        
+        palette = PaletteGrid('17undertones') # or PaletteHorizontal, or PaletteVertical
+        palette.selected.connect(self.show_selected_color)
+        
+        message_box_label_2 = QLabel("Name your layer: ")
+        self.message_name_layer = QLineEdit()               
+
+        
+        message_box_layout = QVBoxLayout()
+        self.dialog_COLOR.setLayout(message_box_layout)
+
+        message_box_layout.addWidget(message_box_label_2)
+        message_box_layout.addWidget(self.message_name_layer)
+        message_box_layout.addWidget(palette)
+
+        
+        self.dialog_COLOR.show()  
+        self.dialog_COLOR.exec_()           
+
+        
+        #cind = self.lstDefectsAndColors.currentIndex()
+        #color = self.cspec[cind]
+        max_index = self.lstDefectsAndColors.count()-1
+        rgb_val = self.add_layer_current_color
+        #g_val = int(col["COLOR_GSCALE_MAPPING"])
+
+        #keys_to_insert = col["COLOR_ABBR_ET"].split(",")
+
+        # Create the icon and populate the list
+        pix = QPixmap(50, 50)
+        pix.fill(QColor(rgb_val))        
+        ticon = QIcon(pix)
+        self.lstDefectsAndColors.addItem(ticon, " " + self.message_name_layer.text() +
+                                         " | "  + self.add_layer_current_color)
+        '''
+        for col in self.cspec:
+            rgb_val = col["COLOR_HEXRGB_DATMANT"].lower()
+            g_val = int(col["COLOR_GSCALE_MAPPING"])
+
+            keys_to_insert = col["COLOR_ABBR_ET"].split(",")
+            for ks in keys_to_insert:
+                tk2rgb[ks.strip()] = col["COLOR_HEXRGB_TK"]
+
+            # Create the icon and populate the list
+            pix = QPixmap(50, 50)
+            pix.fill(QColor(rgb_val))
+            ticon = QIcon(pix)
+            #self.lstDefectsAndColors.addItem(ticon, " " + col["COLOR_NAME_EN"] +
+            #                                 " | " + col["COLOR_NAME_ET"])
+
+            # Fill in necessary dicts
+            g2rgb[g_val] = rgb_val
+            rgb2g[rgb_val] = g_val
+        '''
+        
+        
     '''
     **********
     KEY EVENTS
@@ -1635,7 +1692,7 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
 def main():
     # Prepare and launch the GUI
     app = QtWidgets.QApplication(sys.argv)
-    app.setWindowIcon(QtGui.QIcon('res/A.ico'))
+    app.setWindowIcon(QtGui.QIcon('annotator/res/OpenHSL_Logo_1.ico'))
     dialog = DATMantGUI()
     dialog.setWindowTitle(APP_TITLE + " - " + APP_VERSION) # Window title
     dialog.app = app  # Store the reference
