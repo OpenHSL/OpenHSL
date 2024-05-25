@@ -247,7 +247,7 @@
           <item row="1" column="0">
            <widget class="QCheckBox" name="bdtSlitImageContrastValue_checkBox">
             <property name="text">
-             <string>Contrast</string>
+             <string>Contrast preview</string>
             </property>
            </widget>
           </item>
@@ -386,26 +386,135 @@
         <string>Wavelengths</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_9">
+        <item row="2" column="0">
+         <layout class="QGridLayout" name="gridLayout_8">
+          <item row="2" column="2">
+           <widget class="QSpinBox" name="wtContrastPreviewValue_spinBox"/>
+          </item>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="wtApplyContrastPreview_checkBox">
+            <property name="text">
+             <string>Contrast preview</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QSlider" name="wtContrastPreviewValue_horizontalSlider">
+            <property name="maximum">
+             <number>255</number>
+            </property>
+            <property name="value">
+             <number>60</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSlider" name="wtCurrentWavelengthImage_horizontalSlider">
+            <property name="minimum">
+             <number>0</number>
+            </property>
+            <property name="maximum">
+             <number>255</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="wtImage_label">
+            <property name="text">
+             <string>Wavelength image</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QSpinBox" name="wtCurrentWavelengthImage_spinBox">
+            <property name="maximum">
+             <number>255</number>
+            </property>
+            <property name="value">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="wtImageCalibration_label">
+            <property name="text">
+             <string>Image correction</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_8">
+            <item>
+             <widget class="QCheckBox" name="wtApplyRotation_checkBox">
+              <property name="text">
+               <string>Apply rotation</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="wtApplyUndistortion_checkBox">
+              <property name="text">
+               <string>Apply undistortion</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_10">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item row="0" column="0">
+         <widget class="HSGraphicsView" name="wt_graphicsView"/>
+        </item>
+        <item row="1" column="0">
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QLabel" name="wtImageDirPath_label">
+            <property name="text">
+             <string>Wavelength images dir</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="wtImageDirPath_lineEdit"/>
+          </item>
+          <item>
+           <widget class="QPushButton" name="wtImageDirPathOpen_pushButton">
+            <property name="maximumSize">
+             <size>
+              <width>24</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="id" stdset="0">
+             <string>open</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
         <item row="6" column="0">
-         <widget class="QTableWidget" name="wavelength_tableWidget"/>
-        </item>
-        <item row="7" column="0">
-         <spacer name="verticalSpacer_3">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Fixed</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>18</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="8" column="0">
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <item>
            <spacer name="horizontalSpacer_6">
@@ -445,44 +554,38 @@
           </item>
          </layout>
         </item>
-        <item row="0" column="0">
-         <widget class="HSGraphicsView" name="wavelength_graphicsView"/>
+        <item row="5" column="0">
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>18</height>
+           </size>
+          </property>
+         </spacer>
         </item>
-        <item row="4" column="0">
+        <item row="3" column="0">
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
-           <widget class="QPushButton" name="loadWavelengthImage_pushButton">
+           <widget class="QLabel" name="wtWavelengthCalibrationData_label">
             <property name="text">
-             <string>Load wavelength image</string>
+             <string>Wavelength calibration data</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="addWavelength_pushButton">
-            <property name="minimumSize">
-             <size>
-              <width>24</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="id" stdset="0">
-             <string>add_to_table</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="viewWavelength_pushButton">
-            <property name="minimumSize">
-             <size>
-              <width>24</width>
-              <height>0</height>
-             </size>
-            </property>
+           <widget class="QPushButton" name="wtWavelengthCalibrationDataWindowShow_pushButton">
             <property name="text">
              <string/>
             </property>
             <property name="id" stdset="0">
-             <string>view_from_table</string>
+             <string>table</string>
             </property>
            </widget>
           </item>
@@ -500,269 +603,6 @@
            </spacer>
           </item>
          </layout>
-        </item>
-        <item row="1" column="0">
-         <layout class="QGridLayout" name="gridLayout_8">
-          <item row="1" column="1">
-           <widget class="QSlider" name="wavelengthSlitAngle_horizontalSlider">
-            <property name="minimum">
-             <number>-89999999</number>
-            </property>
-            <property name="maximum">
-             <number>89999999</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="1">
-           <widget class="QSlider" name="wavelengthLineAngle_horizontalSlider">
-            <property name="minimum">
-             <number>-89999999</number>
-            </property>
-            <property name="maximum">
-             <number>89999999</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="wavelengthSlitIntercept_label">
-            <property name="text">
-             <string>Slit intercept</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QCheckBox" name="wavelengthImageThresholdValue_checkBox">
-            <property name="text">
-             <string>Wavelength threshold</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="2">
-           <widget class="QSpinBox" name="wavelengthImageThresholdValue_spinBox">
-            <property name="maximum">
-             <number>255</number>
-            </property>
-            <property name="value">
-             <number>60</number>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="2">
-           <widget class="QDoubleSpinBox" name="wavelengthLineAngle_doubleSpinBox">
-            <property name="decimals">
-             <number>6</number>
-            </property>
-            <property name="minimum">
-             <double>-89.999999000000003</double>
-            </property>
-            <property name="maximum">
-             <double>89.999999000000003</double>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QSpinBox" name="wavelengthSlitImageThresholdValue_spinBox">
-            <property name="maximum">
-             <number>255</number>
-            </property>
-            <property name="value">
-             <number>40</number>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QSlider" name="wavelengthSlitIntercept_horizontalSlider">
-            <property name="maximum">
-             <number>2048</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QCheckBox" name="wavelengthSlitImageThresholdValue_checkBox">
-            <property name="text">
-             <string>Slit threshold</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2">
-           <widget class="QDoubleSpinBox" name="wavelengthSlitIntercept_doubleSpinBox">
-            <property name="decimals">
-             <number>6</number>
-            </property>
-            <property name="maximum">
-             <double>2048.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="wavelength_label">
-            <property name="text">
-             <string>Wavelength</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QSlider" name="wavelengthImageThresholdValue_horizontalSlider">
-            <property name="maximum">
-             <number>255</number>
-            </property>
-            <property name="value">
-             <number>60</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QSlider" name="wavelength_horizontalSlider">
-            <property name="maximum">
-             <number>1500</number>
-            </property>
-            <property name="value">
-             <number>400</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QDoubleSpinBox" name="wavelengthSlitAngle_doubleSpinBox">
-            <property name="decimals">
-             <number>6</number>
-            </property>
-            <property name="minimum">
-             <double>-89.999999000000003</double>
-            </property>
-            <property name="maximum">
-             <double>89.999999000000003</double>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="2">
-           <widget class="QDoubleSpinBox" name="wavelength_doubleSpinBox">
-            <property name="decimals">
-             <number>6</number>
-            </property>
-            <property name="maximum">
-             <double>1500.000000000000000</double>
-            </property>
-            <property name="value">
-             <double>400.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QSlider" name="wavelengthSlitImageThresholdValue_horizontalSlider">
-            <property name="minimum">
-             <number>0</number>
-            </property>
-            <property name="maximum">
-             <number>255</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="wavelengthSlitAngle_label">
-            <property name="text">
-             <string>Slit angle</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="wavelengthLineAngle_label">
-            <property name="text">
-             <string>Wavelength line angle</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="0">
-           <widget class="QLabel" name="wavelengthLineIntercept_label">
-            <property name="text">
-             <string>Wavelength line intercept</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="1">
-           <widget class="QSlider" name="wavelengthLineIntercept_horizontalSlider">
-            <property name="maximum">
-             <number>2048</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="2">
-           <widget class="QDoubleSpinBox" name="wavelengthLineIntercept_doubleSpinBox">
-            <property name="decimals">
-             <number>6</number>
-            </property>
-            <property name="maximum">
-             <double>2048.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="2" column="0">
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QLabel" name="wavelengthImagePath_label">
-            <property name="text">
-             <string>Wavelength image</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="wavelengthImagePath_lineEdit"/>
-          </item>
-          <item>
-           <widget class="QPushButton" name="wavelengthImagePathOpen_pushButton">
-            <property name="maximumSize">
-             <size>
-              <width>24</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="id" stdset="0">
-             <string>open</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="3" column="0">
-         <spacer name="verticalSpacer_4">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Fixed</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>10</height>
-           </size>
-          </property>
-         </spacer>
         </item>
        </layout>
       </widget>
@@ -971,7 +811,7 @@
   <customwidget>
    <class>HSGraphicsView</class>
    <extends>QGraphicsView</extends>
-   <header>openhsl.gui.device.custom_controls</header>
+   <header location="global">openhsl.gui.device.custom_controls</header>
   </customwidget>
  </customwidgets>
  <resources/>

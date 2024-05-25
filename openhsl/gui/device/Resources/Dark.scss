@@ -420,37 +420,37 @@ QPushButton {
 	}
 
 	&[id="add_to_table"] {
-		image: url(icons:ud-download.svg);
+		image: url(icons:ud-plus-lg.svg);
 		border-radius: 2px;
 		width: 24px;
 		padding-left: 0px;
 		padding-right: 0px;
 
 		&:hover {
-			image: url(icons:ud-download-hover.svg);
+			image: url(icons:ud-plus-lg-hover.svg);
 			background-color: $bg-button-hover;
 		}
 
 		&:pressed {
-			image: url(icons:ud-download.svg);
+			image: url(icons:ud-plus-lg.svg);
 			background-color: $bg-pressed;
 		}
 	}
 
-	&[id="view_from_table"] {
-		image: url(icons:ud-upload.svg);
+	&[id="remove_from_table"] {
+		image: url(icons:ud-dash-lg.svg);
 		border-radius: 2px;
 		width: 24px;
 		padding-left: 0px;
 		padding-right: 0px;
 
 		&:hover {
-			image: url(icons:ud-upload-hover.svg);
+			image: url(icons:ud-dash-lg-hover.svg);
 			background-color: $bg-button-hover;
 		}
 
 		&:pressed {
-			image: url(icons:ud-upload.svg);
+			image: url(icons:ud-dash-lg.svg);
 			background-color: $bg-pressed;
 		}
 	}

@@ -358,7 +358,7 @@ QPushButton[id="add"]:pressed {
 }
 
 QPushButton[id="add_to_table"] {
-  image: url(icons:ud-download.svg);
+  image: url(icons:ud-plus-lg.svg);
   border-radius: 2px;
   width: 24px;
   padding-left: 0px;
@@ -366,30 +366,30 @@ QPushButton[id="add_to_table"] {
 }
 
 QPushButton[id="add_to_table"]:hover {
-  image: url(icons:ud-download-hover.svg);
+  image: url(icons:ud-plus-lg-hover.svg);
   background-color: #654321;
 }
 
 QPushButton[id="add_to_table"]:pressed {
-  image: url(icons:ud-download.svg);
+  image: url(icons:ud-plus-lg.svg);
   background-color: #2e2f30;
 }
 
-QPushButton[id="view_from_table"] {
-  image: url(icons:ud-upload.svg);
+QPushButton[id="remove_from_table"] {
+  image: url(icons:ud-dash-lg.svg);
   border-radius: 2px;
   width: 24px;
   padding-left: 0px;
   padding-right: 0px;
 }
 
-QPushButton[id="view_from_table"]:hover {
-  image: url(icons:ud-upload-hover.svg);
+QPushButton[id="remove_from_table"]:hover {
+  image: url(icons:ud-dash-lg-hover.svg);
   background-color: #654321;
 }
 
-QPushButton[id="view_from_table"]:pressed {
-  image: url(icons:ud-upload.svg);
+QPushButton[id="remove_from_table"]:pressed {
+  image: url(icons:ud-dash-lg.svg);
   background-color: #2e2f30;
 }
 

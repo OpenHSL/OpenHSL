@@ -3,6 +3,7 @@ from openhsl.build.hs_image_utils import BaseIntEnum
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 import openhsl.build.utils as utils
+import openhsl.build.hs_image_utils as hsiutils
 
 
 class HSCalibrationWavelengthData:
@@ -62,11 +63,13 @@ class HSCalibrationSlitData:
         self.slope: float = 0
         self.angle: float = 0
         self.intercept: float = 0
-        self.x: int = 0
-        self.y: int = 0
-        self.width: int = 0
-        self.height: int = 0
-        self.barrel_distortion_params: Optional[Dict[str, List[float]]] = None
+        self.slit_roi_origin_x: int = 0
+        self.slit_roi_origin_y: int = 0
+        self.slit_roi_width: int = 0
+        self.slit_roi_height: int = 0
+        self.image_shape: Optional[Tuple[int, ...]] = None
+        # {'center': [], 'powers': [], 'coeffs': [], 'factors': []}
+        self.barrel_distortion_params: Optional[Dict[str, Union[List[float]], List[int]]] = None
 
     def load_dict(self, data_dict: dict):
         if utils.key_exists_in_dict(data_dict, "slope"):
@@ -75,14 +78,16 @@ class HSCalibrationSlitData:
             self.angle = data_dict["angle"]
         if utils.key_exists_in_dict(data_dict, "intercept"):
             self.intercept = data_dict["intercept"]
-        if utils.key_exists_in_dict(data_dict, "x"):
-            self.x = data_dict["x"]
-        if utils.key_exists_in_dict(data_dict, "y"):
-            self.y = data_dict["y"]
-        if utils.key_exists_in_dict(data_dict, "width"):
-            self.width = data_dict["width"]
-        if utils.key_exists_in_dict(data_dict, "height"):
-            self.height = data_dict["height"]
+        if utils.key_exists_in_dict(data_dict, "slit_roi_origin_x"):
+            self.slit_roi_origin_x = data_dict["slit_roi_origin_x"]
+        if utils.key_exists_in_dict(data_dict, "slit_roi_origin_y"):
+            self.slit_roi_origin_y = data_dict["slit_roi_origin_y"]
+        if utils.key_exists_in_dict(data_dict, "slit_roi_width"):
+            self.slit_roi_width = data_dict["slit_roi_width"]
+        if utils.key_exists_in_dict(data_dict, "slit_roi_height"):
+            self.slit_roi_height = data_dict["slit_roi_height"]
+        if utils.key_exists_in_dict(data_dict, "image_shape"):
+            self.image_shape = tuple(data_dict["image_shape"])
         if utils.key_exists_in_dict(data_dict, "barrel_distortion_params"):
             self.barrel_distortion_params = data_dict["barrel_distortion_params"]
 
@@ -95,14 +100,16 @@ class HSCalibrationSlitData:
             obj.angle = data_dict["angle"]
         if utils.key_exists_in_dict(data_dict, "intercept"):
             obj.intercept = data_dict["intercept"]
-        if utils.key_exists_in_dict(data_dict, "x"):
-            obj.x = data_dict["x"]
-        if utils.key_exists_in_dict(data_dict, "y"):
-            obj.y = data_dict["y"]
-        if utils.key_exists_in_dict(data_dict, "width"):
-            obj.width = data_dict["width"]
-        if utils.key_exists_in_dict(data_dict, "height"):
-            obj.height = data_dict["height"]
+        if utils.key_exists_in_dict(data_dict, "slit_roi_origin_x"):
+            obj.slit_roi_origin_x = data_dict["slit_roi_origin_x"]
+        if utils.key_exists_in_dict(data_dict, "slit_roi_origin_y"):
+            obj.slit_roi_origin_y = data_dict["slit_roi_origin_y"]
+        if utils.key_exists_in_dict(data_dict, "slit_roi_width"):
+            obj.slit_roi_width = data_dict["slit_roi_width"]
+        if utils.key_exists_in_dict(data_dict, "slit_roi_height"):
+            obj.slit_roi_height = data_dict["slit_roi_height"]
+        if utils.key_exists_in_dict(data_dict, "image_shape"):
+            obj.image_shape = tuple(data_dict["image_shape"])
         if utils.key_exists_in_dict(data_dict, "barrel_distortion_params"):
             obj.barrel_distortion_params = data_dict["barrel_distortion_params"]
 
@@ -113,10 +120,11 @@ class HSCalibrationSlitData:
         data["slope"] = self.slope
         data["angle"] = self.angle
         data["intercept"] = self.intercept
-        data["x"] = self.x
-        data["y"] = self.y
-        data["width"] = self.width
-        data["height"] = self.height
+        data["slit_roi_origin_x"] = self.slit_roi_origin_x
+        data["slit_roi_origin_y"] = self.slit_roi_origin_y
+        data["slit_roi_width"] = self.slit_roi_width
+        data["slit_roi_height"] = self.slit_roi_height
+        data["image_shape"] = self.image_shape
         data["barrel_distortion_params"] = self.barrel_distortion_params
 
         return data
@@ -151,19 +159,50 @@ class HSDevice:
         # ROI for slit
         self.calib_slit_data: Optional[HSCalibrationSlitData] = None
 
+    def get_barrel_distortion_params(self) -> Dict[str, Union[List[float], Tuple[int]]]:
+        return self.calib_slit_data.barrel_distortion_params
+
+    def get_image_shape(self):
+        return self.calib_slit_data.image_shape
+
     def get_slit_slope(self) -> float:
         return self.calib_slit_data.slope
 
     def get_slit_angle(self) -> float:
         return self.calib_slit_data.angle
 
-    def get_slit_intercept(self, to_int = False) -> Union[int, float]:
+    def get_slit_intercept(self, to_int=False) -> Union[int, float]:
         if to_int:
             return int(np.rint(self.calib_slit_data.intercept))
         return self.calib_slit_data.intercept
 
     def get_slit_roi(self) -> Tuple[int, int, int, int]:
-        return self.calib_slit_data.x, self.calib_slit_data.y, self.calib_slit_data.width, self.calib_slit_data.height
+        return self.calib_slit_data.slit_roi_origin_x, self.calib_slit_data.slit_roi_origin_y, \
+            self.calib_slit_data.slit_roi_width, self.calib_slit_data.slit_roi_height
+
+    def get_undistortion_coefficients(self) -> List[float]:
+        undistortion_coeffs = None
+        compute_needed = False
+        if utils.key_exists_in_dict(self.get_barrel_distortion_params(), 'undistortion_coeffs'):
+            undistortion_coeffs = self.calib_slit_data.barrel_distortion_params['undistortion_coeffs']
+        else:
+            compute_needed = True
+        if undistortion_coeffs is None:
+            compute_needed = True
+        elif len(undistortion_coeffs) == 0:
+            compute_needed = False
+        if compute_needed:
+            barrel_distortion_params = self.get_barrel_distortion_params()
+            coeffs = np.array(barrel_distortion_params['coeffs'])
+            powers = np.array(barrel_distortion_params['powers'])
+            factors = np.array(barrel_distortion_params['factors'])
+            image_shape = self.get_image_shape()
+            center_xy = np.array(barrel_distortion_params['center'])
+            undistortion_coeffs = hsiutils.compute_undistortion_coeffs(coeffs, powers, factors, image_shape, center_xy)
+            undistortion_coeffs = undistortion_coeffs.tolist()
+            self.calib_slit_data.barrel_distortion_params['undistortion_coeffs'] = undistortion_coeffs
+        return undistortion_coeffs
+
 
     def load_calibration_wavelength_data(self, path: Union[str, Path]) -> None:
         pass

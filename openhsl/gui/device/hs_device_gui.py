@@ -35,6 +35,8 @@ class HSDeviceGUI(QMainWindow):
     draw_distortion_grid = pyqtSignal(bool)
     undistort_slit_image = pyqtSignal(bool)
     compute_bd_slit_center = pyqtSignal(QRectF, int)
+    read_wl_image_dir = pyqtSignal(str)
+    read_wl_image = pyqtSignal(int, bool, bool, bool)
 
     def __init__(self):
         super(HSDeviceGUI, self).__init__()
@@ -50,6 +52,10 @@ class HSDeviceGUI(QMainWindow):
         uic.loadUi('bd_equation_form.ui', self.bdew)
         self.bdew.setWindowIcon(QIcon("icons:OpenHSL_logo.png"))
 
+        self.wcdw = QWidget()
+        uic.loadUi('wcd_form.ui', self.wcdw)
+        self.wcdw.setWindowIcon(QIcon("icons:OpenHSL_logo.png"))
+
         qss_path = "./Resources/Dark.qss"
         # qss_path = "./Resources/Grey.qss"
         self.stylesheet = ""
@@ -58,6 +64,7 @@ class HSDeviceGUI(QMainWindow):
             self.stylesheet = f.read()
             self.setStyleSheet(self.stylesheet)
             self.bdew.setStyleSheet(self.stylesheet)
+            self.wcdw.setStyleSheet(self.stylesheet)
 
         self.hsd = HSDeviceQt()
         self.t_hsd = QThread()
@@ -115,7 +122,44 @@ class HSDeviceGUI(QMainWindow):
         self.ui_bdew_equation_header_view_vertical: Optional[EquationParamsTableHeaderViewVertical] = None
         self.ui_bdew_equation_header_view_horizontal: Optional[EquationParamsTableHeaderViewHorizontal] = None
         # Wavelengths tab
-        self.ui_wavelength_table_widget: QTableWidget = self.findChild(QTableWidget, 'wavelength_tableWidget')
+        self.ui_wt_graphics_view: HSGraphicsView = self.findChild(HSGraphicsView, 'wt_graphicsView')
+        self.ui_wt_image_dir_path_open_button: QPushButton = \
+            self.findChild(QPushButton, 'wtImageDirPathOpen_pushButton')
+        self.ui_wt_image_dir_path_line_edit: QLineEdit = self.findChild(QLineEdit, 'wtImageDirPath_lineEdit')
+        self.ui_wt_current_wavelength_image_horizontal_slider: QSlider = \
+            self.findChild(QSlider, 'wtCurrentWavelengthImage_horizontalSlider')
+        self.ui_wt_current_wavelength_image_spinbox: QSpinBox = \
+            self.findChild(QSpinBox, 'wtCurrentWavelengthImage_spinBox')
+        self.ui_wt_apply_rotation_checkbox: QCheckBox = self.findChild(QCheckBox, 'wtApplyRotation_checkBox')
+        self.ui_wt_apply_undistortion_checkbox: QCheckBox = self.findChild(QCheckBox, 'wtApplyUndistortion_checkBox')
+        self.ui_wt_apply_contrast_preview_checkbox: QCheckBox = \
+            self.findChild(QCheckBox, 'wtApplyContrastPreview_checkBox')
+        self.ui_wt_contrast_preview_value_horizontal_slider: QSlider = \
+            self.findChild(QSlider, 'wtContrastPreviewValue_horizontalSlider')
+        self.ui_wt_contrast_preview_value_spinbox: QSpinBox = self.findChild(QSpinBox, 'wtContrastPreviewValue_spinBox')
+        self.ui_wt_wavelength_calibration_data_window_show_button: QPushButton = \
+            self.findChild(QPushButton, 'wtWavelengthCalibrationDataWindowShow_pushButton')
+        # WT: Wavelength calibration data window
+        self.ui_wcdw_wavelength_line_y_coord_horizontal_slider: QSlider = \
+            self.wcdw.findChild(QSlider, 'wavelengthLineYCoord_horizontalSlider')
+        self.ui_wcdw_wavelength_line_y_coord_spinbox: QSpinBox = \
+            self.wcdw.findChild(QSpinBox, 'wtWavelengthLineYCoord_spinBox')
+        self.ui_wcdw_spectrum_origin_x_coord_horizontal_slider: QSlider = \
+            self.wcdw.findChild(QSlider, 'wtSpectrumOriginXCoord_horizontalSlider')
+        self.ui_wcdw_spectrum_origin_x_coord_spinbox: QSpinBox = \
+            self.wcdw.findChild(QSpinBox, 'wtSpectrumOriginXCoord_spinBox')
+        self.ui_wcdw_spectrum_origin_y_coord_horizontal_slider: QSlider = \
+            self.wcdw.findChild(QSlider, 'wtSpectrumOriginYCoord_horizontalSlider')
+        self.ui_wcdw_spectrum_origin_y_coord_spinbox: QSpinBox = \
+            self.wcdw.findChild(QSpinBox, 'wtSpectrumOriginYCoord_spinBox')
+        self.ui_wcdw_spectrum_width_horizontal_slider: QSlider = \
+            self.wcdw.findChild(QSlider, 'wtSpectrumWidth_horizontalSlider')
+        self.ui_wcdw_spectrum_width_spinbox: QSpinBox = self.wcdw.findChild(QSpinBox, 'wtSpectrumWidth_spinBox')
+        self.ui_wcdw_spectrum_height_horizontal_slider: QSlider = \
+            self.findChild(QSlider, 'wtSpectrumHeight_horizontalSlider')
+        self.ui_wcdw_spectrum_height_spinbox: QSpinBox = self.wcdw.findChild(QSpinBox, 'wtSpectrumHeight_spinBox')
+        self.ui_wcdw_wavelength_table_view: QTableView = self.wcdw.findChild(QTableView, 'wtWavelength_tableView')
+        self.ui_wcdw_wavelength_table_view_model: WavelengthCalibrationTableModel = None
         # Settings tab
         self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
         self.ui_device_settings_path_line_edit: QLineEdit = self.findChild(QLineEdit, "deviceSettingsPath_lineEdit")
@@ -184,6 +228,12 @@ class HSDeviceGUI(QMainWindow):
             self.on_ui_bdew_polynomial_degree_spinbox_editing_finished)
         self.ui_bdt_undistort_image_button.clicked.connect(self.on_ui_bdt_undistort_image_button_clicked)
         self.undistort_slit_image.connect(self.hsd.on_undistort_slit_image, Qt.ConnectionType.QueuedConnection)
+        # Wavelengths tab
+        self.ui_wt_image_dir_path_open_button.clicked.connect(self.on_ui_wt_image_dir_path_open_button_clicked)
+        self.read_wl_image_dir.connect(self.hsd.on_read_wl_image_dir, Qt.ConnectionType.QueuedConnection)
+        self.hsd.send_wl_image_count.connect(self.on_receive_wl_image_count, Qt.ConnectionType.QueuedConnection)
+        self.hsd.send_wl_image.connect(self.on_receive_wl_image, Qt.ConnectionType.QueuedConnection)
+        self.read_wl_image.connect(self.hsd.on_read_wl_image, Qt.ConnectionType.QueuedConnection)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -209,6 +259,12 @@ class HSDeviceGUI(QMainWindow):
         self.bdt_slit_image_rotated_qt: Optional[QImage] = None
         self.bdt_slit_image_contrasted_qt: Optional[QImage] = None
 
+        # Wavelengths tab graphics
+        self.wt_graphics_scene = QGraphicsScene(self)
+        self.wt_wavelength_image_dir_path = ""
+        self.wt_wavelength_image_qt: Optional[QImage] = None
+        self.wt_graphics_pixmap_item = QGraphicsPixmapItem()
+
         # TODO add mutex locker
         # TODO List[bool], for each tab different val?
         self.init_after_load_device_settings = False
@@ -232,7 +288,7 @@ class HSDeviceGUI(QMainWindow):
         # self.installEventFilter(self)
 
     def render_latex_images(self):
-        dir_path = utils.get_absolute_file_path(QDir.searchPaths('icons_gen')[0])
+        dir_path = utils.absolute_file_path(QDir.searchPaths('icons_gen')[0])
         mpl_ver = int(mpl.__version__.replace(".", ""))
         poly_deg = self.ui_bdew_polynomial_degree_spinbox.maximum()
 
@@ -278,7 +334,6 @@ class HSDeviceGUI(QMainWindow):
     def prepare_ui(self):
         self.render_latex_images()
         self.fill_device_type_combobox()
-        self.fill_wavelength_table_widget()
         # TODO maybe add default zeros
         self.hsd.calib_slit_data = HSCalibrationSlitData()
         # TODO remove
@@ -287,7 +342,6 @@ class HSDeviceGUI(QMainWindow):
         wl_2 = HSCalibrationWavelengthData()
         wl_2.wavelength = 705
         self.hsd.calib_wavelength_data = [wl_1, wl_2]
-        self.ui_wavelength_table_widget.insertRow(0)
 
         gv_hints = QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform | \
                    QPainter.RenderHint.TextAntialiasing
@@ -303,6 +357,12 @@ class HSDeviceGUI(QMainWindow):
         self.ui_bdt_graphics_view.setMouseTracking(True)
         self.ui_bdt_graphics_view.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
         self.ui_bdt_graphics_view.marquee_area_changed.connect(self.on_marquee_area_changed)
+
+        self.ui_wt_graphics_view.setScene(self.wt_graphics_scene)
+        self.ui_wt_graphics_view.setRenderHints(gv_hints)
+        self.ui_wt_graphics_view.setMouseTracking(True)
+        self.ui_wt_graphics_view.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
+        # self.ui_wt_graphics_view.marquee_area_changed.connect(self.on_marquee_area_changed)
 
         dashed_pen = QPen(QColor("white"))
         dashed_pen.setStyle(Qt.PenStyle.DashLine)
@@ -393,6 +453,23 @@ class HSDeviceGUI(QMainWindow):
             self.on_ui_bdew_equation_table_view_data_changed)
         self.fill_bdew()
 
+        self.ui_wt_current_wavelength_image_horizontal_slider.setEnabled(False)
+        self.ui_wt_current_wavelength_image_spinbox.setEnabled(False)
+        self.ui_wt_apply_rotation_checkbox.setEnabled(False)
+        self.ui_wt_apply_undistortion_checkbox.setEnabled(False)
+        self.ui_wt_apply_contrast_preview_checkbox.setEnabled(False)
+        self.ui_wt_contrast_preview_value_horizontal_slider.setEnabled(False)
+        self.ui_wt_contrast_preview_value_spinbox.setEnabled(False)
+
+        self.ui_wcdw_wavelength_table_view_model = WavelengthCalibrationTableModel()
+        self.ui_wcdw_wavelength_table_view.setModel(self.ui_wcdw_wavelength_table_view_model)
+        self.ui_wcdw_wavelength_table_view.setMouseTracking(True)
+        self.ui_wcdw_wavelength_table_view.horizontalHeader().setMinimumHeight(22)
+        self.ui_wcdw_wavelength_table_view.horizontalHeader().resizeSection(0, 210)
+        self.ui_wcdw_wavelength_table_view.horizontalHeader().setStretchLastSection(True)
+        self.ui_wcdw_wavelength_table_view.setAlternatingRowColors(True)
+        self.fill_wcdw()
+
     def fill_bdew(self):
         self.ui_bdew_equation_header_view_vertical.clear_data()
         poly_deg = self.ui_bdew_polynomial_degree_spinbox.value()
@@ -406,7 +483,7 @@ class HSDeviceGUI(QMainWindow):
         self.check_ui_bdt_undistort_image_button_availability()
 
     def load_barrel_distortion_params(self):
-        barrel_distortion_params = self.hsd.get_equation_params()
+        barrel_distortion_params = self.hsd.get_barrel_distortion_params()
         if barrel_distortion_params is not None:
             ept_model: EquationParamsTableModel = self.ui_bdew_equation_table_view.model()
             params = [barrel_distortion_params['powers'], barrel_distortion_params['coeffs'],
@@ -455,19 +532,14 @@ class HSDeviceGUI(QMainWindow):
         self.recent_device_settings_action_triggered_signal_mapper.mappedString.connect(
             self.on_ui_recent_device_settings_action_triggered)
 
-    def fill_wavelength_table_widget(self):
-        header_labels = ["Wavelength", "Slit slope", "Slit angle", "Slit intercept",
-                         "Wavelength ROI x", "Wavelength ROI y", "Wavelength ROI width", "Wavelength ROI height",
-                         "Wavelength slit offset"]
-        self.ui_wavelength_table_widget.setColumnCount(len(header_labels))
-        self.ui_wavelength_table_widget.setHorizontalHeaderLabels(header_labels)
-        self.ui_wavelength_table_widget.horizontalHeader().setStretchLastSection(True)
-        self.ui_wavelength_table_widget.resizeColumnsToContents()
+    def fill_wcdw(self):
+        wt_model = self.ui_wcdw_wavelength_table_view.model()
+        wt_model.insertRows(0, 3)
 
     def initialize_settings_dict(self):
         settings_dict = {
             "program": "HSDeviceGUI",
-            "generation_date": utils.get_current_date(),
+            "generation_date": utils.current_date(),
             "recent_device_settings_path_list": self.recent_device_settings_path_list,
             "last_device_settings_path": self.device_settings_path,
         }
@@ -475,8 +547,8 @@ class HSDeviceGUI(QMainWindow):
 
     def save_settings(self):
         self.recent_device_settings_path_list = list(set(self.recent_device_settings_path_list))
-        self.settings_dict["generation_date"] = utils.get_current_date()
-        self.settings_dict["generation_time"] = utils.get_current_time()
+        self.settings_dict["generation_date"] = utils.current_date()
+        self.settings_dict["generation_time"] = utils.current_time()
         self.settings_dict["recent_device_settings_path_list"] = self.recent_device_settings_path_list
         self.settings_dict["last_device_settings_path"] = self.last_device_settings_path
 
@@ -494,12 +566,13 @@ class HSDeviceGUI(QMainWindow):
                 self.fill_recent_devices_menu()
 
     def save_device_settings(self):
-        self.device_settings_dict["generation_date"] = utils.get_current_date()
-        self.device_settings_dict["generation_time"] = utils.get_current_time()
+        self.device_settings_dict["generation_date"] = utils.current_date()
+        self.device_settings_dict["generation_time"] = utils.current_time()
         self.device_settings_dict["slit_image_path"] = self.slit_image_path
         self.device_settings_dict["slit_threshold_value"] = self.ui_slit_image_threshold_value_spinbox.value()
         self.device_settings_dict["bdt_contrast_value"] = self.ui_bdt_slit_image_contrast_value_spinbox.value()
         self.device_settings_dict["bdt_grid_tile_size"] = self.ui_bdew_grid_tile_size_spinbox.value()
+        self.device_settings_dict["wt_wavelength_image_dir_path"] = self.wt_wavelength_image_dir_path
         self.device_settings_dict["device_metadata"] = self.hsd.to_dict()
         utils.save_dict_to_json(self.device_settings_dict, self.device_settings_path)
 
@@ -520,11 +593,15 @@ class HSDeviceGUI(QMainWindow):
                 bdt_contrast_value = self.device_settings_dict["bdt_contrast_value"]
                 self.ui_bdt_slit_image_contrast_value_horizontal_slider.setValue(bdt_contrast_value)
                 self.ui_bdt_slit_image_contrast_value_spinbox.setValue(bdt_contrast_value)
-                self.hsd.set_contrast_value(bdt_contrast_value)
+                self.hsd.set_bd_contrast_value(bdt_contrast_value)
             if utils.key_exists_in_dict(self.device_settings_dict, "bdt_grid_tile_size"):
                 bdt_grid_tile_size = self.device_settings_dict["bdt_grid_tile_size"]
                 self.ui_bdew_grid_tile_size_spinbox.setValue(bdt_grid_tile_size)
                 self.hsd.set_grid_tile_size(bdt_grid_tile_size)
+            if utils.key_exists_in_dict(self.device_settings_dict, "wt_wavelength_image_dir_path"):
+                self.wt_wavelength_image_dir_path = self.device_settings_dict["wt_wavelength_image_dir_path"]
+                self.ui_wt_image_dir_path_line_edit.setText(self.wt_wavelength_image_dir_path)
+                self.read_wl_image_dir.emit(self.wt_wavelength_image_dir_path)
             if utils.key_exists_in_dict(self.device_settings_dict, "device_metadata"):
                 device_data_dict = self.device_settings_dict["device_metadata"]
                 self.hsd.load_dict(device_data_dict)
@@ -740,7 +817,7 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot(int)
     def on_ui_bdt_slit_image_contrast_value_horizontal_slider_value_changed(self, value: int):
-        self.hsd.set_contrast_value(value)
+        self.hsd.set_bd_contrast_value(value)
         self.ui_bdt_slit_image_contrast_value_spinbox.setValue(value)
 
         if self.ui_bdt_slit_image_contrast_value_checkbox.isChecked():
@@ -748,7 +825,7 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot(int)
     def on_ui_bdt_slit_image_contrast_value_spinbox_value_changed(self, value: int):
-        self.hsd.set_contrast_value(value)
+        self.hsd.set_bd_contrast_value(value)
         self.ui_bdt_slit_image_contrast_value_spinbox.setValue(value)
 
         if self.ui_bdt_slit_image_contrast_value_checkbox.isChecked():
@@ -856,15 +933,48 @@ class HSDeviceGUI(QMainWindow):
                 equation_params['coeffs'].append(coeff)
                 equation_params['factors'].append(factor)
         if len(equation_params['powers']) > 0:
-            ep_dev = self.hsd.get_equation_params()
+            ep_dev = self.hsd.get_barrel_distortion_params()
             if ep_dev is not None:
                 equation_params['center'] = ep_dev['center']
-            self.hsd.set_equation_params(equation_params)
+            self.hsd.set_barrel_distortion_params(equation_params)
             if self.ui_bdt_distortion_grid_checkbox.isChecked():
                 self.draw_distortion_grid.emit(self.ui_bdt_slit_image_contrast_value_checkbox.isChecked())
         self.check_ui_bdt_undistort_image_button_availability()
 
     # Tab 2: wavelengths tab slots
+
+    @pyqtSlot()
+    def on_ui_wt_image_dir_path_open_button_clicked(self):
+        dir_path = QFileDialog.getExistingDirectory(self, "Choose directory", self.wt_wavelength_image_dir_path)
+        if dir_path != "":
+            self.wt_wavelength_image_dir_path = dir_path
+            self.ui_wt_image_dir_path_line_edit.setText(self.wt_wavelength_image_dir_path)
+            self.read_wl_image_dir.emit(self.wt_wavelength_image_dir_path)
+
+    @pyqtSlot(int)
+    def on_receive_wl_image_count(self, value: int):
+        self.ui_wt_current_wavelength_image_horizontal_slider.setMaximum(value)
+        self.ui_wt_current_wavelength_image_spinbox.setMaximum(value)
+        self.ui_wt_current_wavelength_image_horizontal_slider.setValue(0)
+        self.ui_wt_current_wavelength_image_spinbox.setValue(0)
+        self.ui_wt_current_wavelength_image_horizontal_slider.setEnabled(True)
+        self.ui_wt_current_wavelength_image_spinbox.setEnabled(True)
+        self.ui_wt_apply_rotation_checkbox.setEnabled(True)
+        self.ui_wt_apply_undistortion_checkbox.setEnabled(True)
+        self.ui_wt_apply_contrast_preview_checkbox.setEnabled(True)
+        self.ui_wt_contrast_preview_value_horizontal_slider.setEnabled(True)
+        self.ui_wt_contrast_preview_value_spinbox.setEnabled(True)
+        self.read_wl_image.emit(self.ui_wt_current_wavelength_image_spinbox.value(),
+                                self.ui_wt_apply_rotation_checkbox.isChecked(),
+                                self.ui_wt_apply_undistortion_checkbox.isChecked(),
+                                self.ui_wt_apply_contrast_preview_checkbox.isChecked())
+
+    @pyqtSlot(QImage)
+    def on_receive_wl_image(self, wl_image_qt: QImage):
+        self.wt_wavelength_image_qt = wl_image_qt.copy()
+        self.wt_graphics_scene.removeItem(self.wt_graphics_pixmap_item)
+        self.wt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.wt_wavelength_image_qt))
+        self.wt_graphics_scene.addItem(self.wt_graphics_pixmap_item)
 
     # Tab 4: settings tab slots
 
@@ -875,7 +985,7 @@ class HSDeviceGUI(QMainWindow):
 
         if self.device_settings_path != "":
             self.ui_device_settings_path_line_edit.setText(self.device_settings_path)
-            self.device_settings_name = utils.get_file_complete_name(self.device_settings_path)
+            self.device_settings_name = utils.file_complete_name(self.device_settings_path)
 
     @pyqtSlot()
     def on_ui_device_settings_save_button_clicked(self):
