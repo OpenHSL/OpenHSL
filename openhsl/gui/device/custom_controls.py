@@ -456,6 +456,13 @@ class WavelengthCalibrationTableModel(QAbstractTableModel):
         self.items: List[WavelengthCalibrationTableItem] = []
         self.horizontal_header_labels = ['Wavelength', 'Wavelength Y', 'Wavelength slit offset Y']
 
+    def add_item_from_list(self, data: List):
+        row_count = self.rowCount()
+        self.insertRow(row_count)
+        for i in range(3):
+            index = self.index(row_count, i)
+            self.setData(index, data[i])
+
     def clear(self):
         self.beginRemoveRows(QModelIndex(), 0, self.rowCount() - 1)
         self.items.clear()
