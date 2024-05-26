@@ -162,6 +162,10 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wcdw_add_wavelength_button: QPushButton = self.wcdw.findChild(QPushButton, 'addWavelength_pushButton')
         self.ui_wcdw_remove_wavelength_button: QPushButton = \
             self.wcdw.findChild(QPushButton, 'removeWavelength_pushButton')
+        self.ui_wcdw_estimate_wavelengths_by_range_button: QPushButton = \
+            self.wcdw.findChild(QPushButton, 'estimateWavelengthsByRange_pushButton')
+        self.ui_wcdw_fill_slit_offset_y_button: QPushButton = \
+            self.wcdw.findChild(QPushButton, 'fillSlitOffsetY_pushButton')
         self.ui_wcdw_wavelength_table_view: QTableView = self.wcdw.findChild(QTableView, 'wavelength_tableView')
         self.ui_wcdw_wavelength_table_view_model: WavelengthCalibrationTableModel = None
         # Settings tab
@@ -258,6 +262,9 @@ class HSDeviceGUI(QMainWindow):
             self.on_ui_wcdw_wavelength_line_y_coord_spinbox_value_changed)
         self.ui_wcdw_add_wavelength_button.clicked.connect(self.on_ui_wcdw_add_wavelength_button_clicked)
         self.ui_wcdw_remove_wavelength_button.clicked.connect(self.on_ui_wcdw_remove_wavelength_button_clicked)
+        self.ui_wcdw_estimate_wavelengths_by_range_button.clicked.connect(
+            self.on_ui_wcdw_estimate_wavelengths_by_range_button_clicked)
+        self.ui_wcdw_fill_slit_offset_y_button.clicked.connect(self.on_ui_wcdw_fill_slit_offset_y_button_clicked)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -1119,6 +1126,18 @@ class HSDeviceGUI(QMainWindow):
             for row in rows:
                 model.removeRow(row)
 
+    @pyqtSlot()
+    def on_ui_wcdw_estimate_wavelengths_by_range_button_clicked(self):
+        model = self.ui_wcdw_wavelength_table_view_model
+        model.fill_missing_by_range()
+
+    @pyqtSlot()
+    def on_ui_wcdw_fill_slit_offset_y_button_clicked(self):
+        model = self.ui_wcdw_wavelength_table_view_model
+        for i in range(model.rowCount()):
+            wavelength_line_y_coord = model.data(model.index(i, 1))
+            model.setData(model.index(i, 2),
+                          int(np.abs(wavelength_line_y_coord - self.hsd.get_slit_intercept_rotated())))
 
     @pyqtSlot(int)
     def on_receive_wl_image_count(self, value: int):

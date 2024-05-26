@@ -136,13 +136,6 @@
    <item row="1" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout_4">
      <item>
-      <widget class="QPushButton" name="loadWavelengthImage_pushButton">
-       <property name="text">
-        <string>Load wavelength image</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="addWavelength_pushButton">
        <property name="minimumSize">
         <size>
@@ -168,6 +161,20 @@
        </property>
        <property name="id" stdset="0">
         <string>remove_from_table</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="estimateWavelengthsByRange_pushButton">
+       <property name="text">
+        <string>Estimate by range</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="fillSlitOffsetY_pushButton">
+       <property name="text">
+        <string>Fill slit offset Y</string>
        </property>
       </widget>
      </item>

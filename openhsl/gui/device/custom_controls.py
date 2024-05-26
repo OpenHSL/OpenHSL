@@ -1,4 +1,5 @@
 import matplotlib as mpl
+import numpy as np
 from PyQt6.QtCore import QAbstractTableModel, QItemSelection, QModelIndex, QObject, QPoint, QPointF, QRect, QRectF, \
     Qt, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QMouseEvent, QPainter, QPixmap
@@ -501,6 +502,24 @@ class WavelengthCalibrationTableModel(QAbstractTableModel):
         else:
             return None
 
+    def fill_missing_by_range(self):
+        matrix = np.zeros((len(self.items), 2))
+        for i, item in enumerate(self.items):
+            matrix[i, :] = item.to_list()[0:2]
+        idx_min = matrix[:, 1].argmin(axis=0)
+        y_min = int(matrix[idx_min, 1])
+        wl_min = matrix[idx_min, 0]
+        idx_max = matrix[:, 1].argmax(axis=0)
+        y_max = int(matrix[idx_max, 1])
+        wl_max = matrix[idx_max, 0]
+        y_range = list(range(y_min, y_max + 1))
+        wl_range = np.linspace(wl_min, wl_max, len(y_range))
+        matrix_new = np.transpose(np.vstack((wl_range, y_range, np.zeros(len(y_range)))))
+        matrix_new = np.rint(matrix_new)
+        u, indices = np.unique(matrix_new[:, 0], return_index=True)
+        matrix_new = matrix_new[indices, :].tolist()
+        self.load_data_from_list(matrix_new)
+
     def flags(self, index: QModelIndex) -> Qt.ItemFlag:
         if index.column() == 2:
             return super(WavelengthCalibrationTableModel, self).flags(index)
@@ -544,13 +563,14 @@ class WavelengthCalibrationTableModel(QAbstractTableModel):
 
         return True
 
-    def load_data_from_list(self, data: List[List], row_count: int):
+    def load_data_from_list(self, data: List[List]):
+        row_count = len(data)
         if len(self.items) > 0:
             self.clear()
         self.insertRows(0, row_count)
-        for i in range(len(data[0])):
-            for j, item_value in enumerate(data[1:]):
-                self.setData(self.index(int(data[0][i]), j), item_value[i])
+        for i in range(row_count):
+            for j, item_value in enumerate(data[i]):
+                self.setData(self.index(i, j), item_value)
 
     def removeRow(self, row: int, parent: QModelIndex = QModelIndex()) -> bool:
         self.beginRemoveRows(parent, row, row)
