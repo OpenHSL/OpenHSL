@@ -290,7 +290,7 @@ QLineEdit {
  *             QMainWindow              *
  ****************************************/
 
-QMainWindow, QWidget#EquationForm {
+QMainWindow, QWidget#EquationForm, QWidget#WavelengthCalibrationDataForm {
 	background-color: $bg-dark;
 	color: $fg-text;
 }

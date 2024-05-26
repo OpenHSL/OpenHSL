@@ -246,6 +246,8 @@ class HSDeviceGUI(QMainWindow):
             self.on_ui_wt_contrast_preview_value_horizontal_slider_value_changed)
         self.ui_wt_contrast_preview_value_spinbox.valueChanged.connect(
             self.on_ui_wt_contrast_preview_value_spinbox_value_changed)
+        self.ui_wt_wavelength_calibration_data_window_show_button.clicked.connect(
+            self.on_ui_wt_wavelength_calibration_data_window_show_button_clicked)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -888,7 +890,10 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot()
     def on_ui_bdt_equation_set_button_clicked(self):
-        self.bdew.show()
+        if self.bdew.isVisible() and not self.wcdw.hasFocus():
+            self.bdew.activateWindow()
+        else:
+            self.bdew.show()
 
     @pyqtSlot()
     def on_ui_bdt_get_slit_center_button_clicked(self):
@@ -1025,6 +1030,13 @@ class HSDeviceGUI(QMainWindow):
                                     self.ui_wt_apply_rotation_checkbox.isChecked(),
                                     self.ui_wt_apply_undistortion_checkbox.isChecked(),
                                     True)
+
+    @pyqtSlot()
+    def on_ui_wt_wavelength_calibration_data_window_show_button_clicked(self):
+        if self.wcdw.isVisible() and not self.wcdw.hasFocus():
+            self.wcdw.activateWindow()
+        else:
+            self.wcdw.show()
 
     @pyqtSlot(int)
     def on_receive_wl_image_count(self, value: int):
@@ -1174,6 +1186,7 @@ class HSDeviceGUI(QMainWindow):
 
     def closeEvent(self, event):
         self.bdew.close()
+        self.wcdw.close()
         self.t_hsd.exit()
         self.save_settings()
         event.accept()

@@ -232,7 +232,7 @@ QLineEdit:disabled {
 /****************************************
  *             QMainWindow              *
  ****************************************/
-QMainWindow, QWidget#EquationForm {
+QMainWindow, QWidget#EquationForm, QWidget#WavelengthCalibrationDataForm {
   background-color: #2e2f30;
   color: #d0d0d0;
 }
