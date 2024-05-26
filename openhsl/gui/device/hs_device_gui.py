@@ -278,6 +278,8 @@ class HSDeviceGUI(QMainWindow):
         self.wt_wavelength_image_dir_path = ""
         self.wt_wavelength_image_qt: Optional[QImage] = None
         self.wt_graphics_pixmap_item = QGraphicsPixmapItem()
+        self.wt_graphics_slit_line_item = QGraphicsLineItem()
+        self.wt_graphics_wavelength_line_item = QGraphicsLineItem()
 
         # TODO add mutex locker
         # TODO List[bool], for each tab different val?
@@ -392,6 +394,9 @@ class HSDeviceGUI(QMainWindow):
         dashed_pen_slit_roi_rect = QPen(dashed_pen_marquee)
         dashed_pen_slit_roi_rect.setColor(QColor("#cc870f"))
 
+        dashed_pen_wavelength_line = QPen(dashed_pen_marquee)
+        dashed_pen_wavelength_line.setColor(QColor("green"))
+
         brush_marquee = QBrush(QColor(255, 255, 255, 128))
         brush_marquee.setStyle(Qt.BrushStyle.BDiagPattern)
 
@@ -426,6 +431,12 @@ class HSDeviceGUI(QMainWindow):
 
         self.bdt_graphics_center_y_line_item.setPen(dashed_pen_slit)
         self.bdt_graphics_center_y_line_item.setOpacity(0.25)
+
+        self.wt_graphics_slit_line_item.setPen(dashed_pen_slit)
+        self.wt_graphics_slit_line_item.setOpacity(0.5)
+
+        self.wt_graphics_wavelength_line_item.setPen(dashed_pen_wavelength_line)
+        self.wt_graphics_wavelength_line_item.setOpacity(0.25)
 
         self.ui_slit_image_threshold_value_checkbox.setEnabled(False)
         self.ui_slit_image_threshold_value_horizontal_slider.setEnabled(False)
@@ -996,6 +1007,7 @@ class HSDeviceGUI(QMainWindow):
                                 checked,
                                 self.ui_wt_apply_undistortion_checkbox.isChecked(),
                                 self.ui_wt_apply_contrast_preview_checkbox.isChecked())
+        self.draw_wl_data()
 
     @pyqtSlot(bool)
     def on_ui_wt_apply_undistortion_checkbox_clicked(self, checked: bool):
@@ -1062,6 +1074,7 @@ class HSDeviceGUI(QMainWindow):
         self.wt_graphics_scene.removeItem(self.wt_graphics_pixmap_item)
         self.wt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.wt_wavelength_image_qt))
         self.wt_graphics_scene.addItem(self.wt_graphics_pixmap_item)
+        self.draw_wl_data()
 
     # Tab 4: settings tab slots
 
@@ -1143,6 +1156,20 @@ class HSDeviceGUI(QMainWindow):
             if not self.ui_bdt_slit_image_contrast_value_checkbox.isChecked() or \
                     not self.ui_bdt_distortion_grid_checkbox.isChecked():
                 self.bdt_graphics_scene.addItem(self.bdt_graphics_marquee_area_rect_item)
+
+    def draw_wl_data(self):
+        self.wt_graphics_scene.removeItem(self.wt_graphics_slit_line_item)
+        self.wt_graphics_scene.removeItem(self.wt_graphics_wavelength_line_item)
+        if self.ui_wt_apply_rotation_checkbox.isChecked():
+            self.wt_graphics_slit_line_item.setLine(
+                QLineF(0, self.hsd.get_slit_intercept_rotated(),
+                       self.slit_image_qt.width(),
+                       self.hsd.get_slit_intercept_rotated()))
+        else:
+            self.wt_graphics_slit_line_item.setLine(
+                QLineF(0, self.hsd.get_slit_intercept(), self.slit_image_qt.width(),
+                       self.hsd.get_slit_slope() * self.slit_image_qt.width() + self.hsd.get_slit_intercept()))
+        self.wt_graphics_scene.addItem(self.wt_graphics_slit_line_item)
 
     def redraw_distortion_grid(self):
         if self.ui_bdt_distortion_grid_checkbox.isChecked():

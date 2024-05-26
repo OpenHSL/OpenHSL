@@ -68,6 +68,9 @@ class HSDeviceQt(QObject, HSDevice):
     def get_slit_intercept_max(self):
         return self.slit_intercept_max
 
+    def get_slit_intercept_rotated(self):
+        return np.rint(0.5 * self.get_slit_slope() * self.slit_image_width + self.get_slit_intercept())
+
     def set_bd_contrast_value(self, value: float):
         self.bd_contrast_value = value
 
