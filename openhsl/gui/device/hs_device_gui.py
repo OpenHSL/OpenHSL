@@ -159,6 +159,9 @@ class HSDeviceGUI(QMainWindow):
             self.wcdw.findChild(QSlider, 'spectrumHeight_horizontalSlider')
         self.ui_wcdw_spectrum_height_spinbox: QSpinBox = self.wcdw.findChild(QSpinBox, 'spectrumHeight_spinBox')
         self.ui_wcdw_show_spectrum_roi_checkbox: QCheckBox = self.wcdw.findChild(QCheckBox, 'showSpectrumROI_checkBox')
+        self.ui_wcdw_add_wavelength_button: QPushButton = self.wcdw.findChild(QPushButton, 'addWavelength_pushButton')
+        self.ui_wcdw_remove_wavelength_button: QPushButton = \
+            self.wcdw.findChild(QPushButton, 'removeWavelength_pushButton')
         self.ui_wcdw_wavelength_table_view: QTableView = self.wcdw.findChild(QTableView, 'wavelength_tableView')
         self.ui_wcdw_wavelength_table_view_model: WavelengthCalibrationTableModel = None
         # Settings tab
@@ -253,6 +256,8 @@ class HSDeviceGUI(QMainWindow):
             self.on_ui_wcdw_wavelength_line_y_coord_horizontal_slider_value_changed)
         self.ui_wcdw_wavelength_line_y_coord_spinbox.valueChanged.connect(
             self.on_ui_wcdw_wavelength_line_y_coord_spinbox_value_changed)
+        self.ui_wcdw_add_wavelength_button.clicked.connect(self.on_ui_wcdw_add_wavelength_button_clicked)
+        self.ui_wcdw_remove_wavelength_button.clicked.connect(self.on_ui_wcdw_remove_wavelength_button_clicked)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -504,12 +509,14 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wcdw_spectrum_height_horizontal_slider.setEnabled(False)
         self.ui_wcdw_spectrum_height_spinbox.setEnabled(False)
         self.ui_wcdw_show_spectrum_roi_checkbox.setEnabled(False)
+        self.ui_wcdw_add_wavelength_button.setEnabled(False)
+        self.ui_wcdw_remove_wavelength_button.setEnabled(False)
 
         self.ui_wcdw_wavelength_table_view_model = WavelengthCalibrationTableModel()
         self.ui_wcdw_wavelength_table_view.setModel(self.ui_wcdw_wavelength_table_view_model)
         self.ui_wcdw_wavelength_table_view.setMouseTracking(True)
         self.ui_wcdw_wavelength_table_view.horizontalHeader().setMinimumHeight(22)
-        self.ui_wcdw_wavelength_table_view.horizontalHeader().resizeSection(0, 210)
+        self.ui_wcdw_wavelength_table_view.horizontalHeader().resizeSection(0, 100)
         self.ui_wcdw_wavelength_table_view.horizontalHeader().setStretchLastSection(True)
         self.ui_wcdw_wavelength_table_view.setAlternatingRowColors(True)
         self.fill_wcdw()
@@ -578,7 +585,7 @@ class HSDeviceGUI(QMainWindow):
 
     def fill_wcdw(self):
         wt_model = self.ui_wcdw_wavelength_table_view.model()
-        wt_model.insertRows(0, 3)
+        # wt_model.insertRows(0, 3)
 
     def initialize_settings_dict(self):
         settings_dict = {
@@ -1081,6 +1088,24 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.setValue(self.wt_wavelength_line_y_coord)
         self.draw_wl_data()
 
+    @pyqtSlot()
+    def on_ui_wcdw_add_wavelength_button_clicked(self):
+        model = self.ui_wcdw_wavelength_table_view_model
+        data = [0, self.wt_wavelength_line_y_coord,
+                int(np.abs(self.wt_wavelength_line_y_coord - self.hsd.get_slit_intercept_rotated()))]
+        model.add_item_from_list(data)
+
+    @pyqtSlot()
+    def on_ui_wcdw_remove_wavelength_button_clicked(self):
+        model = self.ui_wcdw_wavelength_table_view_model
+        selection_model = self.ui_wcdw_wavelength_table_view.selectionModel()
+        indexes = selection_model.selectedIndexes()
+        if len(indexes) > 0:
+            rows = sorted(set([index.row() for index in indexes]), reverse=True)
+            for row in rows:
+                model.removeRow(row)
+
+
     @pyqtSlot(int)
     def on_receive_wl_image_count(self, value: int):
         self.ui_wt_current_wavelength_image_horizontal_slider.setMaximum(value)
@@ -1132,6 +1157,8 @@ class HSDeviceGUI(QMainWindow):
             self.ui_wcdw_spectrum_height_horizontal_slider.setEnabled(True)
             self.ui_wcdw_spectrum_height_spinbox.setEnabled(True)
             self.ui_wcdw_show_spectrum_roi_checkbox.setEnabled(True)
+            self.ui_wcdw_add_wavelength_button.setEnabled(True)
+            self.ui_wcdw_remove_wavelength_button.setEnabled(True)
         self.draw_wl_data()
 
     # Tab 4: settings tab slots
