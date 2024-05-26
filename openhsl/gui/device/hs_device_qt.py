@@ -177,6 +177,7 @@ class HSDeviceQt(QObject, HSDevice):
                     if apply_rotation:
                         self.wl_image = hsiutils.rotate_image(self.wl_image, self.get_slit_angle())
                     if apply_undistortion:
+                        # TODO check undistortion coeffs
                         undistortion_coefficients = self.get_undistortion_coefficients()
                         self.wl_image = hsiutils.undistort_image(self.wl_image, undistortion_coefficients)
                     if len(self.wl_image.shape) == 2:

@@ -238,6 +238,10 @@ class HSDeviceGUI(QMainWindow):
             self.on_ui_wt_current_wavelength_image_horizontal_slider_value_changed)
         self.ui_wt_current_wavelength_image_spinbox.valueChanged.connect(
             self.on_ui_wt_current_wavelength_image_spinbox_value_changed)
+        self.ui_wt_apply_rotation_checkbox.clicked.connect(self.on_ui_wt_apply_rotation_checkbox_clicked)
+        self.ui_wt_apply_undistortion_checkbox.clicked.connect(self.on_ui_wt_apply_undistortion_checkbox_clicked)
+        self.ui_wt_apply_contrast_preview_checkbox.clicked.connect(
+            self.on_ui_wt_apply_contrast_preview_checkbox_clicked)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -970,6 +974,27 @@ class HSDeviceGUI(QMainWindow):
                                 self.ui_wt_apply_rotation_checkbox.isChecked(),
                                 self.ui_wt_apply_undistortion_checkbox.isChecked(),
                                 self.ui_wt_apply_contrast_preview_checkbox.isChecked())
+
+    @pyqtSlot(bool)
+    def on_ui_wt_apply_rotation_checkbox_clicked(self, checked: bool):
+        self.read_wl_image.emit(self.ui_wt_current_wavelength_image_spinbox.value(),
+                                checked,
+                                self.ui_wt_apply_undistortion_checkbox.isChecked(),
+                                self.ui_wt_apply_contrast_preview_checkbox.isChecked())
+
+    @pyqtSlot(bool)
+    def on_ui_wt_apply_undistortion_checkbox_clicked(self, checked: bool):
+        self.read_wl_image.emit(self.ui_wt_current_wavelength_image_spinbox.value(),
+                                self.ui_wt_apply_rotation_checkbox.isChecked(),
+                                checked,
+                                self.ui_wt_apply_contrast_preview_checkbox.isChecked())
+
+    @pyqtSlot(bool)
+    def on_ui_wt_apply_contrast_preview_checkbox_clicked(self, checked: bool):
+        self.read_wl_image.emit(self.ui_wt_current_wavelength_image_spinbox.value(),
+                                self.ui_wt_apply_rotation_checkbox.isChecked(),
+                                self.ui_wt_apply_undistortion_checkbox.isChecked(),
+                                checked)
 
     @pyqtSlot(int)
     def on_receive_wl_image_count(self, value: int):
