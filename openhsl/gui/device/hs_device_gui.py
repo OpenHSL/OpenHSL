@@ -249,6 +249,10 @@ class HSDeviceGUI(QMainWindow):
             self.on_ui_wt_contrast_preview_value_spinbox_value_changed)
         self.ui_wt_wavelength_calibration_data_window_show_button.clicked.connect(
             self.on_ui_wt_wavelength_calibration_data_window_show_button_clicked)
+        self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.valueChanged.connect(
+            self.on_ui_wcdw_wavelength_line_y_coord_horizontal_slider_value_changed)
+        self.ui_wcdw_wavelength_line_y_coord_spinbox.valueChanged.connect(
+            self.on_ui_wcdw_wavelength_line_y_coord_spinbox_value_changed)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -281,6 +285,7 @@ class HSDeviceGUI(QMainWindow):
         self.wt_graphics_pixmap_item = QGraphicsPixmapItem()
         self.wt_graphics_slit_line_item = QGraphicsLineItem()
         self.wt_graphics_wavelength_line_item = QGraphicsLineItem()
+        self.wt_wavelength_line_y_coord: int = 0
 
         # TODO add mutex locker
         # TODO List[bool], for each tab different val?
@@ -438,7 +443,7 @@ class HSDeviceGUI(QMainWindow):
         self.wt_graphics_slit_line_item.setOpacity(0.5)
 
         self.wt_graphics_wavelength_line_item.setPen(dashed_pen_wavelength_line)
-        self.wt_graphics_wavelength_line_item.setOpacity(0.25)
+        self.wt_graphics_wavelength_line_item.setOpacity(0.5)
 
         self.ui_slit_image_threshold_value_checkbox.setEnabled(False)
         self.ui_slit_image_threshold_value_horizontal_slider.setEnabled(False)
@@ -1065,6 +1070,18 @@ class HSDeviceGUI(QMainWindow):
             self.wcdw.show()
 
     @pyqtSlot(int)
+    def on_ui_wcdw_wavelength_line_y_coord_horizontal_slider_value_changed(self, value: int):
+        self.wt_wavelength_line_y_coord = value
+        self.ui_wcdw_wavelength_line_y_coord_spinbox.setValue(self.wt_wavelength_line_y_coord)
+        self.draw_wl_data()
+
+    @pyqtSlot(int)
+    def on_ui_wcdw_wavelength_line_y_coord_spinbox_value_changed(self, value: int):
+        self.wt_wavelength_line_y_coord = value
+        self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.setValue(self.wt_wavelength_line_y_coord)
+        self.draw_wl_data()
+
+    @pyqtSlot(int)
     def on_receive_wl_image_count(self, value: int):
         self.ui_wt_current_wavelength_image_horizontal_slider.setMaximum(value)
         self.ui_wt_current_wavelength_image_spinbox.setMaximum(value)
@@ -1210,7 +1227,10 @@ class HSDeviceGUI(QMainWindow):
             self.wt_graphics_slit_line_item.setLine(
                 QLineF(0, self.hsd.get_slit_intercept(), self.slit_image_qt.width(),
                        self.hsd.get_slit_slope() * self.slit_image_qt.width() + self.hsd.get_slit_intercept()))
+        self.wt_graphics_wavelength_line_item.setLine(
+            QLineF(2, self.wt_wavelength_line_y_coord, self.slit_image_qt.width() - 3, self.wt_wavelength_line_y_coord))
         self.wt_graphics_scene.addItem(self.wt_graphics_slit_line_item)
+        self.wt_graphics_scene.addItem(self.wt_graphics_wavelength_line_item)
 
     def redraw_distortion_grid(self):
         if self.ui_bdt_distortion_grid_checkbox.isChecked():
