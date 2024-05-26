@@ -265,5 +265,9 @@ class HSDeviceQt(QObject, HSDevice):
         points = np.argwhere(image_thresholded > 0)
         center_x = int(points[:, 1].sum() / len(points)) + x
         center_y = int(points[:, 0].sum() / len(points)) + y
+        barrel_distortion_params = self.get_barrel_distortion_params()
+        if barrel_distortion_params is None:
+            barrel_distortion_params = {'center': [], 'powers': [], 'coeffs': [], 'factors': []}
+            self.set_barrel_distortion_params(barrel_distortion_params)
         self.calib_slit_data.barrel_distortion_params['center'] = [center_x, center_y]
         self.send_bd_slit_center.emit(center_x, center_y)

@@ -234,6 +234,10 @@ class HSDeviceGUI(QMainWindow):
         self.hsd.send_wl_image_count.connect(self.on_receive_wl_image_count, Qt.ConnectionType.QueuedConnection)
         self.hsd.send_wl_image.connect(self.on_receive_wl_image, Qt.ConnectionType.QueuedConnection)
         self.read_wl_image.connect(self.hsd.on_read_wl_image, Qt.ConnectionType.QueuedConnection)
+        self.ui_wt_current_wavelength_image_horizontal_slider.valueChanged.connect(
+            self.on_ui_wt_current_wavelength_image_horizontal_slider_value_changed)
+        self.ui_wt_current_wavelength_image_spinbox.valueChanged.connect(
+            self.on_ui_wt_current_wavelength_image_spinbox_value_changed)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -950,6 +954,22 @@ class HSDeviceGUI(QMainWindow):
             self.wt_wavelength_image_dir_path = dir_path
             self.ui_wt_image_dir_path_line_edit.setText(self.wt_wavelength_image_dir_path)
             self.read_wl_image_dir.emit(self.wt_wavelength_image_dir_path)
+
+    @pyqtSlot(int)
+    def on_ui_wt_current_wavelength_image_horizontal_slider_value_changed(self, value: int):
+        self.ui_wt_current_wavelength_image_spinbox.setValue(value)
+        self.read_wl_image.emit(value,
+                                self.ui_wt_apply_rotation_checkbox.isChecked(),
+                                self.ui_wt_apply_undistortion_checkbox.isChecked(),
+                                self.ui_wt_apply_contrast_preview_checkbox.isChecked())
+
+    @pyqtSlot(int)
+    def on_ui_wt_current_wavelength_image_spinbox_value_changed(self, value: int):
+        self.ui_wt_current_wavelength_image_horizontal_slider.setValue(value)
+        self.read_wl_image.emit(value,
+                                self.ui_wt_apply_rotation_checkbox.isChecked(),
+                                self.ui_wt_apply_undistortion_checkbox.isChecked(),
+                                self.ui_wt_apply_contrast_preview_checkbox.isChecked())
 
     @pyqtSlot(int)
     def on_receive_wl_image_count(self, value: int):
