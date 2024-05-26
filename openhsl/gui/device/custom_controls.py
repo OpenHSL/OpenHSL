@@ -193,6 +193,10 @@ class HSGraphicsView(QGraphicsView):
         super(HSGraphicsView, self).__init__(parent)
         self.marquee_area_top_left = QPoint()
         self.marquee_area_bottom_right = QPoint()
+        self.preserved_pos_items = []
+
+    def add_preserved_pos_graphics_item(self, item):
+        self.preserved_pos_items.append(item)
 
     def get_pos_on_scene(self, event_pos: QPoint) -> Tuple[QPointF, bool]:
         scene_rect: QRectF = self.scene().sceneRect()
@@ -244,6 +248,16 @@ class HSGraphicsView(QGraphicsView):
             self.marquee_area_changed.emit(self.marquee_area_top_left, self.marquee_area_bottom_right)
         else:
             return super(HSGraphicsView, self).mouseReleaseEvent(event)
+
+    def scrollContentsBy(self, dx: int, dy: int) -> None:
+        super(HSGraphicsView, self).scrollContentsBy(dx, dy)
+        for item in self.preserved_pos_items:
+            if item in self.scene().items():
+                pos = item.pos()
+                scene_pos = self.mapToScene(0, 0)
+                if scene_pos.x() < 0:
+                    scene_pos.setX(int(pos.x()))
+                item.setPos(scene_pos)
 
 
 class EquationParamsTableItem:
