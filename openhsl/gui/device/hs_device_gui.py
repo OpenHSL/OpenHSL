@@ -242,6 +242,10 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wt_apply_undistortion_checkbox.clicked.connect(self.on_ui_wt_apply_undistortion_checkbox_clicked)
         self.ui_wt_apply_contrast_preview_checkbox.clicked.connect(
             self.on_ui_wt_apply_contrast_preview_checkbox_clicked)
+        self.ui_wt_contrast_preview_value_horizontal_slider.valueChanged.connect(
+            self.on_ui_wt_contrast_preview_value_horizontal_slider_value_changed)
+        self.ui_wt_contrast_preview_value_spinbox.valueChanged.connect(
+            self.on_ui_wt_contrast_preview_value_spinbox_value_changed)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -581,6 +585,7 @@ class HSDeviceGUI(QMainWindow):
         self.device_settings_dict["bdt_contrast_value"] = self.ui_bdt_slit_image_contrast_value_spinbox.value()
         self.device_settings_dict["bdt_grid_tile_size"] = self.ui_bdew_grid_tile_size_spinbox.value()
         self.device_settings_dict["wt_wavelength_image_dir_path"] = self.wt_wavelength_image_dir_path
+        self.device_settings_dict["wt_contrast_value"] = self.ui_wt_contrast_preview_value_spinbox.value()
         self.device_settings_dict["device_metadata"] = self.hsd.to_dict()
         utils.save_dict_to_json(self.device_settings_dict, self.device_settings_path)
 
@@ -610,6 +615,11 @@ class HSDeviceGUI(QMainWindow):
                 self.wt_wavelength_image_dir_path = self.device_settings_dict["wt_wavelength_image_dir_path"]
                 self.ui_wt_image_dir_path_line_edit.setText(self.wt_wavelength_image_dir_path)
                 self.read_wl_image_dir.emit(self.wt_wavelength_image_dir_path)
+            if utils.key_exists_in_dict(self.device_settings_dict, "wt_contrast_value"):
+                wt_contrast_value = self.device_settings_dict["wt_contrast_value"]
+                self.hsd.set_wl_contrast_value(wt_contrast_value)
+                self.ui_wt_contrast_preview_value_horizontal_slider.setValue(wt_contrast_value)
+                self.ui_wt_contrast_preview_value_spinbox.setValue(wt_contrast_value)
             if utils.key_exists_in_dict(self.device_settings_dict, "device_metadata"):
                 device_data_dict = self.device_settings_dict["device_metadata"]
                 self.hsd.load_dict(device_data_dict)
@@ -995,6 +1005,26 @@ class HSDeviceGUI(QMainWindow):
                                 self.ui_wt_apply_rotation_checkbox.isChecked(),
                                 self.ui_wt_apply_undistortion_checkbox.isChecked(),
                                 checked)
+
+    @pyqtSlot(int)
+    def on_ui_wt_contrast_preview_value_horizontal_slider_value_changed(self, value: int):
+        self.hsd.set_wl_contrast_value(value)
+        self.ui_wt_contrast_preview_value_spinbox.setValue(value)
+        if self.ui_wt_apply_contrast_preview_checkbox.isChecked():
+            self.read_wl_image.emit(self.ui_wt_current_wavelength_image_spinbox.value(),
+                                    self.ui_wt_apply_rotation_checkbox.isChecked(),
+                                    self.ui_wt_apply_undistortion_checkbox.isChecked(),
+                                    True)
+
+    @pyqtSlot(int)
+    def on_ui_wt_contrast_preview_value_spinbox_value_changed(self, value: int):
+        self.hsd.set_wl_contrast_value(value)
+        self.ui_wt_contrast_preview_value_horizontal_slider.setValue(value)
+        if self.ui_wt_apply_contrast_preview_checkbox.isChecked():
+            self.read_wl_image.emit(self.ui_wt_current_wavelength_image_spinbox.value(),
+                                    self.ui_wt_apply_rotation_checkbox.isChecked(),
+                                    self.ui_wt_apply_undistortion_checkbox.isChecked(),
+                                    True)
 
     @pyqtSlot(int)
     def on_receive_wl_image_count(self, value: int):
