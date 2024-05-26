@@ -21,7 +21,7 @@ class HSDeviceQt(QObject, HSDevice):
     send_bd_distortion_grid_image = pyqtSignal(QImage)
     send_bd_undistorted_slit_image = pyqtSignal(QImage)
     send_bd_slit_center = pyqtSignal(int, int)
-    send_wl_image = pyqtSignal(QImage)
+    send_wl_image = pyqtSignal(QImage, str)
     send_wl_image_count = pyqtSignal(int)
 
     # send_slit_angle = pyqtSignal(float)
@@ -173,6 +173,7 @@ class HSDeviceQt(QObject, HSDevice):
             image_count = len(self.wl_image_path_list)
             if index < image_count:
                 self.wl_image = cv.imread(self.wl_image_path_list[index], cv.IMREAD_ANYCOLOR)
+                inage_name = butils.file_complete_name(self.wl_image_path_list[index])
                 # TODO send message if None
                 if self.wl_image is not None:
                     if len(self.wl_image.shape) == 3:
@@ -190,7 +191,7 @@ class HSDeviceQt(QObject, HSDevice):
                     if apply_contast_preview:
                         self.wl_image_preview = hsiutils.contrast_image(self.wl_image_preview, self.wl_contrast_value)
                     image_qt = self.image_to_qimage(self.wl_image_preview)
-                    self.send_wl_image.emit(image_qt.copy())
+                    self.send_wl_image.emit(image_qt.copy(), inage_name)
 
     @pyqtSlot(QRectF)
     def on_compute_slit_angle(self, area_rect: QRectF):

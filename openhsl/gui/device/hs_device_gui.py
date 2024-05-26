@@ -11,9 +11,9 @@ from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QIm
     QPolygonF, QStandardItemModel
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
     QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsRectItem, \
-    QGraphicsTextItem, QGraphicsScene, QGraphicsView, QHeaderView, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, \
-    QMessageBox, QPushButton, QSlider, QSpinBox, QTableView, QTableWidget, QTableWidgetItem, QToolBar, QToolButton, \
-    QWidget
+    QGraphicsTextItem, QGraphicsScene, QGraphicsSimpleTextItem, QGraphicsView, QHeaderView, QLabel, QLineEdit, \
+    QMainWindow, QMenu, QMenuBar, QMessageBox, QPushButton, QSlider, QSpinBox, QTableView, QTableWidget, \
+    QTableWidgetItem, QToolBar, QToolButton, QWidget
 from PyQt6 import uic
 from typing import Any, Dict, List, Optional
 from openhsl.build.hs_device import HSDevice, HSDeviceType, HSCalibrationSlitData, HSCalibrationWavelengthData
@@ -290,6 +290,8 @@ class HSDeviceGUI(QMainWindow):
         self.wt_graphics_pixmap_item = QGraphicsPixmapItem()
         self.wt_graphics_slit_line_item = QGraphicsLineItem()
         self.wt_graphics_wavelength_line_item = QGraphicsLineItem()
+        self.wt_graphics_text_info_simple_text_item = QGraphicsSimpleTextItem()
+        self.wt_graphics_text_info_rect_item = QGraphicsRectItem()
         self.wt_wavelength_line_y_coord: int = 0
 
         # TODO add mutex locker
@@ -390,6 +392,8 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wt_graphics_view.setRenderHints(gv_hints)
         self.ui_wt_graphics_view.setMouseTracking(True)
         self.ui_wt_graphics_view.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
+        # self.ui_wt_graphics_view.add_preserved_pos_graphics_item(self.wt_graphics_text_info_simple_text_item)
+        self.ui_wt_graphics_view.add_preserved_pos_graphics_item(self.wt_graphics_text_info_rect_item)
         # self.ui_wt_graphics_view.marquee_area_changed.connect(self.on_marquee_area_changed)
 
         dashed_pen = QPen(QColor("white"))
@@ -449,6 +453,16 @@ class HSDeviceGUI(QMainWindow):
 
         self.wt_graphics_wavelength_line_item.setPen(dashed_pen_wavelength_line)
         self.wt_graphics_wavelength_line_item.setOpacity(0.5)
+
+        font = QApplication.font()
+        font_size = font.pointSize()
+
+        self.wt_graphics_text_info_simple_text_item.setFont(QFont(font.family(), font_size + 2, QFont.Weight.Bold))
+        self.wt_graphics_text_info_simple_text_item.setBrush(Qt.GlobalColor.green)
+        self.wt_graphics_text_info_simple_text_item.setOpacity(1)
+
+        self.wt_graphics_text_info_rect_item.setBrush(Qt.GlobalColor.black)
+        self.wt_graphics_text_info_rect_item.setOpacity(0.5)
 
         self.ui_slit_image_threshold_value_checkbox.setEnabled(False)
         self.ui_slit_image_threshold_value_horizontal_slider.setEnabled(False)
@@ -1108,8 +1122,8 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot(int)
     def on_receive_wl_image_count(self, value: int):
-        self.ui_wt_current_wavelength_image_horizontal_slider.setMaximum(value)
-        self.ui_wt_current_wavelength_image_spinbox.setMaximum(value)
+        self.ui_wt_current_wavelength_image_horizontal_slider.setMaximum(value - 1)
+        self.ui_wt_current_wavelength_image_spinbox.setMaximum(value - 1)
         self.ui_wt_current_wavelength_image_horizontal_slider.setValue(0)
         self.ui_wt_current_wavelength_image_spinbox.setValue(0)
         self.ui_wt_current_wavelength_image_horizontal_slider.setEnabled(True)
@@ -1125,12 +1139,15 @@ class HSDeviceGUI(QMainWindow):
                                 self.ui_wt_apply_undistortion_checkbox.isChecked(),
                                 self.ui_wt_apply_contrast_preview_checkbox.isChecked())
 
-    @pyqtSlot(QImage)
-    def on_receive_wl_image(self, wl_image_qt: QImage):
+    @pyqtSlot(QImage, str)
+    def on_receive_wl_image(self, wl_image_qt: QImage, image_name: str):
         self.wt_wavelength_image_qt = wl_image_qt.copy()
         self.wt_graphics_scene.removeItem(self.wt_graphics_pixmap_item)
         self.wt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.wt_wavelength_image_qt))
         self.wt_graphics_scene.addItem(self.wt_graphics_pixmap_item)
+        self.update_wl_overlay_text(
+            f'Image {image_name} [{self.ui_wt_current_wavelength_image_spinbox.value() + 1}/'
+            f'{self.ui_wt_current_wavelength_image_spinbox.maximum() + 1}]')
         if self.wt_is_first_wavelength_image_to_load:
             self.wt_is_first_wavelength_image_to_load = False
             self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.setMinimum(1)
@@ -1245,6 +1262,7 @@ class HSDeviceGUI(QMainWindow):
     def draw_wl_data(self):
         self.wt_graphics_scene.removeItem(self.wt_graphics_slit_line_item)
         self.wt_graphics_scene.removeItem(self.wt_graphics_wavelength_line_item)
+        self.wt_graphics_scene.removeItem(self.wt_graphics_text_info_rect_item)
         if self.ui_wt_apply_rotation_checkbox.isChecked():
             self.wt_graphics_slit_line_item.setLine(
                 QLineF(0, self.hsd.get_slit_intercept_rotated(),
@@ -1258,6 +1276,16 @@ class HSDeviceGUI(QMainWindow):
             QLineF(2, self.wt_wavelength_line_y_coord, self.slit_image_qt.width() - 3, self.wt_wavelength_line_y_coord))
         self.wt_graphics_scene.addItem(self.wt_graphics_slit_line_item)
         self.wt_graphics_scene.addItem(self.wt_graphics_wavelength_line_item)
+        self.wt_graphics_scene.addItem(self.wt_graphics_text_info_rect_item)
+
+    def update_wl_overlay_text(self, text):
+        self.wt_graphics_text_info_simple_text_item.setText(text)
+        self.wt_graphics_text_info_simple_text_item.setParentItem(self.wt_graphics_text_info_rect_item)
+        self.wt_graphics_text_info_simple_text_item.setPos(5, 0)
+        self.wt_graphics_text_info_rect_item.setRect(
+            0, 0,
+            self.wt_graphics_text_info_simple_text_item.boundingRect().width() + 10,
+            self.wt_graphics_text_info_simple_text_item.boundingRect().height() + 3)
 
     def redraw_distortion_grid(self):
         if self.ui_bdt_distortion_grid_checkbox.isChecked():
