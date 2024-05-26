@@ -27,14 +27,14 @@
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QLabel" name="spectrumOriginX_label">
+      <widget class="QLabel" name="spectrumOriginXCoord_label">
        <property name="text">
         <string>Spectrum origin X</string>
        </property>
       </widget>
      </item>
      <item row="2" column="0">
-      <widget class="QLabel" name="spectrumOriginY_label">
+      <widget class="QLabel" name="spectrumOriginYCoord_label">
        <property name="text">
         <string>Spectrum origin Y</string>
        </property>
@@ -48,14 +48,14 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QSlider" name="spectrumOriginX_horizontalSlider">
+      <widget class="QSlider" name="spectrumOriginXCoord_horizontalSlider">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
       </widget>
      </item>
      <item row="1" column="2">
-      <widget class="QSpinBox" name="spectrumOriginX_spinBox">
+      <widget class="QSpinBox" name="spectrumOriginXCoord_spinBox">
        <property name="maximum">
         <number>1000</number>
        </property>
@@ -97,14 +97,14 @@
       </widget>
      </item>
      <item row="2" column="2">
-      <widget class="QSpinBox" name="spectrumOriginY_spinBox">
+      <widget class="QSpinBox" name="spectrumOriginYCoord_spinBox">
        <property name="maximum">
         <number>1000</number>
        </property>
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QSlider" name="spectrumOriginY_horizontalSlider">
+      <widget class="QSlider" name="spectrumOriginYCoord_horizontalSlider">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
@@ -187,7 +187,7 @@
     </layout>
    </item>
    <item row="2" column="0">
-    <widget class="QTableView" name="wtWavelength_tableView"/>
+    <widget class="QTableView" name="wavelength_tableView"/>
    </item>
   </layout>
  </widget>

@@ -143,22 +143,23 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wcdw_wavelength_line_y_coord_horizontal_slider: QSlider = \
             self.wcdw.findChild(QSlider, 'wavelengthLineYCoord_horizontalSlider')
         self.ui_wcdw_wavelength_line_y_coord_spinbox: QSpinBox = \
-            self.wcdw.findChild(QSpinBox, 'wtWavelengthLineYCoord_spinBox')
+            self.wcdw.findChild(QSpinBox, 'wavelengthLineYCoord_spinBox')
         self.ui_wcdw_spectrum_origin_x_coord_horizontal_slider: QSlider = \
-            self.wcdw.findChild(QSlider, 'wtSpectrumOriginXCoord_horizontalSlider')
+            self.wcdw.findChild(QSlider, 'spectrumOriginXCoord_horizontalSlider')
         self.ui_wcdw_spectrum_origin_x_coord_spinbox: QSpinBox = \
-            self.wcdw.findChild(QSpinBox, 'wtSpectrumOriginXCoord_spinBox')
+            self.wcdw.findChild(QSpinBox, 'spectrumOriginXCoord_spinBox')
         self.ui_wcdw_spectrum_origin_y_coord_horizontal_slider: QSlider = \
-            self.wcdw.findChild(QSlider, 'wtSpectrumOriginYCoord_horizontalSlider')
+            self.wcdw.findChild(QSlider, 'spectrumOriginYCoord_horizontalSlider')
         self.ui_wcdw_spectrum_origin_y_coord_spinbox: QSpinBox = \
-            self.wcdw.findChild(QSpinBox, 'wtSpectrumOriginYCoord_spinBox')
+            self.wcdw.findChild(QSpinBox, 'spectrumOriginYCoord_spinBox')
         self.ui_wcdw_spectrum_width_horizontal_slider: QSlider = \
-            self.wcdw.findChild(QSlider, 'wtSpectrumWidth_horizontalSlider')
-        self.ui_wcdw_spectrum_width_spinbox: QSpinBox = self.wcdw.findChild(QSpinBox, 'wtSpectrumWidth_spinBox')
+            self.wcdw.findChild(QSlider, 'spectrumWidth_horizontalSlider')
+        self.ui_wcdw_spectrum_width_spinbox: QSpinBox = self.wcdw.findChild(QSpinBox, 'spectrumWidth_spinBox')
         self.ui_wcdw_spectrum_height_horizontal_slider: QSlider = \
-            self.findChild(QSlider, 'wtSpectrumHeight_horizontalSlider')
-        self.ui_wcdw_spectrum_height_spinbox: QSpinBox = self.wcdw.findChild(QSpinBox, 'wtSpectrumHeight_spinBox')
-        self.ui_wcdw_wavelength_table_view: QTableView = self.wcdw.findChild(QTableView, 'wtWavelength_tableView')
+            self.wcdw.findChild(QSlider, 'spectrumHeight_horizontalSlider')
+        self.ui_wcdw_spectrum_height_spinbox: QSpinBox = self.wcdw.findChild(QSpinBox, 'spectrumHeight_spinBox')
+        self.ui_wcdw_show_spectrum_roi_checkbox: QCheckBox = self.wcdw.findChild(QCheckBox, 'showSpectrumROI_checkBox')
+        self.ui_wcdw_wavelength_table_view: QTableView = self.wcdw.findChild(QTableView, 'wavelength_tableView')
         self.ui_wcdw_wavelength_table_view_model: WavelengthCalibrationTableModel = None
         # Settings tab
         self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
@@ -284,6 +285,7 @@ class HSDeviceGUI(QMainWindow):
         # TODO add mutex locker
         # TODO List[bool], for each tab different val?
         self.init_after_load_device_settings = False
+        self.wt_is_first_wavelength_image_to_load = False
 
         self.recent_device_settings_path_list = []
         self.ui_recent_device_settings_action_list: List[QAction] = []
@@ -485,6 +487,18 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wt_apply_contrast_preview_checkbox.setEnabled(False)
         self.ui_wt_contrast_preview_value_horizontal_slider.setEnabled(False)
         self.ui_wt_contrast_preview_value_spinbox.setEnabled(False)
+
+        self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.setEnabled(False)
+        self.ui_wcdw_wavelength_line_y_coord_spinbox.setEnabled(False)
+        self.ui_wcdw_spectrum_origin_x_coord_horizontal_slider.setEnabled(False)
+        self.ui_wcdw_spectrum_origin_x_coord_spinbox.setEnabled(False)
+        self.ui_wcdw_spectrum_origin_y_coord_horizontal_slider.setEnabled(False)
+        self.ui_wcdw_spectrum_origin_y_coord_spinbox.setEnabled(False)
+        self.ui_wcdw_spectrum_width_horizontal_slider.setEnabled(False)
+        self.ui_wcdw_spectrum_width_spinbox.setEnabled(False)
+        self.ui_wcdw_spectrum_height_horizontal_slider.setEnabled(False)
+        self.ui_wcdw_spectrum_height_spinbox.setEnabled(False)
+        self.ui_wcdw_show_spectrum_roi_checkbox.setEnabled(False)
 
         self.ui_wcdw_wavelength_table_view_model = WavelengthCalibrationTableModel()
         self.ui_wcdw_wavelength_table_view.setModel(self.ui_wcdw_wavelength_table_view_model)
@@ -1063,6 +1077,7 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wt_apply_contrast_preview_checkbox.setEnabled(True)
         self.ui_wt_contrast_preview_value_horizontal_slider.setEnabled(True)
         self.ui_wt_contrast_preview_value_spinbox.setEnabled(True)
+        self.wt_is_first_wavelength_image_to_load = True
         self.read_wl_image.emit(self.ui_wt_current_wavelength_image_spinbox.value(),
                                 self.ui_wt_apply_rotation_checkbox.isChecked(),
                                 self.ui_wt_apply_undistortion_checkbox.isChecked(),
@@ -1074,6 +1089,32 @@ class HSDeviceGUI(QMainWindow):
         self.wt_graphics_scene.removeItem(self.wt_graphics_pixmap_item)
         self.wt_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.wt_wavelength_image_qt))
         self.wt_graphics_scene.addItem(self.wt_graphics_pixmap_item)
+        if self.wt_is_first_wavelength_image_to_load:
+            self.wt_is_first_wavelength_image_to_load = False
+            self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.setMinimum(1)
+            self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.height() - 1)
+            self.ui_wcdw_wavelength_line_y_coord_spinbox.setMinimum(1)
+            self.ui_wcdw_wavelength_line_y_coord_spinbox.setMaximum(self.wt_wavelength_image_qt.height() - 1)
+            self.ui_wcdw_spectrum_origin_x_coord_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.width() - 1)
+            self.ui_wcdw_spectrum_origin_x_coord_spinbox.setMaximum(self.wt_wavelength_image_qt.width() - 1)
+            self.ui_wcdw_spectrum_origin_y_coord_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.height() - 1)
+            self.ui_wcdw_spectrum_origin_y_coord_spinbox.setMaximum(self.wt_wavelength_image_qt.height() - 1)
+            self.ui_wcdw_spectrum_width_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.width() - 1)
+            self.ui_wcdw_spectrum_width_spinbox.setMaximum(self.wt_wavelength_image_qt.width() - 1)
+            self.ui_wcdw_spectrum_height_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.height() - 1)
+            self.ui_wcdw_spectrum_height_spinbox.setMaximum(self.wt_wavelength_image_qt.height() - 1)
+
+            self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.setEnabled(True)
+            self.ui_wcdw_wavelength_line_y_coord_spinbox.setEnabled(True)
+            self.ui_wcdw_spectrum_origin_x_coord_horizontal_slider.setEnabled(True)
+            self.ui_wcdw_spectrum_origin_x_coord_spinbox.setEnabled(True)
+            self.ui_wcdw_spectrum_origin_y_coord_horizontal_slider.setEnabled(True)
+            self.ui_wcdw_spectrum_origin_y_coord_spinbox.setEnabled(True)
+            self.ui_wcdw_spectrum_width_horizontal_slider.setEnabled(True)
+            self.ui_wcdw_spectrum_width_spinbox.setEnabled(True)
+            self.ui_wcdw_spectrum_height_horizontal_slider.setEnabled(True)
+            self.ui_wcdw_spectrum_height_spinbox.setEnabled(True)
+            self.ui_wcdw_show_spectrum_roi_checkbox.setEnabled(True)
         self.draw_wl_data()
 
     # Tab 4: settings tab slots
