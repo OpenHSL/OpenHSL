@@ -403,20 +403,23 @@ class EquationParamsTableModel(QAbstractTableModel):
 
 
 class WavelengthCalibrationTableItem:
-    def __init__(self, wavelength: float = 0, wavelength_slit_offset_y: int = 1):
+    def __init__(self, wavelength: float = 0, wavelength_y: int = 1, wavelength_slit_offset_y: int = 1):
         self.wavelength = wavelength
+        self.wavelength_y = wavelength_y
         self.wavelength_slit_offset_y = wavelength_slit_offset_y
 
     @staticmethod
     def from_list(cls, params: List):
         obj = cls()
-        if len(params) == 2:
+        if len(params) == 3:
             obj.wavelength = params[0]
-            obj.wavelength_slit_offset_y = params[1]
+            obj.wavelength_y = params[1]
+            obj.wavelength_slit_offset_y = params[2]
         return obj
 
     def get_item(self):
-        return {'wavelength': self.wavelength, 'wavelength_slit_offset_y': self.wavelength_slit_offset_y}
+        return {'wavelength': self.wavelength, 'wavelength_y': self.wavelength_y,
+                'wavelength_slit_offset_y': self.wavelength_slit_offset_y}
 
     def get_item_data(self, index: int):
         value = None
@@ -424,29 +427,34 @@ class WavelengthCalibrationTableItem:
         if index == 0:
             value = self.wavelength
         elif index == 1:
+            value = self.wavelength_y
+        elif index == 2:
             value = self.wavelength_slit_offset_y
 
         return value
 
-    def set_item(self, wavelength: float, wavelength_slit_offset_y: int = 1):
+    def set_item(self, wavelength: float, wavelength_y: int = 1, wavelength_slit_offset_y: int = 1):
         self.wavelength = wavelength
+        self.wavelength_y = wavelength_y
         self.wavelength_slit_offset_y = wavelength_slit_offset_y
 
     def set_item_data(self, index: int, value):
         if index == 0:
             self.wavelength = value
         elif index == 1:
+            self.wavelength_y = value
+        elif index == 2:
             self.wavelength_slit_offset_y = value
 
     def to_list(self):
-        return [self.wavelength, self.wavelength_slit_offset_y]
+        return [self.wavelength, self.wavelength_y, self.wavelength_slit_offset_y]
 
 
 class WavelengthCalibrationTableModel(QAbstractTableModel):
     def __init__(self, parent: QObject = None):
         super(WavelengthCalibrationTableModel, self).__init__(parent)
         self.items: List[WavelengthCalibrationTableItem] = []
-        self.horizontal_header_labels = ['Wavelength', 'Wavelength slit offset Y']
+        self.horizontal_header_labels = ['Wavelength', 'Wavelength Y', 'Wavelength slit offset Y']
 
     def clear(self):
         self.beginRemoveRows(QModelIndex(), 0, self.rowCount() - 1)
@@ -454,7 +462,7 @@ class WavelengthCalibrationTableModel(QAbstractTableModel):
         self.endRemoveRows()
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        return 2
+        return 3
 
     def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
         if not index.isValid():
@@ -473,6 +481,8 @@ class WavelengthCalibrationTableModel(QAbstractTableModel):
             return None
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlag:
+        if index.column() == 2:
+            return super(WavelengthCalibrationTableModel, self).flags(index)
         return super(WavelengthCalibrationTableModel, self).flags(index) | Qt.ItemFlag.ItemIsEditable
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
