@@ -11,13 +11,15 @@ from qimage2ndarray import array2qimage, recarray_view
 from annotator.lib.tkmask import generate_tk_defects_layer
 from annotator.lib.annotmask import get_sqround_mask  # New mask generation facility (original mask needed)
 
+from annotator.ui_lib.QtImageAnnotator import QtImageAnnotator
+
 # Specific UI features
 from PyQt5.QtWidgets import QSplashScreen, QMessageBox, QGraphicsScene, QFileDialog, QTableWidgetItem, QDialog, QLabel, QPushButton, QVBoxLayout, QLineEdit, QComboBox
 from PyQt5.QtGui import QPixmap, QImage, QColor, QIcon
 from PyQt5.QtCore import Qt, QRectF, QSize
 
 
-from annotator.ui import datmant_ui, color_specs_ui
+from annotator.ui import annotator_ui, color_specs_ui
 import configparser
 import time
 import datetime
@@ -31,7 +33,7 @@ from openhsl.paint.utils import ANDVI, ANDI, cluster_hsi
 from scipy.io import loadmat
 import qimage2ndarray
 
-from ui.palette import PaletteGrid, PaletteHorizontal, PaletteVertical
+from annotator.ui.palette import PaletteGrid, PaletteHorizontal, PaletteVertical
 
 from functools import partial    
 
@@ -56,15 +58,15 @@ COLOR_DEF_PATH = "../annotator/defs/color_defs.csv"
 
 
 # Color definitions window
-class DATMantGUIColorSpec(QtWidgets.QMainWindow):
+class AnnotatorGUIColorSpec(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
-        super(DATMantGUIColorSpec, self).__init__(parent)
+        super(AnnotatorGUIColorSpec, self).__init__(parent)
         self.ui = color_specs_ui.Ui_ColorSpecsUI()
         self.ui.setupUi(self)
 
 
 # Main UI class with all methods
-class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
+class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
     # Applications states in status bar
     APP_STATUS_STATES = {"ready": "Ready.",
                          "loading": "Loading image...",
@@ -86,7 +88,7 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
     # Config file
     config_path = None  # Path to config file
     config_data = None  # The actual configuration
-    CONFIG_NAME = "datmant_config.ini"  # Name of the config file
+    CONFIG_NAME = "annotator_config.ini"  # Name of the config file
 
     has_image = None
     img_shape = None
@@ -143,6 +145,9 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
     img_path = ""
     
     isANDImethod = False
+    
+    colors_arr =(['#410967', '#F4E511', '#6A176E', '#FAC61E','#932567', '#BA3655', '#DC5039', '#F2751A', '#FBA40A', '#F6D542', '#FCFEA4'])
+    colors_gray_arr =([10, 25, 50, 60, 75, 85, 100, 125, 150, 175, 200])
 
 
     def __init__(self, parent=None):
@@ -150,10 +155,10 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         self.initializing = True
 
         # Setting up the base UI
-        super(DATMantGUI, self).__init__(parent)
+        super(AnnotatorGUI, self).__init__(parent)
         self.setupUi(self)
 
-        from ui_lib.QtImageAnnotator import QtImageAnnotator
+
         self.annotator = QtImageAnnotator()
 
         # Need to synchronize brush sizes with the annotator
@@ -178,7 +183,7 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         #    raise RuntimeError("Failed to load the color conversion schemes. Annotations cannot be saved.")
 
         # Set up second window
-        self.color_ui = DATMantGUIColorSpec(self)
+        self.color_ui = AnnotatorGUIColorSpec(self)
 
         # Update button states
         self.update_button_states()
@@ -281,7 +286,7 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
             tk = col["COLOR_HEXRGB_TK"]
             nus = col["COLOR_NAME_EN"]
             net = col["COLOR_NAME_ET"]
-            dt = col["COLOR_HEXRGB_DATMANT"]
+            dt = col["COLOR_HEXRGB"]
             gr = col["COLOR_GSCALE_MAPPING"]
 
             # Text
@@ -324,7 +329,7 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         nus = "COLOR_NAME_EN"
         net = self.cspec[0]["COLOR_NAME_ET"]
         print(net, row)
-        dt = "COLOR_HEXRGB_DATMANT"
+        dt = "COLOR_HEXRGB"
         gr = "COLOR_GSCALE_MAPPING"
         bt = "BUTTON_ADD"
 
@@ -711,8 +716,50 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
     def setmasktocolor(self, ai_mask):
         cind = self.lstDefectsAndColors.currentIndex()
         color = self.cspec[cind]
+
+        # Create the necessary dicts
+        g2rgb = {}
+        rgb2g = {}
+        tk2rgb = {}        
+
         
-        the_color = QColor("#63" + color["COLOR_HEXRGB_DATMANT"].split("#")[1])
+        k=1               
+        # очищаем словарь
+        max_index = self.lstDefectsAndColors.count()-1
+        for ind_d in range(max_index):
+            self.cspec.pop(ind_d)
+            self.lstDefectsAndColors.removeItem(ind_d)
+                                                                        
+        #устанавливаем цвета по слоям маски
+        #colors_arr =(['#410967', '#F4E511', '#6A176E', '#FAC61E','#932567', '#BA3655', '#DC5039', '#F2751A', '#FBA40A', '#F6D542', '#FCFEA4'])
+        #colors_gray_arr =([10, 25, 50, 60, 75, 85, 100, 125, 150, 175, 200])
+               
+        self.add_layer_current_color = self.colors_arr[k]
+    
+        self.cspec.append({"NAME_LAYER_D": "class", 
+                            "COLOR_HEXRGB": self.colors_arr[k],
+                            "COLOR_GSCALE_MAPPING": self.colors_gray_arr[k]})
+
+        #for col, row in self.cspec:            
+        rgb_val = self.cspec[k]["COLOR_HEXRGB"] 
+        g_val = self.cspec[k]["COLOR_GSCALE_MAPPING"]
+        #g_val = self.cspec[k]["NAME_LAYER_D"] # col["NAME_LAYER_D"]     
+        print(rgb_val,g_val)
+        
+        ####################################
+        # Fill in necessary dicts
+        g2rgb[g_val] = rgb_val
+        rgb2g[rgb_val] = g_val        
+
+        # Set up dicts
+        self.d_rgb2gray = rgb2g
+        self.d_gray2rgb = g2rgb
+        self.tk_colors = tk2rgb
+        ###################################
+
+        
+        print(color)
+        the_color = QColor("#63" + color["COLOR_HEXRGB"].split("#")[1])
         self.current_paint = the_color
         self.annotator.brush_fill_color = the_color
     
@@ -880,35 +927,9 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
             # For now also print it to CMD, maybe remove later
             print("Cannot load the auto-generated image: either file missing eror wrong mode selected.")
         '''
-    '''
-    def load_prev_image(self):
-        total_items = self.lstImages.count()
-        if total_items == 0:
-            return
-        cur_index = self.lstImages.currentIndex()
-        if cur_index - 1 < 0:
-            self.log("This is the first image. Saving annotation masks.")
-            self.show_info_box("First image",
-                               "This is the first image in the folder. I will now save the current annotation masks.")
-            self.save_masks()
-            return
-        self.save_masks()
-        self.lstImages.setCurrentIndex(cur_index-1)
 
-    def load_next_image(self):
-        total_items = self.lstImages.count()
-        if total_items == 0:
-            return
-        cur_index = self.lstImages.currentIndex()
-        if cur_index+1 == total_items:
-            self.log("This is the last image")
-            self.show_info_box("Last image",
-                               "This is the last image in the folder. I will now save the current annotation masks.")
-            self.save_masks()
-            return
-        self.save_masks()
-        self.lstImages.setCurrentIndex(cur_index + 1)
-    '''
+
+
 
     def save_masks(self):
 
@@ -1244,7 +1265,12 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         directory = QtWidgets.QFileDialog.getOpenFileName(self, "Выбери маску", "", "Image Files (*.mat *.h5 *.tiff *.npy *.bmp *.png)")
 
         if directory:
-
+            
+            # Create the necessary dicts
+            g2rgb = {}
+            rgb2g = {}
+            tk2rgb = {}
+            
             # get type of file
             file_name_path = directory[0]             
             dot_pos_1 = len(file_name_path) - file_name_path.rfind(".")   
@@ -1294,45 +1320,81 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
             print(self.label_class, "label_class")     
             print(type(self.loaded_hsmask))
 
-
             #max_index = self.lstDefectsAndColors.count()-1
-            for i in range(k):
-                
+            self.mask_all_colors = []
+            for i in range(k):                
                 # очищаем словарь
                 max_index = self.lstDefectsAndColors.count()-1
                 for ind_d in range(max_index):
                     self.cspec.pop(ind_d)
                     self.lstDefectsAndColors.removeItem(ind_d)
-                
-                                                                
-                #устанавливаем цвета по слоям маски
-                colors_arr =(['#410967', '#F4E511', '#6A176E', '#FAC61E','#932567', '#BA3655', '#DC5039', '#F2751A', '#FBA40A', '#F6D542', '#FCFEA4'])
-                     
-                self.add_layer_current_color = colors_arr[i]
-            
+                                                                                                 
+                self.add_layer_current_color = self.colors_arr[i]
+
+                print(self.cspec, i)
                 self.cspec.append({"NAME_LAYER_D": "class", 
-                                    "COLOR_HEXRGB_DATMANT": colors_arr[i]})
+                                    "COLOR_HEXRGB": self.colors_arr[i],
+                                    "COLOR_GSCALE_MAPPING": self.colors_gray_arr[i]})
 
                 #for col, row in self.cspec:            
-                rgb_val = self.cspec[i]["COLOR_HEXRGB_DATMANT"] #col["COLOR_HEXRGB_DATMANT"]
-                g_val = self.cspec[i]["NAME_LAYER_D"] # col["NAME_LAYER_D"]     
+                rgb_val = self.cspec[i]["COLOR_HEXRGB"]  
+                g_val = self.cspec[i]["COLOR_GSCALE_MAPPING"]    
+                name_val = self.cspec[i]["NAME_LAYER_D"]             
+                #g_val = self.cspec[i]["NAME_LAYER_D"] # col["NAME_LAYER_D"]     
                 print(rgb_val,g_val)
 
-                print("Selected: {}".format(colors_arr[i]))
-                #self.dialog_COLOR.accept()               
+                print("Selected: {}".format(self.colors_arr[i]))
+                #self.dialog_COLOR.accept() 
                 
+                pix = QPixmap(50, 50)
+                pix.fill(QColor(rgb_val))
+                ticon = QIcon(pix)                            
+                self.lstDefectsAndColors.addItem(ticon, " " + name_val +
+                    " | "  + rgb_val + " | "  + str(g_val))
                 
                 #### выгружаем слои маски и накладываем друг на друга
-                layer_img = self.loaded_hsmask[:, :, layer_index]
+                layer_img = self.loaded_hsmask[:, :, i]
                 print(type(layer_img), layer_img.shape, len(layer_img))
                 
-                self.setmasktocolor(layer_img)
+                #self.setmasktocolor(layer_img)
+                #self.mask_all_layers =+ layer_img
+                #print(self.mask_all_layers)
+                the_color = QColor("#63" + self.add_layer_current_color.split("#")[1])
+                self.current_paint = the_color
+                self.annotator.brush_fill_color = the_color
+                self.mask_all_colors.append(the_color)
                 
-                self.current_mask = layer_img
-                self.current_defect = self.current_mask
-                layer_index=+1
-                #######
+                print(rgb_val, g_val, "saaaaaaaaaa")
+                g2rgb[g_val] = rgb_val
+                rgb2g[rgb_val] = g_val  
                 
+
+            print(self.loaded_hsmask[:, :, 1], "loaded_hsmask")          
+            print(self.mask_all_colors[1], "mask_all_colors")                 
+            self.annotator.clearAndSetMaskLayers(self.current_image, # self.current_image,
+                                                    self.loaded_hsmask[:, :, 1], # self.current_defects,
+                                                    helper = None, # array2qimage(helper),
+                                                    aux_helper=None, # aux_helper=(array2qimage(self.current_tk) if self.current_tk is not None else None),
+                                                    process_gray2rgb=True, # process_gray2rgb=True,
+                                                    direct_mask_paint=False,
+                                                    color = self.mask_all_colors[1]) # direct_mask_paint=True))     
+            
+
+            
+
+            # Set up dicts
+            self.d_rgb2gray = rgb2g
+            self.d_gray2rgb = g2rgb
+            self.tk_colors = tk2rgb
+            
+            self.current_mask = layer_img
+            self.current_defect = self.current_mask
+            
+            
+            
+            layer_index=+1
+            #######
+            
                 
 
 
@@ -1492,11 +1554,12 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         #cspec_list = cspec.to_dict('records')
         
         df = pd.DataFrame({"NAME_LAYER_D": ["class"], # "class"
-                            "COLOR_HEXRGB_DATMANT": ["#006f05"]}) # "#006f05"
+                            "COLOR_HEXRGB": ["#006f05"],
+                            "COLOR_GSCALE_MAPPING": 10}) # gray
         
         cspec_list = df.to_dict('records')
 #        cspec_list["NAME_LAYER_D"].extend("class")
-#        cspec_list["COLOR_HEXRGB_DATMANT"].extend("#006f05")
+#        cspec_list["COLOR_HEXRGB_"].extend("#006f05")
         # Store the list
         self.cspec = cspec_list
 
@@ -1515,11 +1578,10 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
             g2rgb = {}
             rgb2g = {}
             tk2rgb = {}
-
             
             for col in self.cspec:
-                rgb_val = col["COLOR_HEXRGB_DATMANT"].lower()
-                #g_val = int(col["COLOR_GSCALE_MAPPING"])
+                rgb_val = col["COLOR_HEXRGB"].lower()
+                g_val = int(col["COLOR_GSCALE_MAPPING"])
 
                 #keys_to_insert = col["COLOR_ABBR_ET"].split(",")
                 #for ks in keys_to_insert:
@@ -1533,17 +1595,17 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
                 #                                 " | " + col["COLOR_NAME_ET"])
                 
                 self.lstDefectsAndColors.addItem(ticon, " " + col["NAME_LAYER_D"] +
-                                    " | "  + col["COLOR_HEXRGB_DATMANT"])
+                                    " | "  + col["COLOR_HEXRGB"] + " | "  + str(col["COLOR_GSCALE_MAPPING"]))
 
                 # Fill in necessary dicts
-                #g2rgb[g_val] = rgb_val
-                #rgb2g[rgb_val] = g_val
+                g2rgb[g_val] = rgb_val
+                rgb2g[rgb_val] = g_val
             
 
             # Set up dicts
-            #self.d_rgb2gray = rgb2g
-            #self.d_gray2rgb = g2rgb
-            #self.tk_colors = tk2rgb
+            self.d_rgb2gray = rgb2g
+            self.d_gray2rgb = g2rgb
+            self.tk_colors = tk2rgb
 
             # Change the brush color
             self.lstDefectsAndColors.currentIndexChanged.connect(self.change_brush_color)
@@ -1554,7 +1616,7 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
     def change_brush_color(self):
         cind = self.lstDefectsAndColors.currentIndex()
         color = self.cspec[cind]
-        the_color = QColor("#63" + color["COLOR_HEXRGB_DATMANT"].split("#")[1])
+        the_color = QColor("#63" + color["COLOR_HEXRGB"].split("#")[1])
         self.current_paint = the_color
         self.annotator.brush_fill_color = the_color
 
@@ -1574,13 +1636,15 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         self.add_layer_current_color = c
         
         self.cspec.append({"NAME_LAYER_D": self.message_name_layer.text(), 
-                            "COLOR_HEXRGB_DATMANT": c})
+                            "COLOR_HEXRGB": c,
+                            "COLOR_GSCALE_MAPPING": self.colors_gray_arr[cind]                            })
         #self.cspec.append({"NAME_LAYER_D": self.message_name_layer.text(), 
-        #                    "COLOR_HEXRGB_DATMANT": c})
+        #                    "COLOR_HEXRGB": c})
           
         #for col, row in self.cspec:            
-        rgb_val = self.cspec[cind]["COLOR_HEXRGB_DATMANT"] #col["COLOR_HEXRGB_DATMANT"]
-        g_val = self.cspec[cind]["NAME_LAYER_D"] # col["NAME_LAYER_D"]     
+        rgb_val = self.cspec[cind]["COLOR_HEXRGB"] #col["COLOR_HEXRGB"]
+        g_val = self.cspec[cind]["COLOR_GSCALE_MAPPING"]       
+        #g_val = self.cspec[cind]["NAME_LAYER_D"] # col["NAME_LAYER_D"]     
         print(rgb_val,g_val)
 
         print("Selected: {}".format(c))
@@ -1615,11 +1679,11 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         self.dialog_COLOR.exec_()           
 
         
-        #cind = self.lstDefectsAndColors.currentIndex()
+        cind = self.lstDefectsAndColors.currentIndex()
         #color = self.cspec[cind]
         max_index = self.lstDefectsAndColors.count()-1
         rgb_val = self.add_layer_current_color
-        #g_val = int(col["COLOR_GSCALE_MAPPING"])
+        g_val = self.colors_gray_arr[cind]
 
         #keys_to_insert = col["COLOR_ABBR_ET"].split(",")
 
@@ -1628,10 +1692,10 @@ class DATMantGUI(QtWidgets.QMainWindow, datmant_ui.Ui_DATMantMainWindow):
         pix.fill(QColor(rgb_val))        
         ticon = QIcon(pix)
         self.lstDefectsAndColors.addItem(ticon, " " + self.message_name_layer.text() +
-                                         " | "  + self.add_layer_current_color)
+                                         " | "  + self.add_layer_current_color + " | "  + self.add_layer_current_color)
         '''
         for col in self.cspec:
-            rgb_val = col["COLOR_HEXRGB_DATMANT"].lower()
+            rgb_val = col["COLOR_HEXRGB"].lower()
             g_val = int(col["COLOR_GSCALE_MAPPING"])
 
             keys_to_insert = col["COLOR_ABBR_ET"].split(",")
@@ -1693,7 +1757,7 @@ def main():
     # Prepare and launch the GUI
     app = QtWidgets.QApplication(sys.argv)
     app.setWindowIcon(QtGui.QIcon('annotator/res/OpenHSL_Logo_1.ico'))
-    dialog = DATMantGUI()
+    dialog = AnnotatorGUI()
     dialog.setWindowTitle(APP_TITLE + " - " + APP_VERSION) # Window title
     dialog.app = app  # Store the reference
     dialog.show()
