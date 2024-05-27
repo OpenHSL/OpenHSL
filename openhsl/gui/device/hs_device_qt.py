@@ -98,6 +98,12 @@ class HSDeviceQt(QObject, HSDevice):
         elif self.calib_slit_data.intercept > self.slit_intercept_max:
             self.calib_slit_data.intercept = self.slit_intercept_max
 
+    def set_wavelength_calibration_data(self, data: np.ndarray):
+        if data.shape[1] == 3:
+            self.calib_wavelength_data.wavelength_list = data[:, 0].tolist()
+            self.calib_wavelength_data.wavelength_y_list = data[:, 1].tolist()
+            self.calib_wavelength_data.wavelength_slit_offset_y_list = data[:, 2].tolist()
+
     def set_slit_intercept(self, value: float):
         self.calib_slit_data.intercept = value
         self.compute_slit_intercept_adjusting_range()
@@ -137,10 +143,11 @@ class HSDeviceQt(QObject, HSDevice):
 
     def is_equation_data_enough(self) -> bool:
         enough = False
-        if self.calib_slit_data.barrel_distortion_params is not None:
-            enough = len(self.calib_slit_data.barrel_distortion_params['powers']) > 0 and \
-                     len(self.calib_slit_data.barrel_distortion_params['coeffs']) > 0 and \
-                     len(self.calib_slit_data.barrel_distortion_params['factors']) > 0
+        if self.calib_slit_data is not None:
+            if self.calib_slit_data.barrel_distortion_params is not None:
+                enough = len(self.calib_slit_data.barrel_distortion_params['powers']) > 0 and \
+                         len(self.calib_slit_data.barrel_distortion_params['coeffs']) > 0 and \
+                         len(self.calib_slit_data.barrel_distortion_params['factors']) > 0
         return enough
 
     @pyqtSlot(str)
