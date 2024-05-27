@@ -71,6 +71,9 @@ class HSDeviceQt(QObject, HSDevice):
     def get_slit_intercept_rotated(self):
         return np.rint(0.5 * self.get_slit_slope() * self.slit_image_width + self.get_slit_intercept())
 
+    def get_wavelength_calibration_data(self) -> HSCalibrationWavelengthData:
+        return self.calib_wavelength_data
+
     def set_bd_contrast_value(self, value: float):
         self.bd_contrast_value = value
 

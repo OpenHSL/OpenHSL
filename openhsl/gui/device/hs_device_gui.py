@@ -572,6 +572,14 @@ class HSDeviceGUI(QMainWindow):
         self.ui_bdew_center_y_spinbox.setEnabled(True)
         self.ui_bdew_grid_tile_size_spinbox.setEnabled(True)
 
+    def load_wavelength_calibration_data(self):
+        wcd = self.hsd.get_wavelength_calibration_data()
+        if wcd is not None:
+            wt_model: WavelengthCalibrationTableModel = self.ui_wcdw_wavelength_table_view.model()
+            data = [wcd.wavelength_list, wcd.wavelength_y_list, wcd.wavelength_slit_offset_y_list]
+            data = np.transpose(np.array(data)).tolist()
+            wt_model.load_data_from_list(data)
+
     def initialize_texts(self):
         text_font = QFont("Century Gothic", 20, QFont.Weight.Light)
         text_font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)
@@ -686,6 +694,7 @@ class HSDeviceGUI(QMainWindow):
         self.init_after_load_device_settings = True
         self.on_ui_load_slit_image_button_clicked()
         self.load_barrel_distortion_params()
+        self.load_wavelength_calibration_data()
 
     @staticmethod
     def flush_graphics_scene_data(graphics_scene: QGraphicsScene):
