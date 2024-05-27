@@ -166,6 +166,8 @@ class HSDeviceGUI(QMainWindow):
             self.wcdw.findChild(QPushButton, 'estimateWavelengthsByRange_pushButton')
         self.ui_wcdw_fill_slit_offset_y_button: QPushButton = \
             self.wcdw.findChild(QPushButton, 'fillSlitOffsetY_pushButton')
+        self.ui_wcdw_apply_calibration_data_button: QPushButton = \
+            self.wcdw.findChild(QPushButton, 'applyCalibrationData_pushButton')
         self.ui_wcdw_wavelength_table_view: QTableView = self.wcdw.findChild(QTableView, 'wavelength_tableView')
         self.ui_wcdw_wavelength_table_view_model: WavelengthCalibrationTableModel = None
         # Settings tab
@@ -265,6 +267,8 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wcdw_estimate_wavelengths_by_range_button.clicked.connect(
             self.on_ui_wcdw_estimate_wavelengths_by_range_button_clicked)
         self.ui_wcdw_fill_slit_offset_y_button.clicked.connect(self.on_ui_wcdw_fill_slit_offset_y_button_clicked)
+        self.ui_wcdw_apply_calibration_data_button.clicked.connect(
+            self.on_ui_wcdw_apply_calibration_data_button_clicked)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -1130,6 +1134,12 @@ class HSDeviceGUI(QMainWindow):
             wavelength_line_y_coord = model.data(model.index(i, 1))
             model.setData(model.index(i, 2),
                           int(np.abs(wavelength_line_y_coord - self.hsd.get_slit_intercept_rotated())))
+
+    @pyqtSlot()
+    def on_ui_wcdw_apply_calibration_data_button_clicked(self):
+        model = self.ui_wcdw_wavelength_table_view_model
+        data = model.to_numpy()
+        self.hsd.set_wavelength_calibration_data(data)
 
     @pyqtSlot(int)
     def on_receive_wl_image_count(self, value: int):
