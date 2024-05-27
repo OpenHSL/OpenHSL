@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'datmant_3hiweIK.ui'
+## Form generated from reading UI file 'datmant_4meSpoG.ui'
 ##
 ## Created by: Qt User Interface Compiler version 5.15.2
 ##
@@ -110,12 +110,24 @@ class Ui_DATMantMainWindow(object):
 
         self.horizontalLayout_5.addWidget(self.txt_HSI_slider)
 
+        self.label = QLabel(self.gbAnnotWindow)
+        self.label.setObjectName(u"label")
+        self.label.setMinimumSize(QSize(5, 0))
+
+        self.horizontalLayout_5.addWidget(self.label)
+
         self.txt_HSI_slider_leyer = QLineEdit(self.gbAnnotWindow)
         self.txt_HSI_slider_leyer.setObjectName(u"txt_HSI_slider_leyer")
         self.txt_HSI_slider_leyer.setMinimumSize(QSize(0, 30))
         self.txt_HSI_slider_leyer.setMaximumSize(QSize(50, 16777215))
 
         self.horizontalLayout_5.addWidget(self.txt_HSI_slider_leyer)
+
+        self.label_3 = QLabel(self.gbAnnotWindow)
+        self.label_3.setObjectName(u"label_3")
+        self.label_3.setMinimumSize(QSize(5, 0))
+
+        self.horizontalLayout_5.addWidget(self.label_3)
 
         self.HSI_slider = QSlider(self.gbAnnotWindow)
         self.HSI_slider.setObjectName(u"HSI_slider")
@@ -155,6 +167,12 @@ class Ui_DATMantMainWindow(object):
 
         self.horizontalLayout_8.addWidget(self.txtBrushDiameter)
 
+        self.label_6 = QLabel(self.gbAnnotWindow)
+        self.label_6.setObjectName(u"label_6")
+        self.label_6.setMinimumSize(QSize(5, 0))
+
+        self.horizontalLayout_8.addWidget(self.label_6)
+
         self.sldBrushDiameter = QSlider(self.gbAnnotWindow)
         self.sldBrushDiameter.setObjectName(u"sldBrushDiameter")
         self.sldBrushDiameter.setOrientation(Qt.Horizontal)
@@ -163,6 +181,12 @@ class Ui_DATMantMainWindow(object):
 
 
         self.verticalLayout_4.addLayout(self.horizontalLayout_8)
+
+        self.label_13 = QLabel(self.gbAnnotWindow)
+        self.label_13.setObjectName(u"label_13")
+        self.label_13.setMaximumSize(QSize(16777215, 20))
+
+        self.verticalLayout_4.addWidget(self.label_13)
 
 
         self.horizontalLayout_7.addLayout(self.verticalLayout_4)
@@ -174,42 +198,115 @@ class Ui_DATMantMainWindow(object):
         self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.label_7 = QLabel(self.gbAnnotWindow)
-        self.label_7.setObjectName(u"label_7")
-        self.label_7.setMinimumSize(QSize(70, 0))
-        self.label_7.setMaximumSize(QSize(72, 16777215))
-        self.label_7.setFont(font1)
-
-        self.horizontalLayout.addWidget(self.label_7)
-
-        self.txtImageDir = QLineEdit(self.gbAnnotWindow)
-        self.txtImageDir.setObjectName(u"txtImageDir")
-        self.txtImageDir.setMinimumSize(QSize(0, 30))
-        self.txtImageDir.setMaximumSize(QSize(5000, 16777215))
-        self.txtImageDir.setFont(font2)
-        self.txtImageDir.setReadOnly(True)
-
-        self.horizontalLayout.addWidget(self.txtImageDir)
-
+        self.verticalLayout_11 = QVBoxLayout()
+        self.verticalLayout_11.setObjectName(u"verticalLayout_11")
+        self.verticalLayout_11.setContentsMargins(-1, -1, 0, -1)
+        self.horizontalLayout_13 = QHBoxLayout()
+        self.horizontalLayout_13.setObjectName(u"horizontalLayout_13")
+        self.horizontalLayout_13.setContentsMargins(-1, 0, -1, -1)
         self.btnBrowseImageDir = QPushButton(self.gbAnnotWindow)
         self.btnBrowseImageDir.setObjectName(u"btnBrowseImageDir")
         self.btnBrowseImageDir.setMinimumSize(QSize(150, 30))
         self.btnBrowseImageDir.setMaximumSize(QSize(200, 16777215))
 
-        self.horizontalLayout.addWidget(self.btnBrowseImageDir)
+        self.horizontalLayout_13.addWidget(self.btnBrowseImageDir)
+
+        self.label_7 = QLabel(self.gbAnnotWindow)
+        self.label_7.setObjectName(u"label_7")
+        self.label_7.setMinimumSize(QSize(0, 0))
+        self.label_7.setMaximumSize(QSize(100, 16777215))
+        self.label_7.setFont(font1)
+        self.label_7.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+
+        self.horizontalLayout_13.addWidget(self.label_7)
+
+        self.txtImageDir = QLineEdit(self.gbAnnotWindow)
+        self.txtImageDir.setObjectName(u"txtImageDir")
+        self.txtImageDir.setMinimumSize(QSize(0, 30))
+        self.txtImageDir.setMaximumSize(QSize(360, 16777215))
+        self.txtImageDir.setFont(font2)
+        self.txtImageDir.setReadOnly(True)
+
+        self.horizontalLayout_13.addWidget(self.txtImageDir)
+
+
+        self.verticalLayout_11.addLayout(self.horizontalLayout_13)
+
+        self.horizontalLayout_14 = QHBoxLayout()
+        self.horizontalLayout_14.setObjectName(u"horizontalLayout_14")
+        self.horizontalLayout_14.setContentsMargins(-1, 10, -1, -1)
+        self.actionLoadmask = QPushButton(self.gbAnnotWindow)
+        self.actionLoadmask.setObjectName(u"actionLoadmask")
+        self.actionLoadmask.setMinimumSize(QSize(150, 30))
+        self.actionLoadmask.setMaximumSize(QSize(200, 16777215))
+
+        self.horizontalLayout_14.addWidget(self.actionLoadmask)
+
+        self.label_9 = QLabel(self.gbAnnotWindow)
+        self.label_9.setObjectName(u"label_9")
+        self.label_9.setMaximumSize(QSize(100, 16777215))
+        self.label_9.setFont(font1)
+        self.label_9.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+
+        self.horizontalLayout_14.addWidget(self.label_9)
+
+        self.lineEdit = QLineEdit(self.gbAnnotWindow)
+        self.lineEdit.setObjectName(u"lineEdit")
+        self.lineEdit.setMinimumSize(QSize(0, 30))
+        self.lineEdit.setMaximumSize(QSize(360, 16777215))
+        self.lineEdit.setFont(font2)
+        self.lineEdit.setReadOnly(True)
+
+        self.horizontalLayout_14.addWidget(self.lineEdit)
+
+
+        self.verticalLayout_11.addLayout(self.horizontalLayout_14)
+
+        self.verticalLayout_13 = QVBoxLayout()
+        self.verticalLayout_13.setObjectName(u"verticalLayout_13")
+        self.horizontalLayout_15 = QHBoxLayout()
+        self.horizontalLayout_15.setObjectName(u"horizontalLayout_15")
+        self.horizontalLayout_15.setContentsMargins(-1, -1, 10, -1)
+        self.label_12 = QLabel(self.gbAnnotWindow)
+        self.label_12.setObjectName(u"label_12")
+
+        self.horizontalLayout_15.addWidget(self.label_12)
+
+        self.label_11 = QLabel(self.gbAnnotWindow)
+        self.label_11.setObjectName(u"label_11")
+
+        self.horizontalLayout_15.addWidget(self.label_11)
+
+
+        self.verticalLayout_13.addLayout(self.horizontalLayout_15)
+
+
+        self.verticalLayout_11.addLayout(self.verticalLayout_13)
+
+
+        self.horizontalLayout.addLayout(self.verticalLayout_11)
 
 
         self.horizontalLayout_6.addLayout(self.horizontalLayout)
 
         self.horizontalLayout_4 = QHBoxLayout()
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
-        self.horizontalLayout_4.setContentsMargins(-1, -1, 10, -1)
-        self.label_4 = QLabel(self.gbAnnotWindow)
-        self.label_4.setObjectName(u"label_4")
-        self.label_4.setMinimumSize(QSize(100, 0))
-        self.label_4.setFont(font1)
+        self.horizontalLayout_4.setContentsMargins(-1, -1, 0, -1)
+        self.verticalLayout_5 = QVBoxLayout()
+        self.verticalLayout_5.setObjectName(u"verticalLayout_5")
+        self.verticalLayout_5.setContentsMargins(20, -1, 10, -1)
+        self.verticalLayout_6 = QVBoxLayout()
+        self.verticalLayout_6.setObjectName(u"verticalLayout_6")
+        self.label_10 = QLabel(self.gbAnnotWindow)
+        self.label_10.setObjectName(u"label_10")
+        self.label_10.setMaximumSize(QSize(16777215, 200))
+        self.label_10.setFont(font1)
+        self.label_10.setAlignment(Qt.AlignBottom|Qt.AlignLeading|Qt.AlignLeft)
 
-        self.horizontalLayout_4.addWidget(self.label_4)
+        self.verticalLayout_6.addWidget(self.label_10)
+
+
+        self.verticalLayout_5.addLayout(self.verticalLayout_6)
 
         self.lstDefectsAndColors = QComboBox(self.gbAnnotWindow)
         self.lstDefectsAndColors.setObjectName(u"lstDefectsAndColors")
@@ -222,9 +319,59 @@ class Ui_DATMantMainWindow(object):
         self.lstDefectsAndColors.setMaximumSize(QSize(5000, 16777215))
         self.lstDefectsAndColors.setFont(font2)
 
-        self.horizontalLayout_4.addWidget(self.lstDefectsAndColors)
+        self.verticalLayout_5.addWidget(self.lstDefectsAndColors)
+
+        self.verticalLayout_7 = QVBoxLayout()
+        self.verticalLayout_7.setSpacing(3)
+        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
+        self.verticalLayout_7.setContentsMargins(-1, 5, -1, -1)
+        self.horizontalLayout_9 = QHBoxLayout()
+        self.horizontalLayout_9.setSpacing(3)
+        self.horizontalLayout_9.setObjectName(u"horizontalLayout_9")
+        self.horizontalLayout_9.setContentsMargins(-1, 0, -1, -1)
+        self.add_layer = QPushButton(self.gbAnnotWindow)
+        self.add_layer.setObjectName(u"add_layer")
+        self.add_layer.setMinimumSize(QSize(0, 30))
+        self.add_layer.setMaximumSize(QSize(100, 16777215))
+
+        self.horizontalLayout_9.addWidget(self.add_layer)
+
+        self.delete_layer = QPushButton(self.gbAnnotWindow)
+        self.delete_layer.setObjectName(u"delete_layer")
+        self.delete_layer.setMinimumSize(QSize(0, 30))
+        self.delete_layer.setMaximumSize(QSize(100, 16777215))
+
+        self.horizontalLayout_9.addWidget(self.delete_layer)
+
+        self.btnMode = QPushButton(self.gbAnnotWindow)
+        self.btnMode.setObjectName(u"btnMode")
+        self.btnMode.setMinimumSize(QSize(0, 30))
+        self.btnMode.setMaximumSize(QSize(100, 16777215))
+
+        self.horizontalLayout_9.addWidget(self.btnMode)
+
+
+        self.verticalLayout_7.addLayout(self.horizontalLayout_9)
+
+
+        self.verticalLayout_5.addLayout(self.verticalLayout_7)
+
+        self.horizontalLayout_16 = QHBoxLayout()
+        self.horizontalLayout_16.setObjectName(u"horizontalLayout_16")
+        self.label_4 = QLabel(self.gbAnnotWindow)
+        self.label_4.setObjectName(u"label_4")
+        self.label_4.setMaximumSize(QSize(200, 16777215))
+
+        self.horizontalLayout_16.addWidget(self.label_4)
+
+
+        self.verticalLayout_5.addLayout(self.horizontalLayout_16)
+
+
+        self.horizontalLayout_4.addLayout(self.verticalLayout_5)
 
         self.verticalLayout = QVBoxLayout()
+        self.verticalLayout.setSpacing(0)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(10, -1, 10, -1)
         self.makemask = QPushButton(self.gbAnnotWindow)
@@ -237,20 +384,23 @@ class Ui_DATMantMainWindow(object):
         self.btnClear = QPushButton(self.gbAnnotWindow)
         self.btnClear.setObjectName(u"btnClear")
         self.btnClear.setEnabled(True)
+        self.btnClear.setMinimumSize(QSize(0, 30))
         self.btnClear.setMaximumSize(QSize(300, 16777215))
 
         self.verticalLayout.addWidget(self.btnClear)
 
         self.InvertingMask = QPushButton(self.gbAnnotWindow)
         self.InvertingMask.setObjectName(u"InvertingMask")
+        self.InvertingMask.setMinimumSize(QSize(0, 30))
 
         self.verticalLayout.addWidget(self.InvertingMask)
 
-        self.btnMode = QPushButton(self.gbAnnotWindow)
-        self.btnMode.setObjectName(u"btnMode")
-        self.btnMode.setMaximumSize(QSize(300, 16777215))
+        self.pushButton_2 = QPushButton(self.gbAnnotWindow)
+        self.pushButton_2.setObjectName(u"pushButton_2")
+        self.pushButton_2.setMinimumSize(QSize(150, 30))
+        self.pushButton_2.setMaximumSize(QSize(200, 16777215))
 
-        self.verticalLayout.addWidget(self.btnMode)
+        self.verticalLayout.addWidget(self.pushButton_2)
 
 
         self.horizontalLayout_4.addLayout(self.verticalLayout)
@@ -303,7 +453,6 @@ class Ui_DATMantMainWindow(object):
         self.menubar.addAction(self.menuEdit.menuAction())
         self.menubar.addAction(self.menuView.menuAction())
         self.menuFile.addAction(self.actionSave_current_annotations)
-        self.menuFile.addAction(self.actionReload_original_mask)
         self.menuFile.addAction(self.actionLoad)
         self.menuView.addSeparator()
         self.menuView.addAction(self.actionColor_definitions)
@@ -329,18 +478,30 @@ class Ui_DATMantMainWindow(object):
         self.actionColor_definitions.setText(QCoreApplication.translate("DATMantMainWindow", u"Color specifications", None))
         self.actionLoad.setText(QCoreApplication.translate("DATMantMainWindow", u"Load annotations", None))
         self.gbAnnotWindow.setTitle(QCoreApplication.translate("DATMantMainWindow", u"Annotation", None))
-        self.label_5.setText(QCoreApplication.translate("DATMantMainWindow", u"Wavelengths / Layer HSI", None))
+        self.label_5.setText(QCoreApplication.translate("DATMantMainWindow", u"Wavelengths / Layer HSI:  ", None))
+        self.label.setText("")
+        self.label_3.setText("")
         self.label_2.setText(QCoreApplication.translate("DATMantMainWindow", u"Brush diameter:", None))
-        self.label_7.setText(QCoreApplication.translate("DATMantMainWindow", u"Folder HSI:", None))
+        self.label_6.setText("")
+        self.label_13.setText("")
         self.btnBrowseImageDir.setText(QCoreApplication.translate("DATMantMainWindow", u"Open HSI", None))
-        self.label_4.setText(QCoreApplication.translate("DATMantMainWindow", u"Annotated layer:", None))
-        self.makemask.setText(QCoreApplication.translate("DATMantMainWindow", u"Smart Mask", None))
-        self.btnClear.setText(QCoreApplication.translate("DATMantMainWindow", u"Clear annotations", None))
-        self.InvertingMask.setText(QCoreApplication.translate("DATMantMainWindow", u"Inverting Mask", None))
-        self.btnMode.setText(QCoreApplication.translate("DATMantMainWindow", u"Annotation (on/off)", None))
+        self.label_7.setText(QCoreApplication.translate("DATMantMainWindow", u"Folder HSI:", None))
+        self.actionLoadmask.setText(QCoreApplication.translate("DATMantMainWindow", u"Load Mask", None))
+        self.label_9.setText(QCoreApplication.translate("DATMantMainWindow", u"Folder MASK:", None))
+        self.label_12.setText("")
+        self.label_11.setText("")
+        self.label_10.setText(QCoreApplication.translate("DATMantMainWindow", u"Annotated layer:", None))
+        self.add_layer.setText(QCoreApplication.translate("DATMantMainWindow", u"Add layer", None))
+        self.delete_layer.setText(QCoreApplication.translate("DATMantMainWindow", u"Delete layer", None))
+        self.btnMode.setText(QCoreApplication.translate("DATMantMainWindow", u"Hide layers", None))
 #if QT_CONFIG(shortcut)
         self.btnMode.setShortcut(QCoreApplication.translate("DATMantMainWindow", u"M", None))
 #endif // QT_CONFIG(shortcut)
+        self.label_4.setText("")
+        self.makemask.setText(QCoreApplication.translate("DATMantMainWindow", u"Smart Mask", None))
+        self.btnClear.setText(QCoreApplication.translate("DATMantMainWindow", u"Clear Mask", None))
+        self.InvertingMask.setText(QCoreApplication.translate("DATMantMainWindow", u"Inverting Mask", None))
+        self.pushButton_2.setText(QCoreApplication.translate("DATMantMainWindow", u"Save Mask", None))
         self.gbApplicationLog.setTitle(QCoreApplication.translate("DATMantMainWindow", u"Application log", None))
         self.menuFile.setTitle(QCoreApplication.translate("DATMantMainWindow", u"File", None))
         self.menuView.setTitle(QCoreApplication.translate("DATMantMainWindow", u"View", None))
