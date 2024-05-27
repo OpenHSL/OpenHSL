@@ -607,3 +607,10 @@ class WavelengthCalibrationTableModel(QAbstractTableModel):
             return True
 
         return False
+
+    def to_numpy(self) -> np.ndarray:
+        data = np.zeros((self.rowCount(), self.columnCount()))
+        for i, item in enumerate(self.items):
+            data[i, :] = item.to_list()
+        return data
+
