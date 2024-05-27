@@ -366,7 +366,120 @@ class QtImageAnnotator(QGraphicsView):
             self._deleteCrossHandles[1].hide()
 
         self.updateViewer()
+
+    # накладывает несколько цветов по слоям маски
+    def clearAndSetMaskLayers(self, image, mask, helper=None, aux_helper=None,
+                                process_gray2rgb=False, direct_mask_paint=False, color=None):
+        # Clear the scene
+        self.scene.clear()
+
+        # Clear handles
+        self._pixmapHandle = None
+        self._helperHandle = None
+        self._auxHelper = None
+        self._overlayHandle = None
+
+        # Clear UNDO stack
+        self._overlay_stack = collections.deque(maxlen=MAX_CTRLZ_STATES)
+
+        # For compatibility, convert IMAGE to QImage, if needed
+        if type(image) is np.array:
+            image = array2qimage(image)        
+        # First we just set the image
+        if type(image) is QPixmap:
+            pixmap = image
+        elif type(image) is QImage:
+            pixmap = QPixmap.fromImage(image)
+        else:
+            raise RuntimeError("QtImageAnnotator.clearAndSetImageAndMask: Argument must be a QImage or QPixmap.")
+
         
+        self.shape = pixmap.height(), pixmap.width()
+
+        self._pixmapHandle = self.scene.addPixmap(pixmap)
+        self.setSceneRect(QRectF(pixmap.rect()))
+
+        # Off-screen mask for direct drawing
+        if direct_mask_paint:
+            # We need to convert the offscreen mask to QImage at this point
+            gray_mask = QImage(mask.data, mask.shape[1], mask.shape[0], mask.strides[0], QImage.Format_Grayscale8)
+            self._offscreen_mask = gray_mask.copy()
+            self._offscreen_mask_stack = collections.deque(maxlen=MAX_CTRLZ_STATES)
+
+        # Now we add the helper, if present
+        if type(helper) is np.array:
+            helper = array2qimage(helper)
+
+        if helper is not None:
+            if type(helper) is QPixmap:
+                pixmap = helper
+            elif type(helper) is QImage:
+                pixmap = QPixmap.fromImage(helper)
+            else:
+                raise RuntimeError("QtImageAnnotator.clearAndSetImageAndMask: Argument must be a QImage or QPixmap.")
+
+            # Add the helper layer
+            self._helperHandle = self.scene.addPixmap(pixmap)
+
+        if type(aux_helper) is np.array:
+            aux_helper = array2qimage(aux_helper)
+
+        if aux_helper is not None:
+            if type(aux_helper) is QPixmap:
+                pixmap = aux_helper
+            elif type(aux_helper) is QImage:
+                pixmap = QPixmap.fromImage(aux_helper)
+            else:
+                raise RuntimeError("QtImageAnnotator.clearAndSetImageAndMask: Argument must be a QImage or QPixmap.")
+
+            # Add the aux helper layer
+            self._auxHelper = self.scene.addPixmap(pixmap)
+
+       
+       
+        if process_gray2rgb:
+            if self.d_gray2rgb:
+                # We assume mask is np array, grayscale and the conversion rules are set (otherwise cannot continue)
+                h, w = mask.shape
+                mask = mask * 100
+                new_mask = np.zeros((h, w, 4), np.uint8)
+                for gr, rgb in self.d_gray2rgb.items():
+                    col = color.getRgb() # QColor("#63" + rgb.split("#")[1]).getRgb()  # TODO: not elegant, need external function
+                    new_mask[mask == gr] = col
+                print(new_mask)
+                use_mask = array2qimage(new_mask) #array2qimage(new_mask)
+            else:
+                raise RuntimeError("Cannot convert the provided grayscale mask to RGB without color specifications.")
+        else:
+            use_mask = array2qimage(mask)            
+        
+        pixmap = QPixmap.fromImage(use_mask)
+        self.mask_pixmap = pixmap
+        self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
+
+        ###############################################
+        ###############################################        
+        # Add the mask layer
+        #self.mask_pixmap = QPixmap(pixmap.rect().width(), pixmap.rect().height())
+        #self.mask_pixmap.fill(QColor(0,0,0,0))
+        #self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
+        ###############################################
+        ###############################################
+
+        # Add brush cursor to top layer
+        self._cursorHandle = self.scene.addEllipse(0, 0, self.brush_diameter, self.brush_diameter)
+
+        # Add also X to the cursor for "delete" operation, and hide it by default only showing it when the
+        # either the global drawing mode is set to ERASE or when CTRL is held while drawing
+        self._deleteCrossHandles = (self.scene.addLine(0, 0, self.brush_diameter, self.brush_diameter),
+                                    self.scene.addLine(0, self.brush_diameter, self.brush_diameter, 0))
+
+        if self.current_painting_mode is not self.MODE_ERASE:
+            self._deleteCrossHandles[0].hide()
+            self._deleteCrossHandles[1].hide()
+
+        self.updateViewer()
+                
             
     def clearAndSetImageAndMask(self, image, mask, helper=None, aux_helper=None,
                                 process_gray2rgb=False, direct_mask_paint=False):
