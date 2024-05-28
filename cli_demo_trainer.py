@@ -23,8 +23,10 @@ USE_PCA = False
 NUM_COMPONENTS = 30
 
 CLASSIFIER = 'M1DCNN'
-
+PATH_TO_WEIGHTS = None
 USE_WANDB = False
+
+PREDICT_ONLY = False
 
 OPTIM_LEARNING_RATE = 0.01
 OPTIM_WEIGHT_DECAY = 0
@@ -93,16 +95,18 @@ fit_params = {
 
 net = _CLASSIFIER(n_classes=mask.n_classes,
                   n_bands=hsi.data.shape[-1],  # or hsi.data.shape[-1]
+                  path_to_weights=PATH_TO_WEIGHTS,
                   device='cuda')
 
 if USE_WANDB:
     net.init_wandb()
 
-net.fit(X=hsi,  # or hsi
-        y=mask.get_2d(),
-        fit_params=fit_params)
+if not PREDICT_ONLY:
+    net.fit(X=hsi,  # or hsi
+            y=mask.get_2d(),
+            fit_params=fit_params)
 
-draw_fit_plots(model=net)
+    draw_fit_plots(model=net)
 
 pred = net.predict(X=hsi,  # or hsi
                    y=mask,
