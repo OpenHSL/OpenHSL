@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 from openhsl.build.hs_image_utils import BaseIntEnum
 from pathlib import Path
@@ -11,6 +13,9 @@ class HSCalibrationWavelengthData:
         self.wavelength_list: Optional[List[float]] = None
         self.wavelength_y_list: Optional[List[int]] = None
         self.wavelength_slit_offset_y_list: Optional[List[int]] = None
+        self.spectrum_slit_offset_y: int = 0
+        self.spectrum_left_bound: int = 0
+        self.spectrum_right_bound: int = 0
 
     @classmethod
     def from_dict(cls, data_dict: dict):
@@ -21,6 +26,12 @@ class HSCalibrationWavelengthData:
             obj.wavelength_y_list = data_dict["wavelength_y_list"]
         if utils.key_exists_in_dict(data_dict, "wavelength_slit_offset_y_list"):
             obj.wavelength_slit_offset_y_list = data_dict["wavelength_slit_offset_y_list"]
+        if utils.key_exists_in_dict(data_dict, "spectrum_slit_offset_y"):
+            obj.spectrum_slit_offset_y = data_dict["spectrum_slit_offset_y"]
+        if utils.key_exists_in_dict(data_dict, "spectrum_left_bound"):
+            obj.spectrum_left_bound = data_dict["spectrum_left_bound"]
+        if utils.key_exists_in_dict(data_dict, "spectrum_right_bound"):
+            obj.spectrum_right_bound = data_dict["spectrum_right_bound"]
 
         return obj
 
@@ -29,6 +40,9 @@ class HSCalibrationWavelengthData:
         data["wavelength_list"] = self.wavelength_list
         data["wavelength_y_list"] = self.wavelength_y_list
         data["wavelength_slit_offset_y_list"] = self.wavelength_slit_offset_y_list
+        data["spectrum_slit_offset_y"] = self.spectrum_slit_offset_y
+        data["spectrum_left_bound"] = self.spectrum_left_bound
+        data["spectrum_right_bound"] = self.spectrum_right_bound
 
         return data
 
@@ -139,35 +153,52 @@ class HSDevice:
     def __init__(self):
         self.device_type: HSDeviceType = HSDeviceType.Undef
         # ROI for slit
-        self.calib_slit_data: Optional[HSCalibrationSlitData] = None
-        self.calib_wavelength_data: Optional[HSCalibrationWavelengthData] = None
+        self.slit_data: Optional[HSCalibrationSlitData] = None
+        self.wavelength_data: Optional[HSCalibrationWavelengthData] = None
+        self.illumination_mask: Optional[np.ndarray] = None
+
+    def apply_roi(self, frame: np.ndarray):
+        spectrum_left_bound = self.wavelength_data.spectrum_left_bound
+        spectrum_right_bound = self.wavelength_data.spectrum_right_bound
+        idx_y = self.wavelength_data.wavelength_slit_offset_y_list
+        idx_y = list(map(lambda x: x + self.wavelength_data.spectrum_slit_offset_y, idx_y))
+        idx_x = list(range(spectrum_left_bound, spectrum_right_bound + 1))
+
+        frame_roi: Optional[np.ndarray] = None
+        if len(frame.shape) == 2:
+            ixgrid = np.ix_(idx_y, idx_x)
+            frame_roi = copy.deepcopy(frame[ixgrid[0], ixgrid[1]])
+        else:
+            ixgrid = np.ix_(idx_y, idx_x, [0, 1, 2])
+            frame_roi = copy.deepcopy(frame[ixgrid[0], ixgrid[1], ixgrid[2]])
+        return frame_roi
 
     def get_barrel_distortion_params(self) -> Dict[str, Union[List[float], Tuple[int]]]:
-        return self.calib_slit_data.barrel_distortion_params
+        return self.slit_data.barrel_distortion_params
 
     def get_image_shape(self):
-        return self.calib_slit_data.image_shape
+        return self.slit_data.image_shape
 
     def get_slit_slope(self) -> float:
-        return self.calib_slit_data.slope
+        return self.slit_data.slope
 
     def get_slit_angle(self) -> float:
-        return self.calib_slit_data.angle
+        return self.slit_data.angle
 
     def get_slit_intercept(self, to_int=False) -> Union[int, float]:
         if to_int:
-            return int(np.rint(self.calib_slit_data.intercept))
-        return self.calib_slit_data.intercept
+            return int(np.rint(self.slit_data.intercept))
+        return self.slit_data.intercept
 
     def get_slit_roi(self) -> Tuple[int, int, int, int]:
-        return self.calib_slit_data.slit_roi_origin_x, self.calib_slit_data.slit_roi_origin_y, \
-            self.calib_slit_data.slit_roi_width, self.calib_slit_data.slit_roi_height
+        return self.slit_data.slit_roi_origin_x, self.slit_data.slit_roi_origin_y, \
+            self.slit_data.slit_roi_width, self.slit_data.slit_roi_height
 
     def get_undistortion_coefficients(self) -> List[float]:
         undistortion_coeffs = None
         compute_needed = False
         if utils.key_exists_in_dict(self.get_barrel_distortion_params(), 'undistortion_coeffs'):
-            undistortion_coeffs = self.calib_slit_data.barrel_distortion_params['undistortion_coeffs']
+            undistortion_coeffs = self.slit_data.barrel_distortion_params['undistortion_coeffs']
         else:
             compute_needed = True
         if undistortion_coeffs is None:
@@ -183,7 +214,7 @@ class HSDevice:
             center_xy = np.array(barrel_distortion_params['center'])
             undistortion_coeffs = hsiutils.compute_undistortion_coeffs(coeffs, powers, factors, image_shape, center_xy)
             undistortion_coeffs = undistortion_coeffs.tolist()
-            self.calib_slit_data.barrel_distortion_params['undistortion_coeffs'] = undistortion_coeffs
+            self.slit_data.barrel_distortion_params['undistortion_coeffs'] = undistortion_coeffs
         return undistortion_coeffs
 
 
@@ -196,20 +227,20 @@ class HSDevice:
     def load_dict(self, device_data: dict):
         if utils.key_exists_in_dict(device_data, "device_type"):
             self.device_type = device_data["device_type"]
-        if utils.key_exists_in_dict(device_data, "calib_slit_data"):
-            self.calib_slit_data = HSCalibrationSlitData.from_dict(device_data["calib_slit_data"])
-        if utils.key_exists_in_dict(device_data, "calib_wavelength_data"):
-            self.calib_wavelength_data = HSCalibrationWavelengthData.from_dict(device_data["calib_wavelength_data"])
+        if utils.key_exists_in_dict(device_data, "slit_data"):
+            self.slit_data = HSCalibrationSlitData.from_dict(device_data["slit_data"])
+        if utils.key_exists_in_dict(device_data, "wavelength_data"):
+            self.wavelength_data = HSCalibrationWavelengthData.from_dict(device_data["wavelength_data"])
 
     @classmethod
     def from_dict(cls, device_data: dict):
         obj = cls()
         if utils.key_exists_in_dict(device_data, "device_type"):
             obj.device_type = device_data["device_type"]
-        if utils.key_exists_in_dict(device_data, "calib_slit_data"):
-            obj.calib_slit_data = HSCalibrationSlitData.from_dict(device_data["calib_slit_data"])
-        if utils.key_exists_in_dict(device_data, "calib_wavelength_data"):
-            obj.calib_wavelength_data = HSCalibrationWavelengthData.from_dict(device_data["calib_wavelength_data"])
+        if utils.key_exists_in_dict(device_data, "slit_data"):
+            obj.slit_data = HSCalibrationSlitData.from_dict(device_data["slit_data"])
+        if utils.key_exists_in_dict(device_data, "wavelength_data"):
+            obj.wavelength_data = HSCalibrationWavelengthData.from_dict(device_data["wavelength_data"])
 
         return obj
 
@@ -217,14 +248,14 @@ class HSDevice:
         device_data = dict()
         device_data["device_type"] = self.device_type
 
-        if self.calib_wavelength_data is None:
-            device_data["calib_wavelength_data"] = None
+        if self.wavelength_data is None:
+            device_data["wavelength_data"] = None
         else:
-            device_data["calib_wavelength_data"] = self.calib_wavelength_data.to_dict()
+            device_data["wavelength_data"] = self.wavelength_data.to_dict()
 
-        if self.calib_slit_data is None:
-            device_data["calib_slit_data"] = None
+        if self.slit_data is None:
+            device_data["slit_data"] = None
         else:
-            device_data["calib_slit_data"] = self.calib_slit_data.to_dict()
+            device_data["slit_data"] = self.slit_data.to_dict()
 
         return device_data

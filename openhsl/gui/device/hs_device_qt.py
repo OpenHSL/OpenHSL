@@ -23,6 +23,7 @@ class HSDeviceQt(QObject, HSDevice):
     send_bd_slit_center = pyqtSignal(int, int)
     send_wl_image = pyqtSignal(QImage, str)
     send_wl_image_count = pyqtSignal(int)
+    send_ilm_image = pyqtSignal(QImage)
 
     # send_slit_angle = pyqtSignal(float)
     # send_slit_offset = pyqtSignal(float)
@@ -56,6 +57,11 @@ class HSDeviceQt(QObject, HSDevice):
         self.wl_image_to_send: Optional[np.ndarray] = None
         self.wl_data = HSCalibrationWavelengthData()
 
+        self.ilm_image: Optional[np.ndarray] = None
+        self.ilm_image_roi: Optional[np.ndarray] = None
+        self.ilm_image_preview: Optional[np.ndarray] = None
+        self.ilm_image_roi_preview: Optional[np.ndarray] = None
+
     def get_slit_angle_min(self):
         return self.slit_angle_min
 
@@ -72,16 +78,16 @@ class HSDeviceQt(QObject, HSDevice):
         return np.rint(0.5 * self.get_slit_slope() * self.slit_image_width + self.get_slit_intercept())
 
     def get_wavelength_calibration_data(self) -> HSCalibrationWavelengthData:
-        return self.calib_wavelength_data
+        return self.wavelength_data
 
     def set_bd_contrast_value(self, value: float):
         self.bd_contrast_value = value
 
     def set_center(self, center_x: int, center_y: int):
-        self.calib_slit_data.barrel_distortion_params['center'] = [center_x, center_y]
+        self.slit_data.barrel_distortion_params['center'] = [center_x, center_y]
 
     def set_barrel_distortion_params(self, barrel_distortion_params: Dict[str, Union[List[float], List[int]]]):
-        self.calib_slit_data.barrel_distortion_params = barrel_distortion_params
+        self.slit_data.barrel_distortion_params = barrel_distortion_params
 
     def set_wl_contrast_value(self, value: float):
         self.wl_contrast_value = value
@@ -90,31 +96,35 @@ class HSDeviceQt(QObject, HSDevice):
         self.bd_grid_tile_size = value
 
     def set_slit_angle(self, value: float):
-        self.calib_slit_data.angle = value
-        self.calib_slit_data.slope = np.tan(value * np.pi / 180)
+        self.slit_data.angle = value
+        self.slit_data.slope = np.tan(value * np.pi / 180)
         self.compute_slit_angle_adjusting_range()
         self.compute_slit_intercept_adjusting_range()
 
         # Slit angle priority change is higher
-        if self.calib_slit_data.intercept < self.slit_intercept_min:
-            self.calib_slit_data.intercept = self.slit_intercept_min
-        elif self.calib_slit_data.intercept > self.slit_intercept_max:
-            self.calib_slit_data.intercept = self.slit_intercept_max
+        if self.slit_data.intercept < self.slit_intercept_min:
+            self.slit_data.intercept = self.slit_intercept_min
+        elif self.slit_data.intercept > self.slit_intercept_max:
+            self.slit_data.intercept = self.slit_intercept_max
 
-    def set_wavelength_calibration_data(self, data: np.ndarray):
-        if data.shape[1] == 3:
-            self.calib_wavelength_data.wavelength_list = data[:, 0].tolist()
-            self.calib_wavelength_data.wavelength_y_list = data[:, 1].tolist()
-            self.calib_wavelength_data.wavelength_slit_offset_y_list = data[:, 2].tolist()
+    def set_wavelength_calibration_data(self, wavelength_data: np.ndarray, spectrum_slit_offset_y: int,
+                                        spectrum_left_bound: int, spectrum_right_bound: int):
+        if wavelength_data.shape[1] == 3:
+            self.wavelength_data.wavelength_list = wavelength_data[:, 0].tolist()
+            self.wavelength_data.wavelength_y_list = wavelength_data[:, 1].astype(int).tolist()
+            self.wavelength_data.wavelength_slit_offset_y_list = wavelength_data[:, 2].astype(int).tolist()
+            self.wavelength_data.spectrum_slit_offset_y = spectrum_slit_offset_y
+            self.wavelength_data.spectrum_left_bound = spectrum_left_bound
+            self.wavelength_data.spectrum_right_bound = spectrum_right_bound
 
     def set_slit_intercept(self, value: float):
-        self.calib_slit_data.intercept = value
+        self.slit_data.intercept = value
         self.compute_slit_intercept_adjusting_range()
 
     def compute_slit_angle_adjusting_range(self):
         # Compute min and max angle adjusting range for GUI
-        self.slit_angle_min = np.floor(self.calib_slit_data.angle) - self.slit_angle_range
-        self.slit_angle_max = np.ceil(self.calib_slit_data.angle) + self.slit_angle_range
+        self.slit_angle_min = np.floor(self.slit_data.angle) - self.slit_angle_range
+        self.slit_angle_max = np.ceil(self.slit_data.angle) + self.slit_angle_range
 
         self.adjust_slit_angle_range.emit(self.slit_angle_min, self.slit_angle_max)
 
@@ -139,8 +149,8 @@ class HSDeviceQt(QObject, HSDevice):
 
     def is_center_defined(self) -> bool:
         defined = False
-        if self.calib_slit_data.barrel_distortion_params is not None:
-            center_xy = self.calib_slit_data.barrel_distortion_params['center']
+        if self.slit_data.barrel_distortion_params is not None:
+            center_xy = self.slit_data.barrel_distortion_params['center']
             if center_xy is not None:
                 if len(center_xy) == 2:
                     defined = True
@@ -148,11 +158,11 @@ class HSDeviceQt(QObject, HSDevice):
 
     def is_equation_data_enough(self) -> bool:
         enough = False
-        if self.calib_slit_data is not None:
-            if self.calib_slit_data.barrel_distortion_params is not None:
-                enough = len(self.calib_slit_data.barrel_distortion_params['powers']) > 0 and \
-                         len(self.calib_slit_data.barrel_distortion_params['coeffs']) > 0 and \
-                         len(self.calib_slit_data.barrel_distortion_params['factors']) > 0
+        if self.slit_data is not None:
+            if self.slit_data.barrel_distortion_params is not None:
+                enough = len(self.slit_data.barrel_distortion_params['powers']) > 0 and \
+                         len(self.slit_data.barrel_distortion_params['coeffs']) > 0 and \
+                         len(self.slit_data.barrel_distortion_params['factors']) > 0
         return enough
 
     @pyqtSlot(str)
@@ -166,7 +176,7 @@ class HSDeviceQt(QObject, HSDevice):
                 self.slit_image = cv.cvtColor(self.slit_image, cv.COLOR_BGR2RGB)
                 self.slit_image_to_send = copy.deepcopy(self.slit_image)
             self.slit_image_width, self.slit_image_height = self.slit_image.shape[0:2]
-            self.calib_slit_data.image_shape = self.slit_image.shape[0:2]
+            self.slit_data.image_shape = self.slit_image.shape[0:2]
             self.slit_image_rotated = copy.deepcopy(self.slit_image_to_send)
             image_to_draw_qt = self.image_to_qimage(self.slit_image_to_send)
             # QImage references ndarray data, so we need to copy QImage
@@ -205,16 +215,38 @@ class HSDeviceQt(QObject, HSDevice):
                     image_qt = self.image_to_qimage(self.wl_image_preview)
                     self.send_wl_image.emit(image_qt.copy(), inage_name)
 
+    @pyqtSlot(str)
+    def on_read_ilm_image(self, path: str):
+        self.ilm_image = cv.imread(path, cv.IMREAD_ANYCOLOR)
+
+        if self.ilm_image is not None:
+            if len(self.ilm_image.shape) == 3:
+                self.ilm_image = cv.cvtColor(self.ilm_image, cv.COLOR_BGR2RGB)
+            # Apply rotation
+            self.ilm_image = hsiutils.rotate_image(self.ilm_image, self.get_slit_angle())
+            # Apply undistortion
+            # TODO check undistortion coeffs
+            undistortion_coefficients = self.get_undistortion_coefficients()
+            self.ilm_image = hsiutils.undistort_image(self.ilm_image, undistortion_coefficients)
+            if len(self.ilm_image.shape) == 2:
+                self.ilm_image_preview = cv.cvtColor(self.ilm_image, cv.COLOR_GRAY2RGB)
+            else:
+                self.ilm_image_preview = copy.deepcopy(self.ilm_image)
+            image_to_draw_qt = self.image_to_qimage(self.ilm_image_preview)
+            # QImage references ndarray data, so we need to copy QImage
+            # See: https://stackoverflow.com/a/49516303
+            self.send_ilm_image.emit(image_to_draw_qt.copy())
+
     @pyqtSlot(QRectF)
     def on_compute_slit_angle(self, area_rect: QRectF):
         x, y, w, h = area_rect.topLeft().x(), area_rect.topLeft().y(), area_rect.width(), area_rect.height()
-        self.calib_slit_data.slope, self.calib_slit_data.angle, self.calib_slit_data.intercept = \
+        self.slit_data.slope, self.slit_data.angle, self.slit_data.intercept = \
             hsiutils.compute_slit_angle(self.slit_image, int(x), int(y), int(w), int(h),
                                         self.threshold_value, self.threshold_type)
-        self.calib_slit_data.slit_roi_origin_x = int(x)
-        self.calib_slit_data.slit_roi_origin_y = int(y)
-        self.calib_slit_data.slit_roi_width = int(w)
-        self.calib_slit_data.slit_roi_height = int(h)
+        self.slit_data.slit_roi_origin_x = int(x)
+        self.slit_data.slit_roi_origin_y = int(y)
+        self.slit_data.slit_roi_width = int(w)
+        self.slit_data.slit_roi_height = int(h)
 
         self.compute_slit_angle_adjusting_range()
         self.compute_slit_intercept_adjusting_range()
@@ -244,10 +276,10 @@ class HSDeviceQt(QObject, HSDevice):
 
     @pyqtSlot(bool)
     def on_draw_distortion_grid(self, contrasted: bool = False):
-        factors = np.array(self.calib_slit_data.barrel_distortion_params['factors'])
-        coeffs = np.array(self.calib_slit_data.barrel_distortion_params['coeffs'])
-        powers = np.array(self.calib_slit_data.barrel_distortion_params['powers'])
-        center_xy = np.array(self.calib_slit_data.barrel_distortion_params['center'])
+        factors = np.array(self.slit_data.barrel_distortion_params['factors'])
+        coeffs = np.array(self.slit_data.barrel_distortion_params['coeffs'])
+        powers = np.array(self.slit_data.barrel_distortion_params['powers'])
+        center_xy = np.array(self.slit_data.barrel_distortion_params['center'])
         image = self.slit_image_rotated_rgb
         if contrasted:
             image = self.bd_slit_contrasted
@@ -259,16 +291,16 @@ class HSDeviceQt(QObject, HSDevice):
 
     @pyqtSlot(bool)
     def on_undistort_slit_image(self, contrasted: bool = False):
-        factors = np.array(self.calib_slit_data.barrel_distortion_params['factors'])
-        coeffs = np.array(self.calib_slit_data.barrel_distortion_params['coeffs'])
-        powers = np.array(self.calib_slit_data.barrel_distortion_params['powers'])
-        center_xy = np.array(self.calib_slit_data.barrel_distortion_params['center'])
+        factors = np.array(self.slit_data.barrel_distortion_params['factors'])
+        coeffs = np.array(self.slit_data.barrel_distortion_params['coeffs'])
+        powers = np.array(self.slit_data.barrel_distortion_params['powers'])
+        center_xy = np.array(self.slit_data.barrel_distortion_params['center'])
         image = self.slit_image_rotated_rgb
         if contrasted:
             image = self.bd_slit_contrasted
         undistortion_coeffs = \
             list(hsiutils.compute_undistortion_coeffs(coeffs, powers, factors, image.shape, center_xy))
-        self.calib_slit_data.barrel_distortion_params['undistortion_coeffs'] = undistortion_coeffs
+        self.slit_data.barrel_distortion_params['undistortion_coeffs'] = undistortion_coeffs
         image_undistorted = hsiutils.undistort_image(image, undistortion_coeffs, list(center_xy))
         image_undistorted_qt = self.image_to_qimage(image_undistorted)
         self.send_bd_undistorted_slit_image.emit(image_undistorted_qt.copy())
@@ -286,5 +318,17 @@ class HSDeviceQt(QObject, HSDevice):
         if barrel_distortion_params is None:
             barrel_distortion_params = {'center': [], 'powers': [], 'coeffs': [], 'factors': []}
             self.set_barrel_distortion_params(barrel_distortion_params)
-        self.calib_slit_data.barrel_distortion_params['center'] = [center_x, center_y]
+        self.slit_data.barrel_distortion_params['center'] = [center_x, center_y]
         self.send_bd_slit_center.emit(center_x, center_y)
+
+    @pyqtSlot(bool)
+    def on_apply_roi_ilm_image(self, apply: bool):
+        if apply:
+            self.ilm_image_roi = self.apply_roi(self.ilm_image)
+            # self.ilm_image_roi_preview = cv.cvtColor(self.ilm_image_roi, cv.COLOR_GRAY2RGB)
+            self.ilm_image_roi_preview = self.apply_roi(self.ilm_image_preview)
+            image_qt = self.image_to_qimage(self.ilm_image_roi_preview)
+            self.send_ilm_image.emit(image_qt.copy())
+        else:
+            image_qt = self.image_to_qimage(self.ilm_image_preview)
+            self.send_ilm_image.emit(image_qt.copy())

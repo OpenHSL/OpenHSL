@@ -37,6 +37,8 @@ class HSDeviceGUI(QMainWindow):
     compute_bd_slit_center = pyqtSignal(QRectF, int)
     read_wl_image_dir = pyqtSignal(str)
     read_wl_image = pyqtSignal(int, bool, bool, bool)
+    read_ilm_image = pyqtSignal(str)
+    apply_roi_ilm_image = pyqtSignal(bool)
 
     def __init__(self):
         super(HSDeviceGUI, self).__init__()
@@ -174,6 +176,17 @@ class HSDeviceGUI(QMainWindow):
             self.wcdw.findChild(QPushButton, 'applyCalibrationData_pushButton')
         self.ui_wcdw_wavelength_table_view: QTableView = self.wcdw.findChild(QTableView, 'wavelength_tableView')
         self.ui_wcdw_wavelength_table_view_model: WavelengthCalibrationTableModel = None
+        # Illumination tab
+        self.ui_it_graphics_view: HSGraphicsView = self.findChild(HSGraphicsView, 'it_graphicsView')
+        self.ui_it_illumination_image_path_line_edit: QLineEdit = \
+            self.findChild(QLineEdit, 'itIlluminationImagePath_lineEdit')
+        self.ui_it_illumination_image_path_open_button: QPushButton = \
+            self.findChild(QPushButton, 'itIlluminationImagePathOpen_pushButton')
+        self.ui_it_apply_roi_checkbox: QCheckBox = self.findChild(QCheckBox, 'itApplyROI_checkBox')
+        self.ui_it_apply_illumination_correction_checkbox: QCheckBox = \
+            self.findChild(QCheckBox, 'itApplyIlluminationCorrection_checkBox')
+        self.ui_it_compute_illumination_mask_button: QPushButton = \
+            self.findChild(QPushButton, 'itComputeIlluminationMask_pushButton')
         # Settings tab
         self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
         self.ui_device_settings_path_line_edit: QLineEdit = self.findChild(QLineEdit, "deviceSettingsPath_lineEdit")
@@ -292,6 +305,17 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wcdw_fill_slit_offset_y_button.clicked.connect(self.on_ui_wcdw_fill_slit_offset_y_button_clicked)
         self.ui_wcdw_apply_calibration_data_button.clicked.connect(
             self.on_ui_wcdw_apply_calibration_data_button_clicked)
+        # Illumination tab
+        self.ui_it_illumination_image_path_open_button.clicked.connect(
+            self.on_ui_it_illumination_image_path_open_button_clicked)
+        self.ui_it_apply_roi_checkbox.clicked.connect(self.on_ui_it_apply_roi_checkbox_clicked)
+        self.ui_it_apply_illumination_correction_checkbox.clicked.connect(
+            self.on_ui_it_apply_illumination_correction_checkbox_clicked)
+        self.ui_it_compute_illumination_mask_button.clicked.connect(
+            self.on_ui_it_compute_illumination_mask_button_clicked)
+        self.read_ilm_image.connect(self.hsd.on_read_ilm_image, Qt.ConnectionType.QueuedConnection)
+        self.hsd.send_ilm_image.connect(self.on_receive_ilm_image, Qt.ConnectionType.QueuedConnection)
+        self.apply_roi_ilm_image.connect(self.hsd.on_apply_roi_ilm_image, Qt.ConnectionType.QueuedConnection)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -341,6 +365,13 @@ class HSDeviceGUI(QMainWindow):
         self.wt_spectrum_bottom_right_point = QPointF(0, 0)
         self.wt_draw_spectrum_roi_enabled = False
         self.wt_highlight_wavelengths_enabled = False
+
+        # Illumination tab graphics
+        self.it_graphics_scene = QGraphicsScene(self)
+        self.it_graphics_pixmap_item = QGraphicsPixmapItem()
+        self.it_illumination_image_qt: Optional[QImage] = None
+        self.it_illumination_image_roi_qt: Optional[QImage] = None
+        self.it_illumination_image_path = ""
 
         # TODO add mutex locker
         # TODO List[bool], for each tab different val?
@@ -436,6 +467,11 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wt_graphics_view.add_preserved_pos_graphics_item(self.wt_graphics_text_info_rect_item)
         # self.ui_wt_graphics_view.marquee_area_changed.connect(self.on_marquee_area_changed)
 
+        self.ui_it_graphics_view.setScene(self.it_graphics_scene)
+        self.ui_it_graphics_view.setRenderHints(gv_hints)
+        self.ui_it_graphics_view.setMouseTracking(True)
+        self.ui_it_graphics_view.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
+
         self.prepare_graphics_items()
 
         self.ui_slit_image_threshold_value_checkbox.setEnabled(False)
@@ -508,6 +544,10 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wcdw_wavelength_table_view.horizontalHeader().setStretchLastSection(True)
         self.ui_wcdw_wavelength_table_view.setAlternatingRowColors(True)
         self.fill_wcdw()
+
+        self.ui_it_apply_roi_checkbox.setEnabled(False)
+        self.ui_it_apply_illumination_correction_checkbox.setEnabled(False)
+        self.ui_it_compute_illumination_mask_button.setEnabled(False)
 
     def prepare_graphics_items(self):
         dashed_pen = QPen(QColor("white"))
@@ -716,6 +756,7 @@ class HSDeviceGUI(QMainWindow):
             [int(self.wt_spectrum_top_left_point.x()), int(self.wt_spectrum_top_left_point.y())]
         self.device_settings_dict["wt_spectrum_bottom_right_point"] = \
             [int(self.wt_spectrum_bottom_right_point.x()), int(self.wt_spectrum_bottom_right_point.y())]
+        self.device_settings_dict["it_illumination_image_path"] = self.it_illumination_image_path
         self.device_settings_dict["device_metadata"] = self.hsd.to_dict()
         utils.save_dict_to_json(self.device_settings_dict, self.device_settings_path)
 
@@ -766,6 +807,10 @@ class HSDeviceGUI(QMainWindow):
                 self.ui_wcdw_spectrum_bottom_right_x_coord_spinbox.setValue(x)
                 self.ui_wcdw_spectrum_bottom_right_y_coord_horizontal_slider.setValue(y)
                 self.ui_wcdw_spectrum_bottom_right_y_coord_spinbox.setValue(y)
+            if utils.key_exists_in_dict(self.device_settings_dict, "it_illumination_image_path"):
+                self.it_illumination_image_path = self.device_settings_dict["it_illumination_image_path"]
+                self.ui_it_illumination_image_path_line_edit.setText(self.it_illumination_image_path)
+                self.read_ilm_image.emit(self.it_illumination_image_path)
             if utils.key_exists_in_dict(self.device_settings_dict, "device_metadata"):
                 device_data_dict = self.device_settings_dict["device_metadata"]
                 self.hsd.load_dict(device_data_dict)
@@ -1294,7 +1339,9 @@ class HSDeviceGUI(QMainWindow):
     def on_ui_wcdw_apply_calibration_data_button_clicked(self):
         model = self.ui_wcdw_wavelength_table_view_model
         data = model.to_numpy()
-        self.hsd.set_wavelength_calibration_data(data)
+        self.hsd.set_wavelength_calibration_data(data, int(self.hsd.get_slit_intercept_rotated()),
+                                                 int(self.wt_spectrum_top_left_point.x()),
+                                                 int(self.wt_spectrum_bottom_right_point.x()))
 
     @pyqtSlot(int)
     def on_receive_wl_image_count(self, value: int):
@@ -1362,6 +1409,38 @@ class HSDeviceGUI(QMainWindow):
             self.ui_wcdw_add_wavelength_button.setEnabled(True)
             self.ui_wcdw_remove_wavelength_button.setEnabled(True)
         self.draw_wl_data()
+
+    # Tab 3: illumination tab slots
+
+    @pyqtSlot()
+    def on_ui_it_illumination_image_path_open_button_clicked(self):
+        file_path, _filter = QFileDialog.getOpenFileName(self, "Choose file", "",
+                                                         "Image file (*.bmp *.png *.jpg *.tif)")
+        if file_path != "":
+            self.it_illumination_image_path = file_path
+            self.ui_it_illumination_image_path_line_edit.setText(self.it_illumination_image_path)
+            self.read_ilm_image.emit(self.it_illumination_image_path)
+
+    @pyqtSlot(bool)
+    def on_ui_it_apply_roi_checkbox_clicked(self, checked: bool):
+        self.apply_roi_ilm_image.emit(checked)
+
+    @pyqtSlot(bool)
+    def on_ui_it_apply_illumination_correction_checkbox_clicked(self, checked: bool):
+        pass
+
+    @pyqtSlot()
+    def on_ui_it_compute_illumination_mask_button_clicked(self):
+        pass
+
+    @pyqtSlot(QImage)
+    def on_receive_ilm_image(self, image_qt: QImage):
+        self.it_illumination_image_qt = image_qt.copy()
+        self.it_graphics_scene.removeItem(self.it_graphics_pixmap_item)
+        self.it_graphics_pixmap_item.setPixmap(QPixmap.fromImage(self.it_illumination_image_qt))
+        self.it_graphics_scene.setSceneRect(self.it_graphics_pixmap_item.boundingRect())
+        self.it_graphics_scene.addItem(self.it_graphics_pixmap_item)
+        self.ui_it_apply_roi_checkbox.setEnabled(True)
 
     # Tab 4: settings tab slots
 
