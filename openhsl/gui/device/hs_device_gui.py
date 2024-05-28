@@ -9,7 +9,7 @@ from PyQt6.QtCore import Qt, QDir, QEvent, QLineF, QObject, QPointF, QRect, QRec
     QTimer, pyqtSignal, pyqtSlot, QModelIndex
 from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap, \
     QPolygonF, QStandardItemModel
-from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
+from PyQt6.QtWidgets import QApplication, QAbstractGraphicsShapeItem, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
     QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsRectItem, \
     QGraphicsTextItem, QGraphicsScene, QGraphicsSimpleTextItem, QGraphicsView, QHeaderView, QLabel, QLineEdit, \
     QMainWindow, QMenu, QMenuBar, QMessageBox, QPushButton, QSlider, QSpinBox, QTableView, QTableWidget, \
@@ -144,21 +144,27 @@ class HSDeviceGUI(QMainWindow):
             self.wcdw.findChild(QSlider, 'wavelengthLineYCoord_horizontalSlider')
         self.ui_wcdw_wavelength_line_y_coord_spinbox: QSpinBox = \
             self.wcdw.findChild(QSpinBox, 'wavelengthLineYCoord_spinBox')
-        self.ui_wcdw_spectrum_origin_x_coord_horizontal_slider: QSlider = \
-            self.wcdw.findChild(QSlider, 'spectrumOriginXCoord_horizontalSlider')
-        self.ui_wcdw_spectrum_origin_x_coord_spinbox: QSpinBox = \
-            self.wcdw.findChild(QSpinBox, 'spectrumOriginXCoord_spinBox')
-        self.ui_wcdw_spectrum_origin_y_coord_horizontal_slider: QSlider = \
-            self.wcdw.findChild(QSlider, 'spectrumOriginYCoord_horizontalSlider')
-        self.ui_wcdw_spectrum_origin_y_coord_spinbox: QSpinBox = \
-            self.wcdw.findChild(QSpinBox, 'spectrumOriginYCoord_spinBox')
-        self.ui_wcdw_spectrum_width_horizontal_slider: QSlider = \
-            self.wcdw.findChild(QSlider, 'spectrumWidth_horizontalSlider')
-        self.ui_wcdw_spectrum_width_spinbox: QSpinBox = self.wcdw.findChild(QSpinBox, 'spectrumWidth_spinBox')
-        self.ui_wcdw_spectrum_height_horizontal_slider: QSlider = \
-            self.wcdw.findChild(QSlider, 'spectrumHeight_horizontalSlider')
-        self.ui_wcdw_spectrum_height_spinbox: QSpinBox = self.wcdw.findChild(QSpinBox, 'spectrumHeight_spinBox')
+        self.ui_wcdw_spectrum_top_left_x_coord_horizontal_slider: QSlider = \
+            self.wcdw.findChild(QSlider, 'spectrumTopLeftXCoord_horizontalSlider')
+        self.ui_wcdw_spectrum_top_left_x_coord_spinbox: QSpinBox = \
+            self.wcdw.findChild(QSpinBox, 'spectrumTopLeftXCoord_spinBox')
+        self.ui_wcdw_spectrum_top_left_y_coord_horizontal_slider: QSlider = \
+            self.wcdw.findChild(QSlider, 'spectrumTopLeftYCoord_horizontalSlider')
+        self.ui_wcdw_spectrum_top_left_y_coord_spinbox: QSpinBox = \
+            self.wcdw.findChild(QSpinBox, 'spectrumTopLeftYCoord_spinBox')
+        self.ui_wcdw_spectrum_bottom_right_x_coord_horizontal_slider: QSlider = \
+            self.wcdw.findChild(QSlider, 'spectrumBottomRightXCoord_horizontalSlider')
+        self.ui_wcdw_spectrum_bottom_right_x_coord_spinbox: QSpinBox = \
+            self.wcdw.findChild(QSpinBox, 'spectrumBottomRightXCoord_spinBox')
+        self.ui_wcdw_spectrum_bottom_right_y_coord_horizontal_slider: QSlider = \
+            self.wcdw.findChild(QSlider, 'spectrumBottomRightYCoord_horizontalSlider')
+        self.ui_wcdw_spectrum_bottom_right_y_coord_spinbox: QSpinBox = \
+            self.wcdw.findChild(QSpinBox, 'spectrumBottomRightYCoord_spinBox')
+        self.ui_wcdw_highlight_calibrated_roi_checkbox: QCheckBox = \
+            self.wcdw.findChild(QCheckBox, 'highlightCalibratedROI_checkBox')
         self.ui_wcdw_show_spectrum_roi_checkbox: QCheckBox = self.wcdw.findChild(QCheckBox, 'showSpectrumROI_checkBox')
+        self.ui_wcdw_apply_roi_intersection_checkbox: QCheckBox = \
+            self.wcdw.findChild(QCheckBox, 'applyROIIntersection_checkBox')
         self.ui_wcdw_add_wavelength_button: QPushButton = self.wcdw.findChild(QPushButton, 'addWavelength_pushButton')
         self.ui_wcdw_remove_wavelength_button: QPushButton = \
             self.wcdw.findChild(QPushButton, 'removeWavelength_pushButton')
@@ -262,6 +268,27 @@ class HSDeviceGUI(QMainWindow):
             self.on_ui_wcdw_wavelength_line_y_coord_horizontal_slider_value_changed)
         self.ui_wcdw_wavelength_line_y_coord_spinbox.valueChanged.connect(
             self.on_ui_wcdw_wavelength_line_y_coord_spinbox_value_changed)
+        self.ui_wcdw_spectrum_top_left_x_coord_horizontal_slider.valueChanged.connect(
+            self.on_ui_wcdw_spectrum_top_left_x_coord_horizontal_slider_value_changed)
+        self.ui_wcdw_spectrum_top_left_x_coord_spinbox.valueChanged.connect(
+            self.on_ui_wcdw_spectrum_top_left_x_coord_spinbox_value_changed)
+        self.ui_wcdw_spectrum_top_left_y_coord_horizontal_slider.valueChanged.connect(
+            self.on_ui_wcdw_spectrum_top_left_y_coord_horizontal_slider_value_changed)
+        self.ui_wcdw_spectrum_top_left_y_coord_spinbox.valueChanged.connect(
+            self.on_ui_wcdw_spectrum_top_left_y_coord_spinbox_value_changed)
+        self.ui_wcdw_spectrum_bottom_right_x_coord_horizontal_slider.valueChanged.connect(
+            self.on_ui_wcdw_spectrum_bottom_right_x_horizontal_slider_value_changed)
+        self.ui_wcdw_spectrum_bottom_right_x_coord_spinbox.valueChanged.connect(
+            self.on_ui_wcdw_spectrum_bottom_right_x_spinbox_value_changed)
+        self.ui_wcdw_spectrum_bottom_right_y_coord_horizontal_slider.valueChanged.connect(
+            self.on_ui_wcdw_spectrum_bottom_right_y_horizontal_slider_value_changed)
+        self.ui_wcdw_spectrum_bottom_right_y_coord_spinbox.valueChanged.connect(
+            self.on_ui_wcdw_spectrum_bottom_right_y_spinbox_value_changed)
+        self.ui_wcdw_highlight_calibrated_roi_checkbox.clicked.connect(
+            self.on_ui_wcdw_highlight_calibrated_roi_checkbox_clicked)
+        self.ui_wcdw_show_spectrum_roi_checkbox.clicked.connect(self.on_ui_wcdw_show_spectrum_roi_checkbox_clicked)
+        self.ui_wcdw_apply_roi_intersection_checkbox.clicked.connect(
+            self.on_ui_wcdw_apply_roi_intersection_checkbox_clicked)
         self.ui_wcdw_add_wavelength_button.clicked.connect(self.on_ui_wcdw_add_wavelength_button_clicked)
         self.ui_wcdw_remove_wavelength_button.clicked.connect(self.on_ui_wcdw_remove_wavelength_button_clicked)
         self.ui_wcdw_estimate_wavelengths_by_range_button.clicked.connect(
@@ -301,9 +328,19 @@ class HSDeviceGUI(QMainWindow):
         self.wt_graphics_pixmap_item = QGraphicsPixmapItem()
         self.wt_graphics_slit_line_item = QGraphicsLineItem()
         self.wt_graphics_wavelength_line_item = QGraphicsLineItem()
+        self.wt_graphics_spectrum_top_left_x_line_item = QGraphicsLineItem()
+        self.wt_graphics_spectrum_top_left_y_line_item = QGraphicsLineItem()
+        self.wt_graphics_spectrum_bottom_right_x_line_item = QGraphicsLineItem()
+        self.wt_graphics_spectrum_bottom_right_y_line_item = QGraphicsLineItem()
+        self.wt_graphics_spectrum_top_left_ellipse_item = QGraphicsEllipseItem()
+        self.wt_graphics_spectrum_top_right_ellipse_item = QGraphicsEllipseItem()
+        self.wt_graphics_spectrum_bottom_right_ellipse_item = QGraphicsEllipseItem()
+        self.wt_graphics_spectrum_bottom_left_ellipse_item = QGraphicsEllipseItem()
         self.wt_graphics_text_info_simple_text_item = QGraphicsSimpleTextItem()
         self.wt_graphics_text_info_rect_item = QGraphicsRectItem()
         self.wt_wavelength_line_y_coord: int = 0
+        self.wt_spectrum_top_left_point = QPointF(0, 0)
+        self.wt_spectrum_bottom_right_point = QPointF(0, 0)
 
         # TODO add mutex locker
         # TODO List[bool], for each tab different val?
@@ -399,73 +436,7 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wt_graphics_view.add_preserved_pos_graphics_item(self.wt_graphics_text_info_rect_item)
         # self.ui_wt_graphics_view.marquee_area_changed.connect(self.on_marquee_area_changed)
 
-        dashed_pen = QPen(QColor("white"))
-        dashed_pen.setStyle(Qt.PenStyle.DashLine)
-        dashed_pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
-        dashed_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-        dashed_pen.setWidth(2)
-
-        dashed_pen_marquee = QPen(dashed_pen)
-
-        dashed_pen_slit = QPen(dashed_pen_marquee)
-        dashed_pen_slit.setColor(QColor("red"))
-
-        dashed_pen_slit_roi_rect = QPen(dashed_pen_marquee)
-        dashed_pen_slit_roi_rect.setColor(QColor("#cc870f"))
-
-        dashed_pen_wavelength_line = QPen(dashed_pen_marquee)
-        dashed_pen_wavelength_line.setColor(QColor("green"))
-
-        brush_marquee = QBrush(QColor(255, 255, 255, 128))
-        brush_marquee.setStyle(Qt.BrushStyle.BDiagPattern)
-
-        brush_spectrum = QBrush(QColor(255, 0, 0, 192))
-        brush_spectrum.setStyle(Qt.BrushStyle.BDiagPattern)
-
-        circle_pen = QPen(QColor("red"))
-        circle_pen.setWidth(2)
-
-        polygon_pen = QPen(QColor("white"))
-        polygon_pen.setWidth(2)
-
-        polygon_brush = QBrush(QColor("red"))
-        polygon_brush.setStyle(Qt.BrushStyle.SolidPattern)
-
-        self.slit_graphics_line_item.setPen(dashed_pen_slit)
-        self.slit_graphics_line_item.setOpacity(0.5)
-
-        self.slit_graphics_roi_rect_item.setPen(dashed_pen_slit_roi_rect)
-        self.slit_graphics_roi_rect_item.setOpacity(0.5)
-
-        self.slit_graphics_marquee_area_rect_item.setPen(dashed_pen_marquee)
-        self.slit_graphics_marquee_area_rect_item.setBrush(brush_marquee)
-        self.slit_graphics_marquee_area_rect_item.setOpacity(0.5)
-
-        self.bdt_graphics_marquee_area_rect_item.setPen(dashed_pen_marquee)
-        self.bdt_graphics_marquee_area_rect_item.setBrush(brush_marquee)
-        self.bdt_graphics_marquee_area_rect_item.setOpacity(0.5)
-
-        self.bdt_graphics_center_x_line_item.setPen(dashed_pen_slit)
-        self.bdt_graphics_center_x_line_item.setOpacity(0.25)
-
-        self.bdt_graphics_center_y_line_item.setPen(dashed_pen_slit)
-        self.bdt_graphics_center_y_line_item.setOpacity(0.25)
-
-        self.wt_graphics_slit_line_item.setPen(dashed_pen_slit)
-        self.wt_graphics_slit_line_item.setOpacity(0.5)
-
-        self.wt_graphics_wavelength_line_item.setPen(dashed_pen_wavelength_line)
-        self.wt_graphics_wavelength_line_item.setOpacity(0.5)
-
-        font = QApplication.font()
-        font_size = font.pointSize()
-
-        self.wt_graphics_text_info_simple_text_item.setFont(QFont(font.family(), font_size + 2, QFont.Weight.Bold))
-        self.wt_graphics_text_info_simple_text_item.setBrush(Qt.GlobalColor.green)
-        self.wt_graphics_text_info_simple_text_item.setOpacity(1)
-
-        self.wt_graphics_text_info_rect_item.setBrush(Qt.GlobalColor.black)
-        self.wt_graphics_text_info_rect_item.setOpacity(0.5)
+        self.prepare_graphics_items()
 
         self.ui_slit_image_threshold_value_checkbox.setEnabled(False)
         self.ui_slit_image_threshold_value_horizontal_slider.setEnabled(False)
@@ -517,14 +488,14 @@ class HSDeviceGUI(QMainWindow):
 
         self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.setEnabled(False)
         self.ui_wcdw_wavelength_line_y_coord_spinbox.setEnabled(False)
-        self.ui_wcdw_spectrum_origin_x_coord_horizontal_slider.setEnabled(False)
-        self.ui_wcdw_spectrum_origin_x_coord_spinbox.setEnabled(False)
-        self.ui_wcdw_spectrum_origin_y_coord_horizontal_slider.setEnabled(False)
-        self.ui_wcdw_spectrum_origin_y_coord_spinbox.setEnabled(False)
-        self.ui_wcdw_spectrum_width_horizontal_slider.setEnabled(False)
-        self.ui_wcdw_spectrum_width_spinbox.setEnabled(False)
-        self.ui_wcdw_spectrum_height_horizontal_slider.setEnabled(False)
-        self.ui_wcdw_spectrum_height_spinbox.setEnabled(False)
+        self.ui_wcdw_spectrum_top_left_x_coord_horizontal_slider.setEnabled(False)
+        self.ui_wcdw_spectrum_top_left_x_coord_spinbox.setEnabled(False)
+        self.ui_wcdw_spectrum_top_left_y_coord_horizontal_slider.setEnabled(False)
+        self.ui_wcdw_spectrum_top_left_y_coord_spinbox.setEnabled(False)
+        self.ui_wcdw_spectrum_bottom_right_x_coord_horizontal_slider.setEnabled(False)
+        self.ui_wcdw_spectrum_bottom_right_x_coord_spinbox.setEnabled(False)
+        self.ui_wcdw_spectrum_bottom_right_y_coord_horizontal_slider.setEnabled(False)
+        self.ui_wcdw_spectrum_bottom_right_y_coord_spinbox.setEnabled(False)
         self.ui_wcdw_show_spectrum_roi_checkbox.setEnabled(False)
         self.ui_wcdw_add_wavelength_button.setEnabled(False)
         self.ui_wcdw_remove_wavelength_button.setEnabled(False)
@@ -537,6 +508,95 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wcdw_wavelength_table_view.horizontalHeader().setStretchLastSection(True)
         self.ui_wcdw_wavelength_table_view.setAlternatingRowColors(True)
         self.fill_wcdw()
+
+    def prepare_graphics_items(self):
+        dashed_pen = QPen(QColor("white"))
+        dashed_pen.setStyle(Qt.PenStyle.DashLine)
+        dashed_pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        dashed_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        dashed_pen.setWidth(2)
+
+        dashed_pen_marquee = QPen(dashed_pen)
+
+        dashed_pen_slit = QPen(dashed_pen_marquee)
+        dashed_pen_slit.setColor(QColor("red"))
+
+        dashed_pen_slit_roi_rect = QPen(dashed_pen_marquee)
+        dashed_pen_slit_roi_rect.setColor(QColor("#cc870f"))
+
+        dashed_pen_spectrum_line = QPen(dashed_pen_marquee)
+        dashed_pen_spectrum_line.setColor(QColor("#cc870f"))
+
+        dashed_pen_wavelength_line = QPen(dashed_pen_marquee)
+        dashed_pen_wavelength_line.setColor(QColor("green"))
+
+        brush_marquee = QBrush(QColor(255, 255, 255, 128))
+        brush_marquee.setStyle(Qt.BrushStyle.BDiagPattern)
+
+        brush_spectrum = QBrush(QColor(255, 0, 0, 192))
+        brush_spectrum.setStyle(Qt.BrushStyle.BDiagPattern)
+
+        brush_spectrum_line = QBrush(QColor("white"))
+        # brush_spectrum_line.setStyle(Qt.BrushStyle.SolidPattern)
+
+        circle_pen_spectrum_line = QPen(QColor("#cc870f"))
+        circle_pen_spectrum_line.setWidth(2)
+
+        polygon_pen = QPen(QColor("white"))
+        polygon_pen.setWidth(2)
+
+        polygon_brush = QBrush(QColor("red"))
+        polygon_brush.setStyle(Qt.BrushStyle.SolidPattern)
+
+        self.prepare_graphics_item(self.slit_graphics_line_item, dashed_pen_slit, 0.5)
+
+        self.prepare_graphics_item(self.slit_graphics_roi_rect_item, dashed_pen_slit_roi_rect, 0.5)
+
+        self.prepare_graphics_item(self.slit_graphics_marquee_area_rect_item,
+                                   dashed_pen_marquee, 0.5, brush_marquee)
+
+        self.prepare_graphics_item(self.bdt_graphics_marquee_area_rect_item,
+                                   dashed_pen_marquee, 0.5, brush_marquee)
+
+        self.prepare_graphics_item(self.bdt_graphics_center_x_line_item, dashed_pen_slit, 0.25)
+        self.prepare_graphics_item(self.bdt_graphics_center_y_line_item, dashed_pen_slit, 0.25)
+
+        self.prepare_graphics_item(self.wt_graphics_slit_line_item, dashed_pen_slit, 0.5)
+
+        self.prepare_graphics_item(self.wt_graphics_wavelength_line_item, dashed_pen_wavelength_line, 0.5)
+
+        self.prepare_graphics_item(self.wt_graphics_spectrum_top_left_x_line_item, dashed_pen_spectrum_line, 0.5)
+        self.prepare_graphics_item(self.wt_graphics_spectrum_top_left_y_line_item, dashed_pen_spectrum_line, 0.5)
+        self.prepare_graphics_item(self.wt_graphics_spectrum_bottom_right_x_line_item, dashed_pen_spectrum_line, 0.5)
+        self.prepare_graphics_item(self.wt_graphics_spectrum_bottom_right_y_line_item, dashed_pen_spectrum_line, 0.5)
+
+        self.prepare_graphics_item(self.wt_graphics_spectrum_top_left_ellipse_item,
+                                   circle_pen_spectrum_line, 1, brush_spectrum_line)
+        self.prepare_graphics_item(self.wt_graphics_spectrum_top_right_ellipse_item,
+                                   circle_pen_spectrum_line, 1, brush_spectrum_line)
+        self.prepare_graphics_item(self.wt_graphics_spectrum_bottom_right_ellipse_item,
+                                   circle_pen_spectrum_line, 1, brush_spectrum_line)
+        self.prepare_graphics_item(self.wt_graphics_spectrum_bottom_left_ellipse_item,
+                                   circle_pen_spectrum_line, 1, brush_spectrum_line)
+
+        font = QApplication.font()
+        font_size = font.pointSize()
+
+        self.wt_graphics_text_info_simple_text_item.setFont(QFont(font.family(), font_size + 2, QFont.Weight.Bold))
+        self.wt_graphics_text_info_simple_text_item.setBrush(Qt.GlobalColor.green)
+        self.wt_graphics_text_info_simple_text_item.setOpacity(1)
+
+        self.wt_graphics_text_info_rect_item.setBrush(Qt.GlobalColor.black)
+        self.wt_graphics_text_info_rect_item.setOpacity(0.5)
+
+    @staticmethod
+    def prepare_graphics_item(item: QAbstractGraphicsShapeItem, pen: QPen = None, opacity: float = 1.0,
+                              brush: QBrush = None):
+        if pen is not None:
+            item.setPen(pen)
+        item.setOpacity(opacity)
+        if brush is not None:
+            item.setBrush(brush)
 
     def fill_bdew(self):
         self.ui_bdew_equation_header_view_vertical.clear_data()
@@ -650,6 +710,10 @@ class HSDeviceGUI(QMainWindow):
         self.device_settings_dict["bdt_grid_tile_size"] = self.ui_bdew_grid_tile_size_spinbox.value()
         self.device_settings_dict["wt_wavelength_image_dir_path"] = self.wt_wavelength_image_dir_path
         self.device_settings_dict["wt_contrast_value"] = self.ui_wt_contrast_preview_value_spinbox.value()
+        self.device_settings_dict["wt_spectrum_top_left_point"] = \
+            [int(self.wt_spectrum_top_left_point.x()), int(self.wt_spectrum_top_left_point.y())]
+        self.device_settings_dict["wt_spectrum_bottom_right_point"] = \
+            [int(self.wt_spectrum_bottom_right_point.x()), int(self.wt_spectrum_bottom_right_point.y())]
         self.device_settings_dict["device_metadata"] = self.hsd.to_dict()
         utils.save_dict_to_json(self.device_settings_dict, self.device_settings_path)
 
@@ -684,6 +748,22 @@ class HSDeviceGUI(QMainWindow):
                 self.hsd.set_wl_contrast_value(wt_contrast_value)
                 self.ui_wt_contrast_preview_value_horizontal_slider.setValue(wt_contrast_value)
                 self.ui_wt_contrast_preview_value_spinbox.setValue(wt_contrast_value)
+            if utils.key_exists_in_dict(self.device_settings_dict, "wt_spectrum_top_left_point"):
+                x, y = self.device_settings_dict["wt_spectrum_top_left_point"]
+                self.wt_spectrum_top_left_point.setX(x)
+                self.wt_spectrum_top_left_point.setY(y)
+                self.ui_wcdw_spectrum_top_left_x_coord_horizontal_slider.setValue(x)
+                self.ui_wcdw_spectrum_top_left_x_coord_spinbox.setValue(x)
+                self.ui_wcdw_spectrum_top_left_y_coord_horizontal_slider.setValue(y)
+                self.ui_wcdw_spectrum_top_left_y_coord_spinbox.setValue(y)
+            if utils.key_exists_in_dict(self.device_settings_dict, "wt_spectrum_bottom_right_point"):
+                x, y = self.device_settings_dict["wt_spectrum_bottom_right_point"]
+                self.wt_spectrum_bottom_right_point.setX(x)
+                self.wt_spectrum_bottom_right_point.setY(y)
+                self.ui_wcdw_spectrum_bottom_right_x_coord_horizontal_slider.setValue(x)
+                self.ui_wcdw_spectrum_bottom_right_x_coord_spinbox.setValue(x)
+                self.ui_wcdw_spectrum_bottom_right_y_coord_horizontal_slider.setValue(y)
+                self.ui_wcdw_spectrum_bottom_right_y_coord_spinbox.setValue(y)
             if utils.key_exists_in_dict(self.device_settings_dict, "device_metadata"):
                 device_data_dict = self.device_settings_dict["device_metadata"]
                 self.hsd.load_dict(device_data_dict)
@@ -1114,6 +1194,66 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.setValue(self.wt_wavelength_line_y_coord)
         self.draw_wl_data()
 
+    @pyqtSlot(int)
+    def on_ui_wcdw_spectrum_top_left_x_coord_horizontal_slider_value_changed(self, value: int):
+        self.wt_spectrum_top_left_point.setX(value)
+        self.ui_wcdw_spectrum_top_left_x_coord_spinbox.setValue(value)
+        self.draw_wl_spectrum_lines()
+
+    @pyqtSlot(int)
+    def on_ui_wcdw_spectrum_top_left_x_coord_spinbox_value_changed(self, value: int):
+        self.wt_spectrum_top_left_point.setX(value)
+        self.ui_wcdw_spectrum_top_left_x_coord_horizontal_slider.setValue(value)
+        self.draw_wl_spectrum_lines()
+
+    @pyqtSlot(int)
+    def on_ui_wcdw_spectrum_top_left_y_coord_horizontal_slider_value_changed(self, value: int):
+        self.wt_spectrum_top_left_point.setY(value)
+        self.ui_wcdw_spectrum_top_left_y_coord_spinbox.setValue(value)
+        self.draw_wl_spectrum_lines()
+
+    @pyqtSlot(int)
+    def on_ui_wcdw_spectrum_top_left_y_coord_spinbox_value_changed(self, value: int):
+        self.wt_spectrum_top_left_point.setY(value)
+        self.ui_wcdw_spectrum_top_left_y_coord_horizontal_slider.setValue(value)
+        self.draw_wl_spectrum_lines()
+
+    @pyqtSlot(int)
+    def on_ui_wcdw_spectrum_bottom_right_x_horizontal_slider_value_changed(self, value: int):
+        self.wt_spectrum_bottom_right_point.setX(value)
+        self.ui_wcdw_spectrum_bottom_right_x_coord_spinbox.setValue(value)
+        self.draw_wl_spectrum_lines()
+
+    @pyqtSlot(int)
+    def on_ui_wcdw_spectrum_bottom_right_x_spinbox_value_changed(self, value: int):
+        self.wt_spectrum_bottom_right_point.setX(value)
+        self.ui_wcdw_spectrum_bottom_right_x_coord_horizontal_slider.setValue(value)
+        self.draw_wl_spectrum_lines()
+
+    @pyqtSlot(int)
+    def on_ui_wcdw_spectrum_bottom_right_y_horizontal_slider_value_changed(self, value: int):
+        self.wt_spectrum_bottom_right_point.setY(value)
+        self.ui_wcdw_spectrum_bottom_right_y_coord_spinbox.setValue(value)
+        self.draw_wl_spectrum_lines()
+
+    @pyqtSlot(int)
+    def on_ui_wcdw_spectrum_bottom_right_y_spinbox_value_changed(self, value: int):
+        self.wt_spectrum_bottom_right_point.setY(value)
+        self.ui_wcdw_spectrum_bottom_right_y_coord_horizontal_slider.setValue(value)
+        self.draw_wl_spectrum_lines()
+
+    @pyqtSlot(bool)
+    def on_ui_wcdw_highlight_calibrated_roi_checkbox_clicked(self, checked: bool):
+        pass
+
+    @pyqtSlot(bool)
+    def on_ui_wcdw_show_spectrum_roi_checkbox_clicked(self, checked: bool):
+        pass
+
+    @pyqtSlot(bool)
+    def on_ui_wcdw_apply_roi_intersection_checkbox_clicked(self, checked: bool):
+        pass
+
     @pyqtSlot()
     def on_ui_wcdw_add_wavelength_button_clicked(self):
         model = self.ui_wcdw_wavelength_table_view_model
@@ -1134,7 +1274,11 @@ class HSDeviceGUI(QMainWindow):
     @pyqtSlot()
     def on_ui_wcdw_estimate_wavelengths_by_range_button_clicked(self):
         model = self.ui_wcdw_wavelength_table_view_model
-        model.fill_missing_by_range()
+        y_min, y_max = model.fill_missing_by_y_coord_range()
+        if not (0 < self.wt_spectrum_top_left_point.x() < self.wt_wavelength_image_qt.width() - 1):
+            self.on_ui_wcdw_spectrum_top_left_y_coord_spinbox_value_changed(y_min)
+        if not (0 < self.wt_spectrum_bottom_right_point.x() < self.wt_wavelength_image_qt.width() - 1):
+            self.on_ui_wcdw_spectrum_bottom_right_y_spinbox_value_changed(y_max)
 
     @pyqtSlot()
     def on_ui_wcdw_fill_slit_offset_y_button_clicked(self):
@@ -1180,29 +1324,38 @@ class HSDeviceGUI(QMainWindow):
             f'{self.ui_wt_current_wavelength_image_spinbox.maximum() + 1}]')
         if self.wt_is_first_wavelength_image_to_load:
             self.wt_is_first_wavelength_image_to_load = False
-            self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.setMinimum(1)
+            self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.setMinimum(0)
             self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.height() - 1)
-            self.ui_wcdw_wavelength_line_y_coord_spinbox.setMinimum(1)
+            self.ui_wcdw_wavelength_line_y_coord_spinbox.setMinimum(0)
             self.ui_wcdw_wavelength_line_y_coord_spinbox.setMaximum(self.wt_wavelength_image_qt.height() - 1)
-            self.ui_wcdw_spectrum_origin_x_coord_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.width() - 1)
-            self.ui_wcdw_spectrum_origin_x_coord_spinbox.setMaximum(self.wt_wavelength_image_qt.width() - 1)
-            self.ui_wcdw_spectrum_origin_y_coord_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.height() - 1)
-            self.ui_wcdw_spectrum_origin_y_coord_spinbox.setMaximum(self.wt_wavelength_image_qt.height() - 1)
-            self.ui_wcdw_spectrum_width_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.width() - 1)
-            self.ui_wcdw_spectrum_width_spinbox.setMaximum(self.wt_wavelength_image_qt.width() - 1)
-            self.ui_wcdw_spectrum_height_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.height() - 1)
-            self.ui_wcdw_spectrum_height_spinbox.setMaximum(self.wt_wavelength_image_qt.height() - 1)
+            self.ui_wcdw_spectrum_top_left_x_coord_horizontal_slider.setMinimum(0)
+            self.ui_wcdw_spectrum_top_left_x_coord_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.width() - 1)
+            self.ui_wcdw_spectrum_top_left_x_coord_spinbox.setMinimum(0)
+            self.ui_wcdw_spectrum_top_left_x_coord_spinbox.setMaximum(self.wt_wavelength_image_qt.width() - 1)
+            self.ui_wcdw_spectrum_top_left_y_coord_horizontal_slider.setMinimum(0)
+            self.ui_wcdw_spectrum_top_left_y_coord_horizontal_slider.setMaximum(
+                self.wt_wavelength_image_qt.height() - 1)
+            self.ui_wcdw_spectrum_top_left_y_coord_spinbox.setMinimum(0)
+            self.ui_wcdw_spectrum_top_left_y_coord_spinbox.setMaximum(self.wt_wavelength_image_qt.height() - 1)
+            self.ui_wcdw_spectrum_bottom_right_x_coord_horizontal_slider.setMinimum(0)
+            self.ui_wcdw_spectrum_bottom_right_x_coord_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.width() - 1)
+            self.ui_wcdw_spectrum_bottom_right_x_coord_spinbox.setMinimum(0)
+            self.ui_wcdw_spectrum_bottom_right_x_coord_spinbox.setMaximum(self.wt_wavelength_image_qt.width() - 1)
+            self.ui_wcdw_spectrum_bottom_right_y_coord_horizontal_slider.setMinimum(0)
+            self.ui_wcdw_spectrum_bottom_right_y_coord_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.height() - 1)
+            self.ui_wcdw_spectrum_bottom_right_y_coord_spinbox.setMinimum(0)
+            self.ui_wcdw_spectrum_bottom_right_y_coord_spinbox.setMaximum(self.wt_wavelength_image_qt.height() - 1)
 
             self.ui_wcdw_wavelength_line_y_coord_horizontal_slider.setEnabled(True)
             self.ui_wcdw_wavelength_line_y_coord_spinbox.setEnabled(True)
-            self.ui_wcdw_spectrum_origin_x_coord_horizontal_slider.setEnabled(True)
-            self.ui_wcdw_spectrum_origin_x_coord_spinbox.setEnabled(True)
-            self.ui_wcdw_spectrum_origin_y_coord_horizontal_slider.setEnabled(True)
-            self.ui_wcdw_spectrum_origin_y_coord_spinbox.setEnabled(True)
-            self.ui_wcdw_spectrum_width_horizontal_slider.setEnabled(True)
-            self.ui_wcdw_spectrum_width_spinbox.setEnabled(True)
-            self.ui_wcdw_spectrum_height_horizontal_slider.setEnabled(True)
-            self.ui_wcdw_spectrum_height_spinbox.setEnabled(True)
+            self.ui_wcdw_spectrum_top_left_x_coord_horizontal_slider.setEnabled(True)
+            self.ui_wcdw_spectrum_top_left_x_coord_spinbox.setEnabled(True)
+            self.ui_wcdw_spectrum_top_left_y_coord_horizontal_slider.setEnabled(True)
+            self.ui_wcdw_spectrum_top_left_y_coord_spinbox.setEnabled(True)
+            self.ui_wcdw_spectrum_bottom_right_x_coord_horizontal_slider.setEnabled(True)
+            self.ui_wcdw_spectrum_bottom_right_x_coord_spinbox.setEnabled(True)
+            self.ui_wcdw_spectrum_bottom_right_y_coord_horizontal_slider.setEnabled(True)
+            self.ui_wcdw_spectrum_bottom_right_y_coord_spinbox.setEnabled(True)
             self.ui_wcdw_show_spectrum_roi_checkbox.setEnabled(True)
             self.ui_wcdw_add_wavelength_button.setEnabled(True)
             self.ui_wcdw_remove_wavelength_button.setEnabled(True)
@@ -1289,9 +1442,37 @@ class HSDeviceGUI(QMainWindow):
                     not self.ui_bdt_distortion_grid_checkbox.isChecked():
                 self.bdt_graphics_scene.addItem(self.bdt_graphics_marquee_area_rect_item)
 
+    @staticmethod
+    def draw_circle(scene: QGraphicsScene, item: QGraphicsEllipseItem, center: QPointF, radius: int = 4):
+        scene.removeItem(item)
+        item.setRect(center.x() - radius, center.y() - radius, 2 * radius, 2 * radius)
+        scene.addItem(item)
+
+    @staticmethod
+    def draw_line(scene: QGraphicsScene, item: QGraphicsLineItem, point_start: QPointF, point_stop: QPointF):
+        scene.removeItem(item)
+        item.setLine(QLineF(point_start, point_stop))
+        scene.addItem(item)
+
+    @staticmethod
+    def line_intersection(line_item_1: QGraphicsLineItem, line_item_2: QGraphicsLineItem) -> Optional[QPointF]:
+        intersection_type, point = line_item_1.line().intersects(line_item_2.line())
+        if intersection_type == QLineF.IntersectionType.BoundedIntersection:
+            return point
+        else:
+            return None
+
+    def draw_line_intersection_circle(self, line_item_1: QGraphicsLineItem, line_item_2: QGraphicsLineItem,
+                                      scene: QGraphicsScene, ellipse_item: QGraphicsEllipseItem, radius: int = 4):
+        if line_item_1 in scene.items() and line_item_2 in scene.items():
+            p = self.line_intersection(line_item_1, line_item_2)
+            if p is not None:
+                self.draw_circle(scene, ellipse_item, p)
+            else:
+                scene.removeItem(ellipse_item)
+
     def draw_wl_data(self):
         self.wt_graphics_scene.removeItem(self.wt_graphics_slit_line_item)
-        self.wt_graphics_scene.removeItem(self.wt_graphics_wavelength_line_item)
         self.wt_graphics_scene.removeItem(self.wt_graphics_text_info_rect_item)
         if self.ui_wt_apply_rotation_checkbox.isChecked():
             self.wt_graphics_slit_line_item.setLine(
@@ -1302,11 +1483,89 @@ class HSDeviceGUI(QMainWindow):
             self.wt_graphics_slit_line_item.setLine(
                 QLineF(0, self.hsd.get_slit_intercept(), self.slit_image_qt.width(),
                        self.hsd.get_slit_slope() * self.slit_image_qt.width() + self.hsd.get_slit_intercept()))
-        self.wt_graphics_wavelength_line_item.setLine(
-            QLineF(2, self.wt_wavelength_line_y_coord, self.slit_image_qt.width() - 3, self.wt_wavelength_line_y_coord))
         self.wt_graphics_scene.addItem(self.wt_graphics_slit_line_item)
-        self.wt_graphics_scene.addItem(self.wt_graphics_wavelength_line_item)
         self.wt_graphics_scene.addItem(self.wt_graphics_text_info_rect_item)
+        self.draw_wl_wavelength_line()
+        self.draw_wl_spectrum_lines()
+
+    def draw_wl_wavelength_line(self):
+        if 0 < self.wt_wavelength_line_y_coord < self.slit_image_qt.height() - 1:
+            point_start = QPointF(0, self.wt_wavelength_line_y_coord)
+            point_stop = QPointF(self.slit_image_qt.width() - 1, self.wt_wavelength_line_y_coord)
+            self.draw_line(self.wt_graphics_scene, self.wt_graphics_wavelength_line_item, point_start, point_stop)
+        else:
+            self.wt_graphics_scene.removeItem(self.wt_graphics_wavelength_line_item)
+
+    def draw_wl_spectrum_top_left_x_line(self):
+        if 0 < self.wt_spectrum_top_left_point.x() < self.wt_wavelength_image_qt.width() - 1:
+            point_start = QPointF(self.wt_spectrum_top_left_point.x(), 0)
+            point_stop = QPointF(self.wt_spectrum_top_left_point.x(), self.wt_wavelength_image_qt.height() - 1)
+            self.draw_line(self.wt_graphics_scene, self.wt_graphics_spectrum_top_left_x_line_item,
+                           point_start, point_stop)
+        else:
+            self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_left_x_line_item)
+            self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_left_ellipse_item)
+            self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_bottom_left_ellipse_item)
+
+    def draw_wl_spectrum_top_left_y_line(self):
+        if self.wt_wavelength_image_qt is not None:
+            if 0 < self.wt_spectrum_top_left_point.y() < self.wt_wavelength_image_qt.height() - 1:
+                point_start = QPointF(0, self.wt_spectrum_top_left_point.y())
+                point_stop = QPointF(self.wt_wavelength_image_qt.width() - 1, self.wt_spectrum_top_left_point.y())
+                self.draw_line(self.wt_graphics_scene, self.wt_graphics_spectrum_top_left_y_line_item,
+                               point_start, point_stop)
+            else:
+                self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_left_y_line_item)
+                self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_left_ellipse_item)
+                self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_right_ellipse_item)
+
+    def draw_wl_spectrum_bottom_right_x_line(self):
+        if self.wt_wavelength_image_qt is not None:
+            if 0 < self.wt_spectrum_bottom_right_point.x() < self.wt_wavelength_image_qt.width() - 1:
+                point_start = QPointF(self.wt_spectrum_bottom_right_point.x(), 0)
+                point_stop = QPointF(self.wt_spectrum_bottom_right_point.x(), self.wt_wavelength_image_qt.height() - 1)
+                self.draw_line(self.wt_graphics_scene, self.wt_graphics_spectrum_bottom_right_x_line_item,
+                               point_start, point_stop)
+            else:
+                self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_bottom_right_x_line_item)
+                self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_right_ellipse_item)
+                self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_bottom_right_ellipse_item)
+
+    def draw_wl_spectrum_bottom_right_y_line(self):
+        if self.wt_wavelength_image_qt is not None:
+            if 0 < self.wt_spectrum_bottom_right_point.y() < self.wt_wavelength_image_qt.height() - 1:
+                point_start = QPointF(0, self.wt_spectrum_bottom_right_point.y())
+                point_stop = QPointF(self.wt_wavelength_image_qt.width() - 1, self.wt_spectrum_bottom_right_point.y())
+                self.draw_line(self.wt_graphics_scene, self.wt_graphics_spectrum_bottom_right_y_line_item,
+                               point_start, point_stop)
+            else:
+                self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_bottom_right_y_line_item)
+                self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_bottom_left_ellipse_item)
+                self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_bottom_right_ellipse_item)
+
+    def draw_wl_spectrum_lines(self):
+        self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_left_ellipse_item)
+        self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_right_ellipse_item)
+        self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_bottom_right_ellipse_item)
+        self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_bottom_left_ellipse_item)
+
+        self.draw_wl_spectrum_top_left_x_line()
+        self.draw_wl_spectrum_top_left_y_line()
+        self.draw_wl_spectrum_bottom_right_x_line()
+        self.draw_wl_spectrum_bottom_right_y_line()
+
+        self.draw_line_intersection_circle(self.wt_graphics_spectrum_top_left_x_line_item,
+                                           self.wt_graphics_spectrum_top_left_y_line_item,
+                                           self.wt_graphics_scene, self.wt_graphics_spectrum_top_left_ellipse_item)
+        self.draw_line_intersection_circle(self.wt_graphics_spectrum_top_left_y_line_item,
+                                           self.wt_graphics_spectrum_bottom_right_x_line_item,
+                                           self.wt_graphics_scene, self.wt_graphics_spectrum_top_right_ellipse_item)
+        self.draw_line_intersection_circle(self.wt_graphics_spectrum_bottom_right_x_line_item,
+                                           self.wt_graphics_spectrum_bottom_right_y_line_item,
+                                           self.wt_graphics_scene, self.wt_graphics_spectrum_bottom_right_ellipse_item)
+        self.draw_line_intersection_circle(self.wt_graphics_spectrum_bottom_right_y_line_item,
+                                           self.wt_graphics_spectrum_top_left_x_line_item,
+                                           self.wt_graphics_scene, self.wt_graphics_spectrum_bottom_left_ellipse_item)
 
     def update_wl_overlay_text(self, text):
         self.wt_graphics_text_info_simple_text_item.setText(text)

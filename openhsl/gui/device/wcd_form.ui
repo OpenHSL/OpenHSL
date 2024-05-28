@@ -16,10 +16,85 @@
   <layout class="QGridLayout" name="gridLayout_2">
    <item row="0" column="0">
     <layout class="QGridLayout" name="gridLayout">
+     <item row="2" column="1">
+      <widget class="QSlider" name="spectrumTopLeftYCoord_horizontalSlider">
+       <property name="maximum">
+        <number>10000</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="2">
+      <widget class="QSpinBox" name="spectrumBottomRightYCoord_spinBox">
+       <property name="maximum">
+        <number>10000</number>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QSlider" name="spectrumBottomRightYCoord_horizontalSlider">
+       <property name="maximum">
+        <number>10000</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QSpinBox" name="wavelengthLineYCoord_spinBox">
+       <property name="maximum">
+        <number>10000</number>
+       </property>
+      </widget>
+     </item>
      <item row="0" column="1">
       <widget class="QSlider" name="wavelengthLineYCoord_horizontalSlider">
        <property name="maximum">
-        <number>2048</number>
+        <number>10000</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="spectrumBottomRightXCoord_label">
+       <property name="text">
+        <string>Spectrum bottom right X</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <widget class="QSpinBox" name="spectrumTopLeftXCoord_spinBox">
+       <property name="maximum">
+        <number>10000</number>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QSlider" name="spectrumBottomRightXCoord_horizontalSlider">
+       <property name="maximum">
+        <number>10000</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="spectrumTopLeftYCoord_label">
+       <property name="text">
+        <string>Spectrum top left Y</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QSlider" name="spectrumTopLeftXCoord_horizontalSlider">
+       <property name="maximum">
+        <number>10000</number>
        </property>
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
@@ -27,51 +102,23 @@
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QLabel" name="spectrumOriginXCoord_label">
+      <widget class="QLabel" name="spectrumTopLeftXCoord_label">
        <property name="text">
-        <string>Spectrum origin X</string>
+        <string>Spectrum top left X</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="spectrumOriginYCoord_label">
+     <item row="6" column="0">
+      <widget class="QCheckBox" name="showSpectrumROI_checkBox">
        <property name="text">
-        <string>Spectrum origin Y</string>
+        <string>Show spectrum ROI</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="spectrumHeight_label">
-       <property name="text">
-        <string>Spectrum height</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QSlider" name="spectrumOriginXCoord_horizontalSlider">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="2">
-      <widget class="QSpinBox" name="spectrumOriginXCoord_spinBox">
+     <item row="2" column="2">
+      <widget class="QSpinBox" name="spectrumTopLeftYCoord_spinBox">
        <property name="maximum">
-        <number>1000</number>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="spectrumWidth_label">
-       <property name="text">
-        <string>Spectrum width</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="2">
-      <widget class="QSpinBox" name="wavelengthLineYCoord_spinBox">
-       <property name="maximum">
-        <number>1000</number>
+        <number>10000</number>
        </property>
       </widget>
      </item>
@@ -82,52 +129,31 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
-      <widget class="QSlider" name="spectrumWidth_horizontalSlider">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="2">
-      <widget class="QSpinBox" name="spectrumHeight_spinBox">
-       <property name="maximum">
-        <number>1000</number>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="2">
-      <widget class="QSpinBox" name="spectrumOriginYCoord_spinBox">
-       <property name="maximum">
-        <number>1000</number>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QSlider" name="spectrumOriginYCoord_horizontalSlider">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+     <item row="4" column="0">
+      <widget class="QLabel" name="spectrumBottomRightYCoord_label">
+       <property name="text">
+        <string>Spectrum bottom right Y</string>
        </property>
       </widget>
      </item>
      <item row="3" column="2">
-      <widget class="QSpinBox" name="spectrumWidth_spinBox">
+      <widget class="QSpinBox" name="spectrumBottomRightXCoord_spinBox">
        <property name="maximum">
-        <number>1000</number>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="1">
-      <widget class="QSlider" name="spectrumHeight_horizontalSlider">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+        <number>10000</number>
        </property>
       </widget>
      </item>
      <item row="5" column="0">
-      <widget class="QCheckBox" name="showSpectrumROI_checkBox">
+      <widget class="QCheckBox" name="highlightCalibratedROI_checkBox">
        <property name="text">
-        <string>Show spectrum ROI</string>
+        <string>Highlight calibrated ROI</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QCheckBox" name="applyROIIntersection_checkBox">
+       <property name="text">
+        <string>Apply ROI intersection</string>
        </property>
       </widget>
      </item>

@@ -502,7 +502,7 @@ class WavelengthCalibrationTableModel(QAbstractTableModel):
         else:
             return None
 
-    def fill_missing_by_range(self):
+    def fill_missing_by_y_coord_range(self) -> Tuple[int, int]:
         matrix = np.zeros((len(self.items), 2))
         for i, item in enumerate(self.items):
             matrix[i, :] = item.to_list()[0:2]
@@ -519,6 +519,7 @@ class WavelengthCalibrationTableModel(QAbstractTableModel):
         u, indices = np.unique(matrix_new[:, 0], return_index=True)
         matrix_new = matrix_new[indices, :].tolist()
         self.load_data_from_list(matrix_new)
+        return y_min, y_max
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlag:
         if index.column() == 2:
