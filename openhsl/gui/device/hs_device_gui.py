@@ -160,11 +160,9 @@ class HSDeviceGUI(QMainWindow):
             self.wcdw.findChild(QSlider, 'spectrumBottomRightYCoord_horizontalSlider')
         self.ui_wcdw_spectrum_bottom_right_y_coord_spinbox: QSpinBox = \
             self.wcdw.findChild(QSpinBox, 'spectrumBottomRightYCoord_spinBox')
-        self.ui_wcdw_highlight_calibrated_roi_checkbox: QCheckBox = \
-            self.wcdw.findChild(QCheckBox, 'highlightCalibratedROI_checkBox')
+        self.ui_wcdw_highlight_wavelengths_checkbox: QCheckBox = \
+            self.wcdw.findChild(QCheckBox, 'highlightWavelengths_checkBox')
         self.ui_wcdw_show_spectrum_roi_checkbox: QCheckBox = self.wcdw.findChild(QCheckBox, 'showSpectrumROI_checkBox')
-        self.ui_wcdw_apply_roi_intersection_checkbox: QCheckBox = \
-            self.wcdw.findChild(QCheckBox, 'applyROIIntersection_checkBox')
         self.ui_wcdw_add_wavelength_button: QPushButton = self.wcdw.findChild(QPushButton, 'addWavelength_pushButton')
         self.ui_wcdw_remove_wavelength_button: QPushButton = \
             self.wcdw.findChild(QPushButton, 'removeWavelength_pushButton')
@@ -284,11 +282,9 @@ class HSDeviceGUI(QMainWindow):
             self.on_ui_wcdw_spectrum_bottom_right_y_horizontal_slider_value_changed)
         self.ui_wcdw_spectrum_bottom_right_y_coord_spinbox.valueChanged.connect(
             self.on_ui_wcdw_spectrum_bottom_right_y_spinbox_value_changed)
-        self.ui_wcdw_highlight_calibrated_roi_checkbox.clicked.connect(
-            self.on_ui_wcdw_highlight_calibrated_roi_checkbox_clicked)
+        self.ui_wcdw_highlight_wavelengths_checkbox.clicked.connect(
+            self.on_ui_wcdw_highlight_wavelengths_checkbox_clicked)
         self.ui_wcdw_show_spectrum_roi_checkbox.clicked.connect(self.on_ui_wcdw_show_spectrum_roi_checkbox_clicked)
-        self.ui_wcdw_apply_roi_intersection_checkbox.clicked.connect(
-            self.on_ui_wcdw_apply_roi_intersection_checkbox_clicked)
         self.ui_wcdw_add_wavelength_button.clicked.connect(self.on_ui_wcdw_add_wavelength_button_clicked)
         self.ui_wcdw_remove_wavelength_button.clicked.connect(self.on_ui_wcdw_remove_wavelength_button_clicked)
         self.ui_wcdw_estimate_wavelengths_by_range_button.clicked.connect(
@@ -340,9 +336,11 @@ class HSDeviceGUI(QMainWindow):
         self.wt_graphics_text_info_simple_text_item = QGraphicsSimpleTextItem()
         self.wt_graphics_text_info_rect_item = QGraphicsRectItem()
         self.wt_wavelength_line_y_coord: int = 0
+        self.wt_calibrated_roi_rect_item_list: List[QGraphicsRectItem] = []
         self.wt_spectrum_top_left_point = QPointF(0, 0)
         self.wt_spectrum_bottom_right_point = QPointF(0, 0)
         self.wt_draw_spectrum_roi_enabled = False
+        self.wt_highlight_wavelengths_enabled = False
 
         # TODO add mutex locker
         # TODO List[bool], for each tab different val?
@@ -1247,17 +1245,14 @@ class HSDeviceGUI(QMainWindow):
         self.draw_wl_spectrum_lines()
 
     @pyqtSlot(bool)
-    def on_ui_wcdw_highlight_calibrated_roi_checkbox_clicked(self, checked: bool):
-        pass
+    def on_ui_wcdw_highlight_wavelengths_checkbox_clicked(self, checked: bool):
+        self.wt_highlight_wavelengths_enabled = checked
+        self.draw_calibrated_roi()
 
     @pyqtSlot(bool)
     def on_ui_wcdw_show_spectrum_roi_checkbox_clicked(self, checked: bool):
         self.wt_draw_spectrum_roi_enabled = checked
         self.draw_wl_spectrum_roi()
-
-    @pyqtSlot(bool)
-    def on_ui_wcdw_apply_roi_intersection_checkbox_clicked(self, checked: bool):
-        pass
 
     @pyqtSlot()
     def on_ui_wcdw_add_wavelength_button_clicked(self):
@@ -1265,6 +1260,7 @@ class HSDeviceGUI(QMainWindow):
         data = [0, self.wt_wavelength_line_y_coord,
                 int(np.abs(self.wt_wavelength_line_y_coord - self.hsd.get_slit_intercept_rotated()))]
         model.add_item_from_list(data)
+        self.draw_calibrated_roi()
 
     @pyqtSlot()
     def on_ui_wcdw_remove_wavelength_button_clicked(self):
@@ -1275,6 +1271,7 @@ class HSDeviceGUI(QMainWindow):
             rows = sorted(set([index.row() for index in indexes]), reverse=True)
             for row in rows:
                 model.removeRow(row)
+        self.draw_calibrated_roi()
 
     @pyqtSlot()
     def on_ui_wcdw_estimate_wavelengths_by_range_button_clicked(self):
@@ -1575,6 +1572,28 @@ class HSDeviceGUI(QMainWindow):
                                            self.wt_graphics_spectrum_top_left_x_line_item,
                                            self.wt_graphics_scene, self.wt_graphics_spectrum_bottom_left_ellipse_item)
         self.draw_wl_spectrum_roi()
+        self.draw_calibrated_roi()
+
+    def draw_calibrated_roi(self):
+        for item in self.wt_calibrated_roi_rect_item_list:
+            self.wt_graphics_scene.removeItem(item)
+        if self.wt_highlight_wavelengths_enabled:
+            self.wt_calibrated_roi_rect_item_list.clear()
+            model = self.ui_wcdw_wavelength_table_view_model
+            y_range_list, _ = model.get_continuous_y_range_list()
+            brush = QBrush(QColor("green"))
+
+            for i in range(len(y_range_list)):
+                rect_item = QGraphicsRectItem()
+                top_left_p = QPointF(0, min(y_range_list[i]))
+                bottom_right_p = QPointF(self.wt_wavelength_image_qt.width() - 1, max(y_range_list[i]))
+                rect = QRectF(top_left_p, bottom_right_p)
+                rect_item.setRect(rect)
+                rect_item.setBrush(brush)
+                rect_item.setOpacity(0.25)
+                self.wt_calibrated_roi_rect_item_list.append(rect_item)
+            for item in self.wt_calibrated_roi_rect_item_list:
+                self.wt_graphics_scene.addItem(item)
 
     def draw_wl_spectrum_roi(self):
         self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_roi)

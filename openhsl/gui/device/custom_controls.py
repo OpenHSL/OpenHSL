@@ -526,6 +526,26 @@ class WavelengthCalibrationTableModel(QAbstractTableModel):
             return super(WavelengthCalibrationTableModel, self).flags(index)
         return super(WavelengthCalibrationTableModel, self).flags(index) | Qt.ItemFlag.ItemIsEditable
 
+    def get_continuous_y_range_list(self) -> Tuple[List[List[int]], List[List[int]]]:
+        data = self.to_numpy()
+        y = data[:, 1]
+        dy = np.diff(y).astype(int)
+        y_range_idx_list = []
+        y_range_list = []
+        start = 0
+        dy_idx_list = np.where(dy > 1)[0]
+        if len(dy_idx_list) == 0:
+            return [y.tolist()], [list(range(len(y)))]
+        else:
+            for i in dy_idx_list:
+                y_range_list.append(y[start: i + 1].tolist())
+                y_range_idx_list.append(list(range(start, i + 1)))
+                start = i + 1
+            y_range_list.append(y[start:].tolist())
+            y_range_idx_list.append(list(range(start, len(y))))
+        return y_range_list, y_range_idx_list
+
+
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
         if orientation == Qt.Orientation.Horizontal:
             if role == Qt.ItemDataRole.DisplayRole:

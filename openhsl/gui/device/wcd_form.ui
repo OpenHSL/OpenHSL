@@ -144,9 +144,9 @@
       </widget>
      </item>
      <item row="5" column="0">
-      <widget class="QCheckBox" name="highlightCalibratedROI_checkBox">
+      <widget class="QCheckBox" name="highlightWavelengths_checkBox">
        <property name="text">
-        <string>Highlight calibrated ROI</string>
+        <string>Highlight wavelengths</string>
        </property>
       </widget>
      </item>
