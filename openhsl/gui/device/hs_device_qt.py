@@ -132,7 +132,9 @@ class HSDeviceQt(QObject, HSDevice):
 
     @staticmethod
     def image_to_qimage(image: np.ndarray, image_format: QImage.Format = QImage.Format.Format_RGB888):
-        image_qt = QImage(image, image.shape[1], image.shape[0], image_format)
+        total_bytes = image.nbytes
+        bytes_per_line = int(total_bytes / image.shape[0])
+        image_qt = QImage(image, image.shape[1], image.shape[0], bytes_per_line, image_format)
         return image_qt
 
     def is_center_defined(self) -> bool:
