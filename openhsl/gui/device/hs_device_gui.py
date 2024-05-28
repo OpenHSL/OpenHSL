@@ -336,11 +336,13 @@ class HSDeviceGUI(QMainWindow):
         self.wt_graphics_spectrum_top_right_ellipse_item = QGraphicsEllipseItem()
         self.wt_graphics_spectrum_bottom_right_ellipse_item = QGraphicsEllipseItem()
         self.wt_graphics_spectrum_bottom_left_ellipse_item = QGraphicsEllipseItem()
+        self.wt_graphics_spectrum_roi = QGraphicsRectItem()
         self.wt_graphics_text_info_simple_text_item = QGraphicsSimpleTextItem()
         self.wt_graphics_text_info_rect_item = QGraphicsRectItem()
         self.wt_wavelength_line_y_coord: int = 0
         self.wt_spectrum_top_left_point = QPointF(0, 0)
         self.wt_spectrum_bottom_right_point = QPointF(0, 0)
+        self.wt_draw_spectrum_roi_enabled = False
 
         # TODO add mutex locker
         # TODO List[bool], for each tab different val?
@@ -524,8 +526,8 @@ class HSDeviceGUI(QMainWindow):
         dashed_pen_slit_roi_rect = QPen(dashed_pen_marquee)
         dashed_pen_slit_roi_rect.setColor(QColor("#cc870f"))
 
-        dashed_pen_spectrum_line = QPen(dashed_pen_marquee)
-        dashed_pen_spectrum_line.setColor(QColor("#cc870f"))
+        dashed_pen_spectrum = QPen(dashed_pen_marquee)
+        dashed_pen_spectrum.setColor(QColor("#cc870f"))
 
         dashed_pen_wavelength_line = QPen(dashed_pen_marquee)
         dashed_pen_wavelength_line.setColor(QColor("green"))
@@ -533,7 +535,7 @@ class HSDeviceGUI(QMainWindow):
         brush_marquee = QBrush(QColor(255, 255, 255, 128))
         brush_marquee.setStyle(Qt.BrushStyle.BDiagPattern)
 
-        brush_spectrum = QBrush(QColor(255, 0, 0, 192))
+        brush_spectrum = QBrush(QColor("#cc870f"))
         brush_spectrum.setStyle(Qt.BrushStyle.BDiagPattern)
 
         brush_spectrum_line = QBrush(QColor("white"))
@@ -565,10 +567,10 @@ class HSDeviceGUI(QMainWindow):
 
         self.prepare_graphics_item(self.wt_graphics_wavelength_line_item, dashed_pen_wavelength_line, 0.5)
 
-        self.prepare_graphics_item(self.wt_graphics_spectrum_top_left_x_line_item, dashed_pen_spectrum_line, 0.5)
-        self.prepare_graphics_item(self.wt_graphics_spectrum_top_left_y_line_item, dashed_pen_spectrum_line, 0.5)
-        self.prepare_graphics_item(self.wt_graphics_spectrum_bottom_right_x_line_item, dashed_pen_spectrum_line, 0.5)
-        self.prepare_graphics_item(self.wt_graphics_spectrum_bottom_right_y_line_item, dashed_pen_spectrum_line, 0.5)
+        self.prepare_graphics_item(self.wt_graphics_spectrum_top_left_x_line_item, dashed_pen_spectrum, 0.5)
+        self.prepare_graphics_item(self.wt_graphics_spectrum_top_left_y_line_item, dashed_pen_spectrum, 0.5)
+        self.prepare_graphics_item(self.wt_graphics_spectrum_bottom_right_x_line_item, dashed_pen_spectrum, 0.5)
+        self.prepare_graphics_item(self.wt_graphics_spectrum_bottom_right_y_line_item, dashed_pen_spectrum, 0.5)
 
         self.prepare_graphics_item(self.wt_graphics_spectrum_top_left_ellipse_item,
                                    circle_pen_spectrum_line, 1, brush_spectrum_line)
@@ -578,6 +580,8 @@ class HSDeviceGUI(QMainWindow):
                                    circle_pen_spectrum_line, 1, brush_spectrum_line)
         self.prepare_graphics_item(self.wt_graphics_spectrum_bottom_left_ellipse_item,
                                    circle_pen_spectrum_line, 1, brush_spectrum_line)
+
+        self.prepare_graphics_item(self.wt_graphics_spectrum_roi, dashed_pen_spectrum, 0.5, brush_spectrum)
 
         font = QApplication.font()
         font_size = font.pointSize()
@@ -1248,7 +1252,8 @@ class HSDeviceGUI(QMainWindow):
 
     @pyqtSlot(bool)
     def on_ui_wcdw_show_spectrum_roi_checkbox_clicked(self, checked: bool):
-        pass
+        self.wt_draw_spectrum_roi_enabled = checked
+        self.draw_wl_spectrum_roi()
 
     @pyqtSlot(bool)
     def on_ui_wcdw_apply_roi_intersection_checkbox_clicked(self, checked: bool):
@@ -1545,6 +1550,8 @@ class HSDeviceGUI(QMainWindow):
                 self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_bottom_right_ellipse_item)
 
     def draw_wl_spectrum_lines(self):
+        # self.ui_wcdw_show_spectrum_roi_checkbox.setChecked(False)
+        # self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_roi)
         self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_left_ellipse_item)
         self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_right_ellipse_item)
         self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_bottom_right_ellipse_item)
@@ -1567,6 +1574,15 @@ class HSDeviceGUI(QMainWindow):
         self.draw_line_intersection_circle(self.wt_graphics_spectrum_bottom_right_y_line_item,
                                            self.wt_graphics_spectrum_top_left_x_line_item,
                                            self.wt_graphics_scene, self.wt_graphics_spectrum_bottom_left_ellipse_item)
+        self.draw_wl_spectrum_roi()
+
+    def draw_wl_spectrum_roi(self):
+        self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_roi)
+        if self.wt_draw_spectrum_roi_enabled:
+            rect = QRectF(self.wt_spectrum_top_left_point, self.wt_spectrum_bottom_right_point)
+            self.wt_graphics_spectrum_roi.setRect(rect)
+            if not rect.isEmpty():
+                self.wt_graphics_scene.addItem(self.wt_graphics_spectrum_roi)
 
     def update_wl_overlay_text(self, text):
         self.wt_graphics_text_info_simple_text_item.setText(text)
