@@ -762,7 +762,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         if cind == -1:
             cind = 0        
         
-        print(ai_mask, "ai_mask")
+        print(ai_mask.shape, "ai_mask")
         
         
         #import matplotlib.pyplot as plt
@@ -772,9 +772,9 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         
         if is_multy_layer== True:
             if is_ai_n_clusters == True:
-                num_class = int(self.message_box_ok_edit.text())                
+                num_class = int(self.message_box_ok_edit.text())  
             
-            self.apeend_new_lstDefectsAndColors(ai_mask, num_class)
+            self.apeend_new_lstDefectsAndColors(ai_mask, num_class, is_cluster = True)
         
         else: 
 
@@ -830,13 +830,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                                                                         
                 self.add_layer_current_color = self.colors_arr[k]
             
-           
-            
-
-          
-            
-                       
-
+        
             #g_val = self.cspec[k]["NAME_LAYER_D"] # col["NAME_LAYER_D"]     
             print(rgb_val,g_val, "rgb_val,g_val")
             
@@ -959,12 +953,12 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             print(area_1, "area_1")
             print(area_2, "area_1")
             
-            print(ai_mask.shape, " ai_mask.shape ")
+            #print(ai_mask.shape, " ai_mask.shape ")
             ai_mask = ai_mask[:,:]
             self.current_mask = ai_mask
-            print(type(ai_mask))
-            print(ai_mask.shape)
-            print(len(ai_mask), "type(ai_mask), ai_mask.shape, len(ai_mask)")
+            #print(type(ai_mask))
+            #print(ai_mask.shape)
+            #print(len(ai_mask), "type(ai_mask), ai_mask.shape, len(ai_mask)")
 
             #import matplotlib.pyplot as plt
             #plt.plot(self.current_mask)
@@ -1037,8 +1031,11 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         '''
 
         #for i in range(0, np.max(ai_mask)):
-        unique_values = np.unique(ai_mask)  # Получаем уникальные значения из массива AR
-
+        #unique_values = np.unique(ai_mask)  # Получаем уникальные значения из массива AR
+        
+        arr = HSMask.convert_2d_to_3d_mask(ai_mask)
+        
+        '''
         sorted_AR = np.zeros_like(ai_mask)  # Создаем новый массив с нулями такого же размера, как и AR
         fin = []
         
@@ -1048,13 +1045,19 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             fin.append(sorted_AR)
             arr = np.array(fin)
    
+        #for l in fin:
+        #    self.setmasktocolor(l, is_multy_layer = False, is_ai_n_clusters = False)
+        
+        
         h,w,g = arr.shape
-        arr= np.reshape(arr, (w, g, h)) #np.array(arr).reshape(w, g, h)
+        arr = np.transpose(arr, (1, 2, 0)) #np.array(arr).reshape(w, g, h)
         #fin = np.stack(fin)        
         self.current_mask = arr
+        '''
+        print(arr.shape, "ai_mask.shape keeeek")        
         
-        print(arr.shape, "ai_mask.shape keeeek")
         self.setmasktocolor(arr, is_multy_layer = True, is_ai_n_clusters = True)   
+        
             
     '''        
     def addloadedlayermask(self, mask):
@@ -1515,7 +1518,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
 
             self.apeend_new_lstDefectsAndColors(self.hsmask, k) #  self.loaded_hsmask
  
-    def apeend_new_lstDefectsAndColors(self, hsmask, k):      # , is_ai = False
+    def apeend_new_lstDefectsAndColors(self, hsmask, k, is_cluster = False):      # , is_ai = False
                 # Create the necessary dicts
 
         g2rgb = {}
@@ -1568,8 +1571,11 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             
             #### выгружаем слои маски и накладываем друг на друга
             #if is_ai == True:
-                  
-            layer_img = hsmask.data[:, :, i] # self.loaded_hsmask[:, :, i] self.hsmask.data
+            
+            if is_cluster == True:
+                layer_img = hsmask[:, :, i]  
+            else:
+                layer_img = hsmask.data[:, :, i] # self.loaded_hsmask[:, :, i] self.hsmask.data
            
             #from matplotlib import pyplot as PLT
             #PLT.imshow(layer_img, interpolation='nearest')
@@ -1597,7 +1603,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         #self.annotator.d_rgb2gray = self.d_rgb2gray
         self.annotator.d_gray2rgb_arr = self.d_gray2rgb_arr
         
-        print(self.loaded_hsmask[:, :, 1], "loaded_hsmask")          
+        #print(self.loaded_hsmask[:, :, 1], "loaded_hsmask")          
         print(self.mask_all_colors[1], "mask_all_colors")
         print(self.current_image, "self.current_image")     
         #self.annotator.current_image = self.current_image
@@ -1616,7 +1622,8 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                                                 aux_helper=None, # aux_helper=(array2qimage(self.current_tk) if self.current_tk is not None else None),
                                                 process_gray2rgb=True, # process_gray2rgb=True,
                                                 direct_mask_paint=False,
-                                                color = self.mask_all_colors) # direct_mask_paint=True))     
+                                                color = self.mask_all_colors,
+                                                data_shape = False) # direct_mask_paint=True))     
             
         self.check_paths()
         self.store_paths_to_config()        

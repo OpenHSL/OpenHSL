@@ -368,7 +368,11 @@ class QtImageAnnotator(QGraphicsView):
 #######################################################################################
     # накладывает несколько цветов по слоям маски
     def clearAndSetMaskLayers(self, image, mask, helper=None, aux_helper=None,
-                                process_gray2rgb=False, direct_mask_paint=False, color=None, is_not_cube_mask =False):
+                                process_gray2rgb=False, 
+                                direct_mask_paint=False, 
+                                color=None, 
+                                is_not_cube_mask = False, 
+                                data_shape = True):
         # Clear the scene
         self.scene.clear()
 
@@ -403,7 +407,12 @@ class QtImageAnnotator(QGraphicsView):
         # Off-screen mask for direct drawing
         if direct_mask_paint:
             # We need to convert the offscreen mask to QImage at this point
-            gray_mask = QImage(mask.data[:,:,0], mask.data.shape[1], mask.data.shape[0], mask.data.strides[0], QImage.Format_Grayscale8)
+            if data_shape == True:
+                gray_mask = QImage(mask.data[:,:,0], mask.data.shape[1], mask.data.shape[0], mask.data.strides[0], QImage.Format_Grayscale8)
+    
+            else:
+                gray_mask = QImage(mask[:,:,0], mask.shape[1], mask.shape[0], mask.strides[0], QImage.Format_Grayscale8)
+
             self._offscreen_mask = gray_mask.copy()
             self._offscreen_mask_stack = collections.deque(maxlen=MAX_CTRLZ_STATES)
 
@@ -495,8 +504,13 @@ class QtImageAnnotator(QGraphicsView):
             self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
         
         else:
+            
+            if data_shape == True:
+                a1,a2,num_layers = mask.data.shape
                             
-            a1,a2,num_layers = mask.data.shape
+            else:
+                a1,a2,num_layers = mask.shape    
+                
             print(a1,a2,num_layers, "a1,a2,num_layers ") 
             for ind_layer in range(num_layers):
                 if process_gray2rgb:
@@ -504,7 +518,13 @@ class QtImageAnnotator(QGraphicsView):
                     if self.d_gray2rgb_arr:
                         # We assume mask is np array, grayscale and the conversion rules are set (otherwise cannot continue)
                         h, w, = a1,a2 # h, w, p = mask.data.shape
-                        mask_ = mask.data[:,:,ind_layer]
+                        
+                        if data_shape == True:
+                            mask_ = mask.data[:,:,ind_layer]
+                        else:
+                            mask_ = mask[:,:,ind_layer]   
+                
+
                         
                         print(mask_, " mask_ ")
                         
@@ -531,7 +551,16 @@ class QtImageAnnotator(QGraphicsView):
                     else:
                         raise RuntimeError("Cannot convert the provided grayscale mask to RGB without color specifications.")
                 else:
-                    mask_ = mask.data[:,:,ind_layer]
+                    if data_shape == True:  
+                        mask_ = mask.data[:,:,ind_layer]
+                    else:
+                        mask_ = mask[:,:,ind_layer]
+                        
+                        import matplotlib.pyplot as plt
+                        plt.imshow(mask_)
+                        plt.show()   
+                            
+                    #mask_ = mask.data[:,:,ind_layer]
                     use_mask = array2qimage(mask_)            
                 
                 #from matplotlib import pyplot as PLT
@@ -841,7 +870,7 @@ class QtImageAnnotator(QGraphicsView):
             min_x, max_x = min(x_values), max(x_values)
             min_y, max_y = min(y_values), max(y_values)
 
-            print(min_x,max_x,min_y, max_y)
+            #print(min_x,max_x,min_y, max_y)
             self.min_x, self.max_x, self.min_y, self.max_y = min_x, max_x, min_y, max_y
             
             image = self.current_img
@@ -1133,8 +1162,8 @@ class QtImageAnnotator(QGraphicsView):
             # Store cursor location separately; needed for certain operations (like fill)
             self.lastCursorLocation = self.mapToScene(event.pos())
             
-            if event.buttons() == Qt.RightButton:
-                print(self.scenePos_x, self.scenePos_y, "self.scenePos_x, self.scenePos_y")
+            #if event.buttons() == Qt.RightButton:
+                #print(self.scenePos_x, self.scenePos_y, "self.scenePos_x, self.scenePos_y")
 
         QGraphicsView.mouseMoveEvent(self, event)
 
