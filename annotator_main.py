@@ -439,6 +439,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                  
         self.annotator.setFocus()
         self.update_annotator_view(is_for_clear=True)
+        
 
     def update_annotator(self):
         if self.annotator is not None:
@@ -457,10 +458,11 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
     def annotation_mode_switch(self):
 
         # Save the mask
-        self.update_mask_from_current_mode()
-
+        #self.update_mask_from_current_mode()
+        
         # Update the UI
         self.annotation_mode += 1
+        
         if self.annotation_mode > 1:
             self.annotation_mode = 0
         self.current_paint = [MARK_COLOR_DEFECT_DEFAULT, MARK_COLOR_MASK][self.annotation_mode]
@@ -473,7 +475,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         self.btnMode.setText(self.ANNOTATION_MODES_BUTTON_TEXT[self.annotation_mode])
         self.btnMode.setStyleSheet("QPushButton {font-weight: bold; color: "
                                    + self.ANNOTATION_MODES_BUTTON_COLORS[self.annotation_mode] + "}")
-
+        
         # Update the view
         self.update_annotator_view()
         self.annotator.setFocus()
@@ -588,8 +590,6 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                             color = self.mask_all_colors,
                             is_not_cube_mask = True) # direct_mask_paint=True))     
 
-
-        
             
         else: 
             mask = self.hsmask    
@@ -600,30 +600,23 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                 helper = np.zeros((h,w,4), dtype=np.uint8)
                 helper[self.current_helper == 0] = list(HELPER_COLOR.getRgb())
                 # self.current_image=qimage2ndarray.array2qimage(self.loaded_hsi[:, :, self.wavelengths.index(self.HSI_slider.value())])
-                '''
-                self.annotator.clearAndSetImageOnly(self.current_image, # self.current_image,
-                                                    helper = None, # array2qimage(helper),
-                                                    aux_helper=None, # aux_helper=(array2qimage(self.current_tk) if self.current_tk is not None else None),
-                                                    process_gray2rgb=False, # process_gray2rgb=True,
-                                                    direct_mask_paint=False) # direct_mask_paint=True)
-                '''
-                '''
-                self.annotator.clearAndSetImageAndMask(self.current_image, # self.current_image,
-                                                    self.current_mask, # self.current_mask,
-                                                    helper = None, # array2qimage(helper),
-                                                    aux_helper=None, # aux_helper=(array2qimage(self.current_tk) if self.current_tk is not None else None),
-                                                    process_gray2rgb=True, # process_gray2rgb=True,
-                                                    direct_mask_paint=False) # direct_mask_paint=True)
-                '''
                 print("update annotaotr view")
+                
+                '''
+                cind = self.lstDefectsAndColors.currentIndex()
+                lol = []
+                lol = self.hsmask
+                lol.data[:,:,cind] = helper[:,:,1]
+                '''
+                
                 self.annotator.clearAndSetMaskLayers(self.current_image, # self.current_image,
                                             mask, # hsmask.data[:, :, 1] self.current_mask,
                                             helper = None, # array2qimage(helper),
                                             aux_helper=None, # aux_helper=(array2qimage(self.current_tk) if self.current_tk is not None else None),
                                             process_gray2rgb=True, # process_gray2rgb=True,
                                             direct_mask_paint=False,
-                                            color = self.mask_all_colors) # direct_mask_paint=True))     
-                
+                                            color = self.mask_all_colors,
+                                            is_hidden = False) # direct_mask_paint=True))     
                 
             else:
 
@@ -632,11 +625,23 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                 mask = 255 * np.zeros((h, w, 4), dtype=np.uint8)
                 mask[self.current_updated_mask == 0] = list(MARK_COLOR_MASK.getRgb())
                 
-                '''
-                self.annotator.clearAndSetImageOnly(self.current_image)
-                '''
-                self.annotator.clearAndSetImageAndMask(self.current_image,
-                                                    mask)
+                cind = self.lstDefectsAndColors.currentIndex()
+                lol = []
+                #a,b,c = self.hsmask.data.shape()
+                lol = self.hsmask.data
+                lol[:,:,cind] = mask[:,:,1]
+                #self.hsmask.data.itemset(4, 0)
+                self.annotator.clearAndSetMaskLayers(self.current_image, # self.current_image,
+                            lol, # hsmask.data[:, :, 1] self.current_mask,
+                            helper = None, # array2qimage(helper),
+                            aux_helper=None, # aux_helper=(array2qimage(self.current_tk) if self.current_tk is not None else None),
+                            process_gray2rgb=True, # process_gray2rgb=True,
+                            direct_mask_paint=False,
+                            color = self.mask_all_colors,
+                            is_hidden = True) # direct_mask_paint=True))     
+         
+                #self.annotator.clearAndSetImageAndMask(self.current_image, mask)
+  
             
 
     def process_mask(self):
@@ -1516,9 +1521,9 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             
             ################################################
 
-            self.apeend_new_lstDefectsAndColors(self.hsmask, k) #  self.loaded_hsmask
+            self.apeend_new_lstDefectsAndColors(self.hsmask, k, is_browser_load = True) #  self.loaded_hsmask
  
-    def apeend_new_lstDefectsAndColors(self, hsmask, k, is_cluster = False):      # , is_ai = False
+    def apeend_new_lstDefectsAndColors(self, hsmask, k, is_cluster = False, is_browser_load = False):      # , is_ai = False
                 # Create the necessary dicts
 
         g2rgb = {}
@@ -1613,9 +1618,17 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         #self.annotator.d_rgb2gray = self.d_rgb2gray
         #self.annotator.d_gray2rgb = self.d_gray2rgb
         
+        
         self.current_mask = layer_img
         self.current_defect = self.current_mask         
-                    
+        
+        '''
+        if is_browser_load == True:
+            new_mask = hsmask.data     
+        else:  
+            new_mask = hsmask 
+        '''   
+            
         self.annotator.clearAndSetMaskLayers(self.current_image, # self.current_image,
                                                 hsmask, # hsmask.data[:, :, 1] self.current_mask,
                                                 helper = None, # array2qimage(helper),
@@ -1629,6 +1642,8 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         self.store_paths_to_config()        
         self.get_image_files()
 
+        #self.load_layer_hsi_image()    
+        #self.update_annotator_view()    # !!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             #######            
             #self.current_mask = qimage2ndarray.array2qimage(self.loaded_hsmask[:, :, 0])
