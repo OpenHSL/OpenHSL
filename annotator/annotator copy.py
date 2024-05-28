@@ -11,8 +11,6 @@ from qimage2ndarray import array2qimage, recarray_view
 from annotator.lib.tkmask import generate_tk_defects_layer
 from annotator.lib.annotmask import get_sqround_mask  # New mask generation facility (original mask needed)
 
-from annotator.ui_lib.QtImageAnnotator import QtImageAnnotator
-
 # Specific UI features
 from PyQt5.QtWidgets import QSplashScreen, QMessageBox, QGraphicsScene, QFileDialog, QTableWidgetItem, QDialog, QLabel, QPushButton, QVBoxLayout, QLineEdit, QComboBox
 from PyQt5.QtGui import QPixmap, QImage, QColor, QIcon
@@ -33,7 +31,7 @@ from openhsl.paint.utils import ANDVI, ANDI, cluster_hsi
 from scipy.io import loadmat
 import qimage2ndarray
 
-from annotator.ui.palette import PaletteGrid, PaletteHorizontal, PaletteVertical
+from ui.palette import PaletteGrid, PaletteHorizontal, PaletteVertical
 
 from functools import partial    
 
@@ -43,9 +41,9 @@ APP_TITLE = "Annotator"
 APP_VERSION = "v.1.3"
 
 # Some configs
-BRUSH_DIAMETER_MIN = 1
-BRUSH_DIAMETER_MAX = 80
-BRUSH_DIAMETER_DEFAULT = 1
+BRUSH_DIAMETER_MIN = 40
+BRUSH_DIAMETER_MAX = 100
+BRUSH_DIAMETER_DEFAULT = 40
 
 
 # Colors
@@ -117,7 +115,6 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
     # Color conversion dicts
     d_rgb2gray = None
     d_gray2rgb = None
-    d_gray2rgb_arr = []
 
     # Immutable items
     current_image = None  # Original image
@@ -126,10 +123,10 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
     current_tk = None  # Defects mareked by TK
 
     # User-updatable items
-    current_mask = None  # Defects mask
+    current_defects = None  # Defects mask
     current_updated_mask = None  # Updated mask
 
-    # Image nameA paint device can only be painted by one painter at a time.
+    # Image name
     current_img = None
     current_img_as_listed = None
 
@@ -147,7 +144,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
     
     isANDImethod = False
     
-    colors_arr =(['#ddffe7', '#98d7c2', '#167d7f', '#29a0b1','#3d550c', '#81b622', '#ecf87f', '#59981a', '#FBA40A', '#F6D542', '#FCFEA4'])
+    colors_arr =(['#410967', '#F4E511', '#6A176E', '#FAC61E','#932567', '#BA3655', '#DC5039', '#F2751A', '#FBA40A', '#F6D542', '#FCFEA4'])
     colors_gray_arr =([10, 25, 50, 60, 75, 85, 100, 125, 150, 175, 200])
 
 
@@ -159,7 +156,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         super(AnnotatorGUI, self).__init__(parent)
         self.setupUi(self)
 
-
+        from ui_lib.QtImageAnnotator import QtImageAnnotator
         self.annotator = QtImageAnnotator()
 
         # Need to synchronize brush sizes with the annotator
@@ -212,9 +209,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         self.label_class = []      
         self.mask_layers = 0
         self.hsi = None
-        
         self.hsmask = HSMask()
-        self.hsi = HSImage()
         self.key_answer = ""
 
     # Set up those UI elements that depend on config
@@ -246,6 +241,9 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         
         self.add_layer.clicked.connect(self.add_layerclass_to_mask)
         self.delete_layer.clicked.connect(self.delete_layerclass)
+        #self.btnBrowseShp.clicked.connect(self.browse_shp_dir)
+        #self.btnPrev.clicked.connect(self.load_prev_image)
+        #self.btnNext.clicked.connect(self.load_next_image)
         self.btnMode.clicked.connect(self.annotation_mode_switch)
         self.actionLoadmask.clicked.connect(self.browse_load_mask_directory)
         # Selecting new image from list
@@ -286,7 +284,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             tk = col["COLOR_HEXRGB_TK"]
             nus = col["COLOR_NAME_EN"]
             net = col["COLOR_NAME_ET"]
-            dt = col["COLOR_HEXRGB"]
+            dt = col["COLOR_HEXRGB_DATMANT"]
             gr = col["COLOR_GSCALE_MAPPING"]
 
             # Text
@@ -328,8 +326,8 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         tk = "COLOR_HEXRGB_TK"
         nus = "COLOR_NAME_EN"
         net = self.cspec[0]["COLOR_NAME_ET"]
-        print(net, row, "add_new_layer net, row")
-        dt = "COLOR_HEXRGB"
+        print(net, row)
+        dt = "COLOR_HEXRGB_DATMANT"
         gr = "COLOR_GSCALE_MAPPING"
         bt = "BUTTON_ADD"
 
@@ -359,7 +357,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             #self.cspec[row] = new_row_data
             self.cspec[row]['COLOR_NAME_ET'] = new_row_data
           
-        print(self.cspec, "Change_layer_data self.cspec")
+        print(self.cspec)
         self.add_colors_to_list()
 
     '''
@@ -419,9 +417,9 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         self.sldBrushDiameter.valueChanged.connect(self.brush_slider_update)
 
     def invert_mask(self):
-        print(self.current_mask, "current_mask")
-        self.current_mask = np.abs(self.current_mask - 1)
-        self.setmasktocolor(self.current_mask, is_multy_layer = False)
+        print(self.current_defects, "current_defects")
+        self.current_defects = np.abs(self.current_defects - 1)
+        self.setmasktocolor(self.current_defects)
         
      
     # Clear currently used paint completely
@@ -429,7 +427,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
 
         img_new = np.zeros(self.img_shape, dtype=np.uint8)
         if self.annotation_mode is self.ANNOTATION_MODE_MARKING_DEFECTS:
-            self.current_mask = img_new
+            self.current_defects = img_new
         elif self.annotation_mode is self.ANNOTATION_MODE_MARKING_MASK:
             self.current_updated_mask = 255-img_new
         self.update_annotator_view()
@@ -444,7 +442,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
     def update_mask_from_current_mode(self):
         the_mask = self.get_updated_mask()
         if self.annotation_mode is self.ANNOTATION_MODE_MARKING_DEFECTS:
-            self.current_mask = the_mask
+            self.current_defects = the_mask
         else:
             self.current_updated_mask = the_mask
 
@@ -549,7 +547,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         
         
     def update_mask_view(self):
-        self.annotator.clearAndSetMaskOnly(self.current_mask, # self.current_mask,
+        self.annotator.clearAndSetMaskOnly(self.current_defects, # self.current_defects,
                                         helper = None, # array2qimage(helper),
                                         aux_helper=None, # aux_helper=(array2qimage(self.current_tk) if self.current_tk is not None else None),
                                         process_gray2rgb=False, # process_gray2rgb=True,
@@ -578,7 +576,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                                                    direct_mask_paint=False) # direct_mask_paint=True)
             '''
             self.annotator.clearAndSetImageAndMask(self.current_image, # self.current_image,
-                                                   self.current_mask, # self.current_mask,
+                                                   self.current_defects, # self.current_defects,
                                                    helper = None, # array2qimage(helper),
                                                    aux_helper=None, # aux_helper=(array2qimage(self.current_tk) if self.current_tk is not None else None),
                                                    process_gray2rgb=False, # process_gray2rgb=True,
@@ -691,7 +689,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             self.actionAIMask.setEnabled(False)
         '''
         # Now we set up the mutable images. NB! They are not COPIES, but references here
-        self.current_mask = img_d
+        self.current_defects = img_d
         self.current_updated_mask = img_m
 
         # Once all that is done, we need to update the actual image working area
@@ -713,124 +711,8 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         boolmask = boolmask * 100
         cv2.imwrite("self.img_path" + "ai_mask.png", boolmask)
         
-    def setmasktocolor(self, ai_mask, is_multy_layer = True, is_ai_n_clusters = False):
-        
-        #cind = self.lstDefectsAndColors.currentIndex()
-        #color = self.cspec[cind]
-
-        cind = len(self.cspec)
-        if cind == -1:
-            cind = 0        
-        
-        print(ai_mask, "ai_mask")
-        
-        
-        #import matplotlib.pyplot as plt
-        #plt.show(ai_mask)
-        #plt.show()
-                
-        
-        if is_multy_layer== True:
-            if is_ai_n_clusters == True:
-                num_class = int(self.message_box_ok_edit.text())                
-            
-            self.apeend_new_lstDefectsAndColors(ai_mask, num_class)
-        
-        else: 
-
-
-            # Create the necessary dicts
-            g2rgb = {}
-            rgb2g = {}
-            tk2rgb = {}                  
-            
-      
-            
-            print(np.max(ai_mask), np.min(ai_mask), "max и min")
-            
-            ai_mask_int = ai_mask.astype(int)
-            print(ai_mask_int, "ai_mask_int")
-            
-            k = self.lstDefectsAndColors.currentIndex()
-            print(k, "setmaskcolor - k")
-            
-            if k == -1:                
-                #rgb_val = self.colors_arr[k] 
-                #g_val = self.cspec[k]["COLOR_GSCALE_MAPPING"]                
-                rgb_val = self.colors_arr[0]  
-                g_val = self.colors_gray_arr[0]
-                color = self.colors_arr[0]
-                
-                the_color = QColor("#63" + color.split("#")[1])
-                self.add_layer_current_color = self.colors_arr[0]
-                
-                
-                self.cspec.append({"NAME_LAYER_D": "New class", 
-                    "COLOR_HEXRGB": self.colors_arr[0],
-                    "COLOR_GSCALE_MAPPING": self.colors_gray_arr[0]})
-            
-                #for col, row in self.cspec:            
-                #rgb_val = self.cspec[i]["COLOR_HEXRGB"]  
-                #g_val = self.cspec[i]["COLOR_GSCALE_MAPPING"]    
-                name_val = self.cspec[0]["NAME_LAYER_D"]             
-
-                print("Selected: {}".format(self.colors_arr[0]), "Selected: (self.colors_arr[i])")
-
-                pix = QPixmap(50, 50)
-                pix.fill(QColor(rgb_val))
-                ticon = QIcon(pix)                            
-                self.lstDefectsAndColors.addItem(ticon, " " + name_val +
-                    " | "  + rgb_val + " | "  + str(g_val))
-                         
-            else:
-                rgb_val = self.cspec[k]["COLOR_HEXRGB"] 
-                g_val = self.cspec[k]["COLOR_GSCALE_MAPPING"]
-                color = self.colors_arr[k]
-                the_color = QColor("#63" + color.split("#")[1])
-                                                                        
-                self.add_layer_current_color = self.colors_arr[k]
-            
-           
-            
-
-          
-            
-                       
-
-            #g_val = self.cspec[k]["NAME_LAYER_D"] # col["NAME_LAYER_D"]     
-            print(rgb_val,g_val, "rgb_val,g_val")
-            
-            ####################################
-            # Fill in necessary dicts
-            g2rgb[g_val] = rgb_val
-            rgb2g[rgb_val] = g_val        
-
-            # Set up dicts
-            self.d_rgb2gray = rgb2g
-            self.d_gray2rgb = g2rgb
-            self.tk_colors = tk2rgb
-            
-            self.annotator.d_rgb2gray = self.d_rgb2gray
-            self.annotator.d_gray2rgb = self.d_gray2rgb
-            ###################################
-
-
-            print(color, "setmaskcolor - color")
-            
-            self.current_paint = the_color
-            self.annotator.brush_fill_color = the_color
-            
-            #self.current_image = self.hsi.data
-        
-            self.annotator.clearAndSetMaskOnly(self.current_image, # self.current_image,
-                                                    ai_mask_int, # self.current_mask,
-                                                    helper = None, # array2qimage(helper),
-                                                    aux_helper=None, # aux_helper=(array2qimage(self.current_tk) if self.current_tk is not None else None),
-                                                    process_gray2rgb=True, # process_gray2rgb=True,
-                                                    direct_mask_paint=False,
-                                                    color = the_color) # direct_mask_paint=True))   
-            
-        '''
+    def setmasktocolor(self, ai_mask):
+        cind = self.lstDefectsAndColors.currentIndex()
         color = self.cspec[cind]
 
         # Create the necessary dicts
@@ -845,15 +727,19 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         for ind_d in range(max_index):
             self.cspec.pop(ind_d)
             self.lstDefectsAndColors.removeItem(ind_d)
-                                                                    
+                                                                        
+        #устанавливаем цвета по слоям маски
+        #colors_arr =(['#410967', '#F4E511', '#6A176E', '#FAC61E','#932567', '#BA3655', '#DC5039', '#F2751A', '#FBA40A', '#F6D542', '#FCFEA4'])
+        #colors_gray_arr =([10, 25, 50, 60, 75, 85, 100, 125, 150, 175, 200])
+               
         self.add_layer_current_color = self.colors_arr[k]
     
-        #self.cspec.append({"NAME_LAYER_D": "New class", 
-        #                    "COLOR_HEXRGB": self.colors_arr[k],
-        #                    "COLOR_GSCALE_MAPPING": self.colors_gray_arr[k]})
+        self.cspec.append({"NAME_LAYER_D": "class", 
+                            "COLOR_HEXRGB_DATMANT": self.colors_arr[k],
+                            "COLOR_GSCALE_MAPPING": self.colors_gray_arr[k]})
 
         #for col, row in self.cspec:            
-        rgb_val = self.cspec[k]["COLOR_HEXRGB"] 
+        rgb_val = self.cspec[k]["COLOR_HEXRGB_DATMANT"] #col["COLOR_HEXRGB_DATMANT"]
         g_val = self.cspec[k]["COLOR_GSCALE_MAPPING"]
         #g_val = self.cspec[k]["NAME_LAYER_D"] # col["NAME_LAYER_D"]     
         print(rgb_val,g_val)
@@ -871,18 +757,17 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
 
         
         print(color)
-        the_color = QColor("#63" + color["COLOR_HEXRGB"].split("#")[1])
+        the_color = QColor("#63" + color["COLOR_HEXRGB_DATMANT"].split("#")[1])
         self.current_paint = the_color
         self.annotator.brush_fill_color = the_color
     
         self.annotator.clearAndSetMaskOnly(self.current_image, # self.current_image,
-                                                ai_mask, # self.current_mask,
+                                                ai_mask, # self.current_defects,
                                                 helper = None, # array2qimage(helper),
                                                 aux_helper=None, # aux_helper=(array2qimage(self.current_tk) if self.current_tk is not None else None),
                                                 process_gray2rgb=True, # process_gray2rgb=True,
                                                 direct_mask_paint=False,
-                                                color = the_color) # direct_mask_paint=True))   
-        '''  
+                                                color = the_color) # direct_mask_paint=True))     
 
 
           
@@ -890,8 +775,8 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         from functools import partial  
         if btn == 'ANDVI': # btn.text()
             ai_mask = ANDVI(self.hsi)            
-            self.current_mask = ai_mask
-            self.setmasktocolor(ai_mask, is_multy_layer = False)
+            self.current_defects = ai_mask
+            self.setmasktocolor(ai_mask)
 
             #self.convertToMaskLeyer(ai_mask)
 
@@ -914,24 +799,11 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             
             ai_mask = ANDI(self.hsi, area_1, area_2)  # ANDI(self.hsi, area_1, area_2).astype(int)  
             
-            print(self.annotator.min_x_1, self.annotator.max_x_1, self.annotator.min_x_2, self.annotator.max_x_2)
-            print(self.hsi.data)
-            print(area_1, "area_1")
-            print(area_2, "area_1")
+            self.current_defects = ai_mask
+            print(type(ai_mask), ai_mask.shape, len(ai_mask))
             
-            print(ai_mask.shape, " ai_mask.shape ")
-            ai_mask = ai_mask[:,:]
-            self.current_mask = ai_mask
-            print(type(ai_mask))
-            print(ai_mask.shape)
-            print(len(ai_mask), "type(ai_mask), ai_mask.shape, len(ai_mask)")
-
-            #import matplotlib.pyplot as plt
-            #plt.plot(self.current_mask)
-            #plt.show()
-            
-            self.setmasktocolor(self.current_mask, is_multy_layer = False) # ai_mask[:,:,0,0] self.current_mask,
-            print(self.current_mask, "self.current_mask")
+            self.setmasktocolor(self.current_defects)
+            print(self.current_defects, "self.current_defects")
 
                        
             #self.addloadedlayermask(ai_mask)  
@@ -973,56 +845,24 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
    
             
         #img_d = cv2.imread(self.img_path + "ai_mask.png", cv2.IMREAD_GRAYSCALE)
-        #self.current_mask = img_d
+        #self.current_defects = img_d
         #self.update_annotator_view()
         #self.log("Replaced the current defect mask with the automatically generated one.")
         
         
     def set_category(self):
-        print(self.message_box_ok_edit.text(), "self.message_box_ok_edit.text()")
-        num_class = int(self.message_box_ok_edit.text())
-        ai_mask = cluster_hsi(self.hsi, n_clusters = num_class, cl_type = str(self.message_box_ok_typeclass.currentText()))          
-        
-        print(np.max(ai_mask), np.min(ai_mask), "max min")
-        
-        '''
-        h, w = ai_mask.shape
-        mask_ones = np.ones((h, w), np.uint8)
-        new_ai_mask = ai_mask + mask_ones
-        
-        #new_ai_mask = [int(x == 1) for x in new_ai_mask]  
-       
-        tet =np.stack((ai_mask, new_ai_mask))
-        print(tet, "tet")
-        '''
-
-        #for i in range(0, np.max(ai_mask)):
-        unique_values = np.unique(ai_mask)  # Получаем уникальные значения из массива AR
-
-        sorted_AR = np.zeros_like(ai_mask)  # Создаем новый массив с нулями такого же размера, как и AR
-        fin = []
-        
-        for value in range(0, np.max(ai_mask)): # unique_values
-            sorted_AR[ai_mask == value] = 1  # Для каждого повторяющегося значения value в AR, изменяем его на 1
-            print(sorted_AR, "ssssssssssssss")  # Выводим отсортированный массив
-            fin.append(sorted_AR)
-            arr = np.array(fin)
-   
-        h,w,g = arr.shape
-        arr= np.reshape(arr, (w, g, h)) #np.array(arr).reshape(w, g, h)
-        #fin = np.stack(fin)        
-        self.current_mask = arr
-        
-        print(arr.shape, "ai_mask.shape keeeek")
-        self.setmasktocolor(arr, is_multy_layer = True, is_ai_n_clusters = True)   
+        print(self.message_box_ok_edit.text())
+        ai_mask = cluster_hsi(self.hsi, n_clusters = int(self.message_box_ok_edit.text()), cl_type = str(self.message_box_ok_typeclass.currentText()))          
+        self.current_defects = ai_mask
+        self.setmasktocolor(ai_mask)   
             
     '''        
     def addloadedlayermask(self, mask):
         self.current_mask = qimage2ndarray.array2qimage(mask)
-        self.current_mask = self.current_mask
+        self.current_defects = self.current_mask
         
         self.annotator.clearAndSetImageAndMask(self.current_image, # self.current_image,
-                                                   self.current_mask, # self.current_mask,
+                                                   self.current_defects, # self.current_defects,
                                                    helper = None, # array2qimage(helper),
                                                    aux_helper=None, # aux_helper=(array2qimage(self.current_tk) if self.current_tk is not None else None),
                                                    process_gray2rgb=False, # process_gray2rgb=True,
@@ -1077,7 +917,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         if os.path.isfile(img_path + ".predicted_defects.png") and \
                 self.annotation_mode is self.ANNOTATION_MODE_MARKING_DEFECTS:
             img_d = cv2.imread(img_path + ".predicted_defects.png", cv2.IMREAD_GRAYSCALE)
-            self.current_mask = img_d
+            self.current_defects = img_d
             self.update_annotator_view()
             self.log("Replaced the current defect mask with the automatically generated one.")
         else:
@@ -1092,12 +932,12 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
     def save_masks(self):
 
         # Update the current mask
-        #self.update_mask_from_current_mode()
+        self.update_mask_from_current_mode()
         
         file_name = ""
         default_dir ="/home/"
         default_filename = os.path.join(default_dir, file_name)
-        files_types = "mat (*.mat);;h5 (*.h5);;tiff (*.tiff);;npy (*.npy);;PNG img (*.png);; BMP img (*.bmp)" # "mat File (*.mat *.h5 *.tiff *.npy)" "h5 File (*.mat *.h5 *.tiff *.npy)"
+        files_types = "mat (*.mat);;h5 (*.h5);;tiff (*.tiff);;npy (*.npy);;img (*.png *.bmp)" # "mat File (*.mat *.h5 *.tiff *.npy)" "h5 File (*.mat *.h5 *.tiff *.npy)"
         filename, _ = QFileDialog.getSaveFileName(
             self, "Сохранить HSI маску", default_filename, files_types
         )
@@ -1114,13 +954,13 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         
         ####
         
-
-        #self.hsmask.data = self.current_mask
-        print(self.hsi.data, "save_masks - self.hsi.data")
-        self.hsmask.save(save_path_masks, self.key_answer)
-        #self.hsmask.save_to_mat(save_path_masks, self.key_answer)
+        #npy = qimage2ndarray.recarray_view(self.current_defects) 
+        #print(npy)
+        self.hsmask.data = self.current_defects
+        self.hsmask.save_to_mat(save_path_masks, self.key_answer)
         ####
-
+        #cv2.imwrite(save_path_defects, self.current_defects)
+        #self.log("Saved defect annotations for image ")
 
 
 
@@ -1353,7 +1193,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                     if key[1] != "_":
                         self.key_answer = key
                 
-
+            self.hsi = HSImage()
             
             # hsi            
             print(file_type)
@@ -1369,8 +1209,8 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
 
             self.loaded_hsi = self.hsi.data #
             self.wavelengths = self.hsi.wavelengths            
-            print(self.wavelengths, len(self.wavelengths), "self.wavelengths, len(self.wavelengths)")     
-            #print(self.wavelengths[0], self.wavelengths[-1])             
+            print(self.wavelengths, len(self.wavelengths))     
+            print(self.wavelengths[0], self.wavelengths[-1])             
                         
             self.HSI_SLIDER_MIN = 0 #self.wavelengths[0]
             self.HSI_SLIDER_MAX = len(self.wavelengths)-1 #self.wavelengths[-1]
@@ -1407,7 +1247,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             self.current_helper = None  # Helper mask
             self.clear_all_annotations()
             # User-updatable items
-            self.current_mask = None  # Defects mask
+            self.current_defects = None  # Defects mask
             self.current_updated_mask = None  # Updated mask
             # Image name
             self.current_img = None
@@ -1423,7 +1263,12 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         directory = QtWidgets.QFileDialog.getOpenFileName(self, "Выбери маску", "", "Image Files (*.mat *.h5 *.tiff *.npy *.bmp *.png)")
 
         if directory:
-                       
+            
+            # Create the necessary dicts
+            g2rgb = {}
+            rgb2g = {}
+            tk2rgb = {}
+            
             # get type of file
             file_name_path = directory[0]             
             dot_pos_1 = len(file_name_path) - file_name_path.rfind(".")   
@@ -1446,8 +1291,10 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                 hsi_data = h5py.File(file_name_path, 'r')
                 for key in hsi_data.keys():
                     if key[1] != "_":
-                        self.key_answer = key                
-           
+                        self.key_answer = key
+                
+            #hsmask = HSMask()
+            
             # hsmask            
             print(file_type)
             
@@ -1466,129 +1313,124 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             self.label_class = self.hsmask.label_class       
             a,b,k = self.loaded_hsmask.shape      
             self.mask_layers = k
-            print(self.hsmask.label_class, "self.hsmask.label_class")
-            print(a,b,k, "a,b,k")
+            print(self.hsmask.label_class )
+            print(a,b,k)
             print(self.label_class, "label_class")     
-            print(type(self.loaded_hsmask), "## type(self.loaded_hsmask) ##")
-            
-            ################################################
+            print(type(self.loaded_hsmask))
 
-            self.apeend_new_lstDefectsAndColors(self.hsmask, k) #  self.loaded_hsmask
- 
-    def apeend_new_lstDefectsAndColors(self, hsmask, k):      # , is_ai = False
-                # Create the necessary dicts
+            #max_index = self.lstDefectsAndColors.count()-1
+            self.mask_all_colors = []
+            for i in range(k):                
+                # очищаем словарь
+                max_index = self.lstDefectsAndColors.count()-1
+                for ind_d in range(max_index):
+                    self.cspec.pop(ind_d)
+                    self.lstDefectsAndColors.removeItem(ind_d)
+                                                                                                 
+                self.add_layer_current_color = self.colors_arr[i]
 
-        g2rgb = {}
-        rgb2g = {}
-        
-        g2rgb_arr = {}
+                print(self.cspec, i)
+                self.cspec.append({"NAME_LAYER_D": "class", 
+                                    "COLOR_HEXRGB_DATMANT": self.colors_arr[i],
+                                    "COLOR_GSCALE_MAPPING": self.colors_gray_arr[i]})
 
-        self.mask_all_colors = []
-        
-                        # очищаем словарь
-        max_index = self.lstDefectsAndColors.count()-1
-        for ind_d in range(max_index):
-                self.cspec.pop(ind_d)
-                self.lstDefectsAndColors.removeItem(ind_d)
+                #for col, row in self.cspec:            
+                rgb_val = self.cspec[i]["COLOR_HEXRGB_DATMANT"] #col["COLOR_HEXRGB_DATMANT"]  
+                g_val = self.cspec[i]["COLOR_GSCALE_MAPPING"]    
+                name_val = self.cspec[i]["NAME_LAYER_D"]             
+                #g_val = self.cspec[i]["NAME_LAYER_D"] # col["NAME_LAYER_D"]     
+                print(rgb_val,g_val)
+
+                print("Selected: {}".format(self.colors_arr[i]))
+                #self.dialog_COLOR.accept() 
                 
-    
-        for i in range(k):                  
-                                                                                                
-            self.add_layer_current_color = self.colors_arr[i]
+                pix = QPixmap(50, 50)
+                pix.fill(QColor(rgb_val))
+                ticon = QIcon(pix)                            
+                self.lstDefectsAndColors.addItem(ticon, " " + name_val +
+                    " | "  + rgb_val + " | "  + str(g_val))
+                
+                #### выгружаем слои маски и накладываем друг на друга
+                layer_img = self.loaded_hsmask[:, :, i]
+                print(type(layer_img), layer_img.shape, len(layer_img))
+                
+                #self.setmasktocolor(layer_img)
+                #self.mask_all_layers =+ layer_img
+                #print(self.mask_all_layers)
+                the_color = QColor("#63" + self.add_layer_current_color.split("#")[1])
+                self.current_paint = the_color
+                self.annotator.brush_fill_color = the_color
+                self.mask_all_colors.append(the_color)
+                
+                print(rgb_val, g_val, "saaaaaaaaaa")
+                g2rgb[g_val] = rgb_val
+                rgb2g[rgb_val] = g_val  
+                
 
-            print(self.cspec, i, k, "self.cspec, i, k,")
-            self.cspec.append({"NAME_LAYER_D": "New class", 
-                                "COLOR_HEXRGB": self.colors_arr[i],
-                                "COLOR_GSCALE_MAPPING": self.colors_gray_arr[i]})
+            print(self.loaded_hsmask[:, :, 1], "loaded_hsmask")          
+            print(self.mask_all_colors[1], "mask_all_colors")                 
+            self.annotator.clearAndSetMaskLayers(self.current_image, # self.current_image,
+                                                    self.loaded_hsmask[:, :, 1], # self.current_defects,
+                                                    helper = None, # array2qimage(helper),
+                                                    aux_helper=None, # aux_helper=(array2qimage(self.current_tk) if self.current_tk is not None else None),
+                                                    process_gray2rgb=True, # process_gray2rgb=True,
+                                                    direct_mask_paint=False,
+                                                    color = self.mask_all_colors[1]) # direct_mask_paint=True))     
             
-            print(self.cspec, i, k, "self.cspec, i, k, AFTER")
-            #for col, row in self.cspec:            
-            rgb_val = self.cspec[i]["COLOR_HEXRGB"]  
-            g_val = self.cspec[i]["COLOR_GSCALE_MAPPING"]    
-            name_val = self.cspec[i]["NAME_LAYER_D"]             
-            #g_val = self.cspec[i]["NAME_LAYER_D"] # col["NAME_LAYER_D"]     
-            print(rgb_val,g_val, "rgb_val,g_val")
 
-            print("Selected: {}".format(self.colors_arr[i]), "Selected: (self.colors_arr[i])")
-            #self.dialog_COLOR.accept() 
             
-            pix = QPixmap(50, 50)
-            pix.fill(QColor(rgb_val))
-            ticon = QIcon(pix)                            
-            self.lstDefectsAndColors.addItem(ticon, " " + name_val +
-                " | "  + rgb_val + " | "  + str(g_val))
-            
-            
-            #### выгружаем слои маски и накладываем друг на друга
-            #if is_ai == True:
-                  
-            layer_img = hsmask.data[:, :, i] # self.loaded_hsmask[:, :, i] self.hsmask.data
-           
-            #from matplotlib import pyplot as PLT
-            #PLT.imshow(layer_img, interpolation='nearest')
-            #PLT.show()                
-            
-            print(type(layer_img), layer_img.shape, len(layer_img), "type(layer_img), layer_img.shape, len(layer_img)")
-            
-            #self.setmasktocolor(layer_img)
-            #self.mask_all_layers =+ layer_img
-            #print(self.mask_all_layers)
-            the_color = QColor("#63" + self.add_layer_current_color.split("#")[1])
-            self.current_paint = the_color
-            self.annotator.brush_fill_color = the_color
-            self.mask_all_colors.append(self.add_layer_current_color) #  the_color
 
-
-            g2rgb_arr[g_val] = rgb_val
-            rgb2g[rgb_val] = g_val  
-                        
-            #g2rgb[g_val] = rgb_val
-            #rgb2g[rgb_val] = g_val  
+            # Set up dicts
+            self.d_rgb2gray = rgb2g
+            self.d_gray2rgb = g2rgb
+            self.tk_colors = tk2rgb
             
-        #self.d_rgb2gray = rgb2g
-        self.d_gray2rgb_arr = g2rgb_arr
-        #self.annotator.d_rgb2gray = self.d_rgb2gray
-        self.annotator.d_gray2rgb_arr = self.d_gray2rgb_arr
-        
-        print(self.loaded_hsmask[:, :, 1], "loaded_hsmask")          
-        print(self.mask_all_colors[1], "mask_all_colors")
-        print(self.current_image, "self.current_image")     
-    
-        # Set up dicts
-        #self.d_rgb2gray = rgb2g
-        #self.d_gray2rgb = g2rgb
-        #self.annotator.d_rgb2gray = self.d_rgb2gray
-        #self.annotator.d_gray2rgb = self.d_gray2rgb
-        
-        self.current_mask = layer_img
-        self.current_defect = self.current_mask         
-                    
-        self.annotator.clearAndSetMaskLayers(self.current_image, # self.current_image,
-                                                hsmask, # hsmask.data[:, :, 1] self.current_mask,
-                                                helper = None, # array2qimage(helper),
-                                                aux_helper=None, # aux_helper=(array2qimage(self.current_tk) if self.current_tk is not None else None),
-                                                process_gray2rgb=True, # process_gray2rgb=True,
-                                                direct_mask_paint=False,
-                                                color = self.mask_all_colors) # direct_mask_paint=True))     
+            self.current_mask = layer_img
+            self.current_defect = self.current_mask
             
-        self.check_paths()
-        self.store_paths_to_config()        
-        self.get_image_files()
+            
+            
+            layer_index=+1
+            #######
+            
+                
 
 
-            #######            
+
+            
+            '''
+            # layer index
+            layer_index=0
+            for layer_index in range (k):
+                
+                layer_img = self.loaded_hsmask[:, :, layer_index]
+                print(type(layer_img), layer_img.shape, len(layer_img))
+                
+                from matplotlib import pyplot as plt
+                plt.imshow(layer_img)
+                plt.show()
+                
+                self.setmasktocolor(layer_img)
+                
+                self.current_mask = layer_img
+                self.current_defect = self.current_mask
+                layer_index=+1
+            '''
+            
             #self.current_mask = qimage2ndarray.array2qimage(self.loaded_hsmask[:, :, 0])
             #print(self.current_mask, "self.current_mask")  
 
-            #self.current_mask = self.current_mask
-            #img = self.QImageToCvMat(self.current_mask)
+            #self.current_defects = self.current_mask
+            #img = self.QImageToCvMat(self.current_defects)
             #self.setmasktocolor(img)
             
             #self.clear_all_annotations()
             #self.annotator.clearAll() # очищаем
 
         ###############################################################
-
+            self.check_paths()
+            self.store_paths_to_config()        
+            self.get_image_files()
 
 
     def QImageToCvMat(self,incomingImage):
@@ -1709,16 +1551,15 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         #                    delimiter=";", encoding='utf-8')
         #cspec_list = cspec.to_dict('records')
         
-        df = pd.DataFrame({"NAME_LAYER_D": [], # "NAME_LAYER_D": ["New class"]
-                            "COLOR_HEXRGB": [], # "COLOR_HEXRGB": ["#006f05"]
-                            "COLOR_GSCALE_MAPPING": []}) # "COLOR_GSCALE_MAPPING": 1
+        df = pd.DataFrame({"NAME_LAYER_D": ["class"], # "class"
+                            "COLOR_HEXRGB_DATMANT": ["#006f05"],
+                            "COLOR_GSCALE_MAPPING": 10}) # gray
         
         cspec_list = df.to_dict('records')
-
+#        cspec_list["NAME_LAYER_D"].extend("class")
+#        cspec_list["COLOR_HEXRGB_DATMANT"].extend("#006f05")
         # Store the list
-        self.cspec = cspec_list       
-          
-        print(self.cspec, "self.cspec after")
+        self.cspec = cspec_list
 
 
 
@@ -1737,7 +1578,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             tk2rgb = {}
             
             for col in self.cspec:
-                rgb_val = col["COLOR_HEXRGB"].lower()
+                rgb_val = col["COLOR_HEXRGB_DATMANT"].lower()
                 g_val = int(col["COLOR_GSCALE_MAPPING"])
 
                 #keys_to_insert = col["COLOR_ABBR_ET"].split(",")
@@ -1752,7 +1593,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                 #                                 " | " + col["COLOR_NAME_ET"])
                 
                 self.lstDefectsAndColors.addItem(ticon, " " + col["NAME_LAYER_D"] +
-                                    " | "  + col["COLOR_HEXRGB"] + " | "  + str(col["COLOR_GSCALE_MAPPING"]))
+                                    " | "  + col["COLOR_HEXRGB_DATMANT"] + " | "  + str(col["COLOR_GSCALE_MAPPING"]))
 
                 # Fill in necessary dicts
                 g2rgb[g_val] = rgb_val
@@ -1763,9 +1604,6 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             self.d_rgb2gray = rgb2g
             self.d_gray2rgb = g2rgb
             self.tk_colors = tk2rgb
-            
-            self.annotator.d_rgb2gray = self.d_rgb2gray
-            self.annotator.d_gray2rgb = self.d_gray2rgb
 
             # Change the brush color
             self.lstDefectsAndColors.currentIndexChanged.connect(self.change_brush_color)
@@ -1775,14 +1613,8 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
 
     def change_brush_color(self):
         cind = self.lstDefectsAndColors.currentIndex()
-        print(cind, "change_brush_color - cind")
-        if cind == -1:
-            color = self.colors_arr[0]  
-            the_color = QColor("#63" + color.split("#")[1])
-            
-        else:            
-            color = self.cspec[cind]
-            the_color = QColor("#63" + color["COLOR_HEXRGB"].split("#")[1]) # color["COLOR_HEXRGB"]
+        color = self.cspec[cind]
+        the_color = QColor("#63" + color["COLOR_HEXRGB_DATMANT"].split("#")[1])
         self.current_paint = the_color
         self.annotator.brush_fill_color = the_color
 
@@ -1796,60 +1628,89 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
 
     def show_selected_color(self, c):
         
-        #cind = self.lstDefectsAndColors.currentIndex()   
-        cind = len(self.cspec)        
-
-        if cind == -1:
-            cind = 0
-   
-        self.add_layer_current_color = c        
-
-        if self.message_name_layer.text() == "":
-            name_layer = "New class"
-        else: 
-            name_layer = self.message_name_layer.text()
-            
-        self.cspec.append({"NAME_LAYER_D": name_layer, 
-                            "COLOR_HEXRGB": c,
-                            "COLOR_GSCALE_MAPPING": self.colors_gray_arr[cind]}) # self.colors_gray_arr[cind]
+        cind = self.lstDefectsAndColors.currentIndex()
+        color = self.cspec[cind]        
+        
+        self.add_layer_current_color = c
+        
+        self.cspec.append({"NAME_LAYER_D": self.message_name_layer.text(), 
+                            "COLOR_HEXRGB_DATMANT": c,
+                            "COLOR_GSCALE_MAPPING": self.colors_gray_arr[cind]                            })
+        #self.cspec.append({"NAME_LAYER_D": self.message_name_layer.text(), 
+        #                    "COLOR_HEXRGB_DATMANT": c})
           
         #for col, row in self.cspec:            
-        rgb_val = self.cspec[cind]["COLOR_HEXRGB"] #col["COLOR_HEXRGB"]
+        rgb_val = self.cspec[cind]["COLOR_HEXRGB_DATMANT"] #col["COLOR_HEXRGB_DATMANT"]
         g_val = self.cspec[cind]["COLOR_GSCALE_MAPPING"]       
         #g_val = self.cspec[cind]["NAME_LAYER_D"] # col["NAME_LAYER_D"]     
-        
-                # Create the icon and populate the list
-        pix = QPixmap(50, 50)
-        pix.fill(QColor(rgb_val))        
-        ticon = QIcon(pix)
-        self.lstDefectsAndColors.addItem(ticon, " " + self.cspec[cind]["NAME_LAYER_D"] +
-                                         " | "  + self.add_layer_current_color + " | "  + str(self.colors_gray_arr[cind]))
-        
-        print(rgb_val,g_val, "Selected: {}".format(c), name_layer, "rgb_val,g_val,  .format(c), name_layer")
+        print(rgb_val,g_val)
+
+        print("Selected: {}".format(c))
+        print(self.message_name_layer.text())
         self.dialog_COLOR.accept() 
 
         
     def add_layerclass_to_mask(self):        
 
+
         self.dialog_COLOR = QDialog(self , Qt.Window | Qt.WindowStaysOnTopHint) #  self , Qt.Window | Qt.WindowStaysOnTopHint
         #message_box_dialog.setModal(True)
         self.dialog_COLOR.setWindowTitle("Параметры генерации")
-        self.dialog_COLOR.resize(300, 150)        
-            
-        palette = PaletteGrid('17undertones') # or PaletteHorizontal, or PaletteVertical     
+        self.dialog_COLOR.resize(300, 150)
+        
+        palette = PaletteGrid('17undertones') # or PaletteHorizontal, or PaletteVertical
+        palette.selected.connect(self.show_selected_color)
         
         message_box_label_2 = QLabel("Name your layer: ")
-        self.message_name_layer = QLineEdit()          
-        
-        palette.selected.connect(self.show_selected_color)
+        self.message_name_layer = QLineEdit()               
+
         
         message_box_layout = QVBoxLayout()
         self.dialog_COLOR.setLayout(message_box_layout)
+
         message_box_layout.addWidget(message_box_label_2)
         message_box_layout.addWidget(self.message_name_layer)
-        message_box_layout.addWidget(palette)        
+        message_box_layout.addWidget(palette)
+
+        
         self.dialog_COLOR.show()  
         self.dialog_COLOR.exec_()           
+
+        
+        cind = self.lstDefectsAndColors.currentIndex()
+        #color = self.cspec[cind]
+        max_index = self.lstDefectsAndColors.count()-1
+        rgb_val = self.add_layer_current_color
+        g_val = self.colors_gray_arr[cind]
+
+        #keys_to_insert = col["COLOR_ABBR_ET"].split(",")
+
+        # Create the icon and populate the list
+        pix = QPixmap(50, 50)
+        pix.fill(QColor(rgb_val))        
+        ticon = QIcon(pix)
+        self.lstDefectsAndColors.addItem(ticon, " " + self.message_name_layer.text() +
+                                         " | "  + self.add_layer_current_color + " | "  + self.add_layer_current_color)
+        '''
+        for col in self.cspec:
+            rgb_val = col["COLOR_HEXRGB_DATMANT"].lower()
+            g_val = int(col["COLOR_GSCALE_MAPPING"])
+
+            keys_to_insert = col["COLOR_ABBR_ET"].split(",")
+            for ks in keys_to_insert:
+                tk2rgb[ks.strip()] = col["COLOR_HEXRGB_TK"]
+
+            # Create the icon and populate the list
+            pix = QPixmap(50, 50)
+            pix.fill(QColor(rgb_val))
+            ticon = QIcon(pix)
+            #self.lstDefectsAndColors.addItem(ticon, " " + col["COLOR_NAME_EN"] +
+            #                                 " | " + col["COLOR_NAME_ET"])
+
+            # Fill in necessary dicts
+            g2rgb[g_val] = rgb_val
+            rgb2g[rgb_val] = g_val
+        '''
         
         
     '''
