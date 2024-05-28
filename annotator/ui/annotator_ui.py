@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'datmant_4BHEeML.ui'
+## Form generated from reading UI file 'annotator_5ATiXWE.ui'
 ##
 ## Created by: Qt User Interface Compiler version 5.15.2
 ##
@@ -452,13 +452,8 @@ class Ui_AnnotatorMainWindow(object):
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
         self.menubar.addAction(self.menuView.menuAction())
-        self.menuFile.addAction(self.actionSave_current_annotations)
-        self.menuFile.addAction(self.actionLoad)
         self.menuView.addSeparator()
-        self.menuView.addAction(self.actionColor_definitions)
         self.menuView.addAction(self.actionLog)
-        self.menuEdit.addAction(self.actionProcess_original_mask)
-        self.menuEdit.addAction(self.actionAIMask)
 
         self.retranslateUi(AnnotatorMainWindow)
 
