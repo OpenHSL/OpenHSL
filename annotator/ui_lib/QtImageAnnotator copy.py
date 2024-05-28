@@ -49,8 +49,7 @@ class QtImageAnnotator(QGraphicsView):
         self._pixmapHandle = None  # This holds the image
         self._helperHandle = None # This holds the "helper" overlay which is not directly manipulated by the user
         self._auxHelper = None  # Aux helper for various purpuses
-        self._overlayHandle = []  # This is the overlay over which we are painting
-        self.layer_mask = 0
+        self._overlayHandle = None  # This is the overlay over which we are painting
         self._cursorHandle = None  # This is the cursor that appears to assist with brush size
         self._deleteCrossHandles = None # For showing that we've activated delete mode
 
@@ -266,11 +265,8 @@ class QtImageAnnotator(QGraphicsView):
         else:
             raise RuntimeError("QtImageAnnotator.clearAndSetImageAndMask: Argument must be a QImage or QPixmap.")
 
-        print(pixmap, "self.current_img !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        
-        self.current_img = pixmap # for ai mask
         self.shape = pixmap.height(), pixmap.width()
-        
+
         self._pixmapHandle = self.scene.addPixmap(pixmap)
         self.setSceneRect(QRectF(pixmap.rect()))
 
@@ -368,7 +364,7 @@ class QtImageAnnotator(QGraphicsView):
 #######################################################################################
     # накладывает несколько цветов по слоям маски
     def clearAndSetMaskLayers(self, image, mask, helper=None, aux_helper=None,
-                                process_gray2rgb=False, direct_mask_paint=False, color=None, is_not_cube_mask =False):
+                                process_gray2rgb=False, direct_mask_paint=False, color=None):
         # Clear the scene
         self.scene.clear()
 
@@ -376,7 +372,7 @@ class QtImageAnnotator(QGraphicsView):
         self._pixmapHandle = None
         self._helperHandle = None
         self._auxHelper = None
-        self._overlayHandle = []
+        self._overlayHandle = None
 
         # Clear UNDO stack
         self._overlay_stack = collections.deque(maxlen=MAX_CTRLZ_STATES)
@@ -392,9 +388,7 @@ class QtImageAnnotator(QGraphicsView):
         else:
             raise RuntimeError("QtImageAnnotator.clearAndSetImageAndMask: Argument must be a QImage or QPixmap.")
 
-        print(pixmap, "self.current_img !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        self.current_img = pixmap # for ai mask
-
+        
         self.shape = pixmap.height(), pixmap.width()
 
         self._pixmapHandle = self.scene.addPixmap(pixmap)
@@ -438,27 +432,23 @@ class QtImageAnnotator(QGraphicsView):
             self._auxHelper = self.scene.addPixmap(pixmap)
             
         '''
-        if is_not_cube_mask == True:
-            print("sss")
-            #self.scene.clear()
-            '''
-            print(mask, "mask")
-            a1,a2 = mask.shape
-            print(a1,a2, "a1,a2 FDEL ") 
 
+        a1,a2,num_layers = mask.data.shape
+        print(a1,a2,num_layers, "a1,a2,num_layers ") 
+        for ind_layer in range(num_layers):
             if process_gray2rgb:
                 print(self.d_gray2rgb_arr, "self.d_gray2rgb")
                 if self.d_gray2rgb_arr:
                     # We assume mask is np array, grayscale and the conversion rules are set (otherwise cannot continue)
                     h, w, = a1,a2 # h, w, p = mask.data.shape
-                    mask_ = mask[:,:]
+                    mask_ = mask.data[:,:,ind_layer]
                     
                     print(mask_, " mask_ ")
                     
                     print(self.d_gray2rgb_arr, "self.d_gray2rgb_arr")
 
                     print(self.d_gray2rgb_arr.keys(), "self.d_gray2rgb_arr.keys")
-                    mask_ = mask_ * list(self.d_gray2rgb_arr.keys())
+                    mask_ = mask_ * list(self.d_gray2rgb_arr.keys())[ind_layer]
                     
                     new_mask = np.zeros((h, w, 4), np.uint8)
                     
@@ -478,7 +468,7 @@ class QtImageAnnotator(QGraphicsView):
                 else:
                     raise RuntimeError("Cannot convert the provided grayscale mask to RGB without color specifications.")
             else:
-                mask_ = mask[:,:]
+                mask_ = mask.data[:,:,ind_layer]
                 use_mask = array2qimage(mask_)            
             
             #from matplotlib import pyplot as PLT
@@ -487,62 +477,9 @@ class QtImageAnnotator(QGraphicsView):
             
             pixmap = QPixmap.fromImage(use_mask)
             self.mask_pixmap = pixmap
-            '''
-            self._overlayHandle.clear()
-            
-            self.mask_pixmap = QPixmap(pixmap.rect().width(), pixmap.rect().height())
-            self.mask_pixmap.fill(QColor(0,0,0,0))
             self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
-        
-        else:
-                            
-            a1,a2,num_layers = mask.data.shape
-            print(a1,a2,num_layers, "a1,a2,num_layers ") 
-            for ind_layer in range(num_layers):
-                if process_gray2rgb:
-                    print(self.d_gray2rgb_arr, "self.d_gray2rgb")
-                    if self.d_gray2rgb_arr:
-                        # We assume mask is np array, grayscale and the conversion rules are set (otherwise cannot continue)
-                        h, w, = a1,a2 # h, w, p = mask.data.shape
-                        mask_ = mask.data[:,:,ind_layer]
-                        
-                        print(mask_, " mask_ ")
-                        
-                        print(self.d_gray2rgb_arr, "self.d_gray2rgb_arr")
 
-                        print(self.d_gray2rgb_arr.keys(), "self.d_gray2rgb_arr.keys")
-                        mask_ = mask_ * list(self.d_gray2rgb_arr.keys())[ind_layer]
-                        
-                        new_mask = np.zeros((h, w, 4), np.uint8)
-                        
-                        print(self.d_gray2rgb_arr.items(), " self.d_gray2rgb_arr.items() ")
-                        for gr, rgb in self.d_gray2rgb_arr.items(): # color self.d_gray2rgb.items():
-                            print (gr, rgb)
-                            col = QColor("#63" + rgb.split("#")[1]).getRgb() #col = QColor("#63" + "#ddffe7".split("#")[1]).getRgb() #color.getRgb() # QColor("#63" + rgb.split("#")[1]).getRgb() 
-                            new_mask[mask_ == gr] = col
-                        #print(new_mask, "QT - clearandsetmasklayers - new_mask")
-                        
-                        print(new_mask, "new_mask")
-                        #from matplotlib import pyplot as PLT
-                        #PLT.imshow(new_mask, interpolation='nearest')
-                        #PLT.show() 
-                        
-                        use_mask = array2qimage(new_mask) #array2qimage(new_mask)
-                    else:
-                        raise RuntimeError("Cannot convert the provided grayscale mask to RGB without color specifications.")
-                else:
-                    mask_ = mask.data[:,:,ind_layer]
-                    use_mask = array2qimage(mask_)            
-                
-                #from matplotlib import pyplot as PLT
-                #PLT.imshow(mask_, interpolation='nearest')
-                #PLT.show()    
-                
-                pixmap = QPixmap.fromImage(use_mask)
-                self.mask_pixmap = pixmap
-                self._overlayHandle.append(self.scene.addPixmap(self.mask_pixmap))
-                #self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
-            ###############################################
+        ###############################################
 
         # Add brush cursor to top layer
         self._cursorHandle = self.scene.addEllipse(0, 0, self.brush_diameter, self.brush_diameter)
@@ -637,7 +574,7 @@ class QtImageAnnotator(QGraphicsView):
         #########
         ### почему убрала ???
         # If we are supplied a grayscale mask that we need to convert to RGB, we will do it here
-        
+        '''
         if process_gray2rgb:
             if self.d_gray2rgb:
                 # We assume mask is np array, grayscale and the conversion rules are set (otherwise cannot continue)
@@ -655,7 +592,7 @@ class QtImageAnnotator(QGraphicsView):
         pixmap = QPixmap.fromImage(use_mask)
         self.mask_pixmap = pixmap
         self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
-        
+        '''
         #########
         ### почему убрала ???
 
@@ -698,13 +635,13 @@ class QtImageAnnotator(QGraphicsView):
         if self._auxHelper is not None:
             self.scene.removeItem(self._auxHelper)
 
-        if self._overlayHandle[self.layer_mask] is not None:
-            self.scene.removeItem(self._overlayHandle[self.layer_mask])
+        if self._overlayHandle is not None:
+            self.scene.removeItem(self._overlayHandle)
 
         self._pixmapHandle = None
         self._helperHandle = None
         self._auxHelper = None
-        self._overlayHandle = []
+        self._overlayHandle = None
 
         if self.direct_mask_paint:
             self._offscreen_mask = None
@@ -845,13 +782,11 @@ class QtImageAnnotator(QGraphicsView):
             self.min_x, self.max_x, self.min_y, self.max_y = min_x, max_x, min_y, max_y
             
             image = self.current_img
-            width,height = self.shape
-            #print(width,height, "width,height")
-            #print(image, "image dddd")
-            #width = image.width()
-            #height = image.height()
+            
+            width = image.width()
+            height = image.height()
             channels_count = 4
-            image = image.toImage() # image[0].toImage()
+            image = image.toImage()
             s = image.bits().asstring(width * height * channels_count)
             array = np.fromstring(s, dtype=np.uint8).reshape((height, width, channels_count))
             
@@ -895,8 +830,7 @@ class QtImageAnnotator(QGraphicsView):
         # It seems that the way to approach hardcore optimization is to switch to OpenGL
         # for all rendering purposes. This update will likely come much later in the tool's
         # lifecycle.
-        print(self.layer_mask, "self.layer_mask")
-        self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap)
+        self._overlayHandle.setPixmap(self.mask_pixmap)
 
         # In case of direct mask paint mode, we need to paint on the mask as well
         if self.direct_mask_paint:
@@ -919,7 +853,7 @@ class QtImageAnnotator(QGraphicsView):
         painter.setPen(QPen(self.brush_fill_color,
                             self.brush_diameter, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         painter.drawLine(self.lastPoint, scenePos)
-        self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap)
+        self._overlayHandle.setPixmap(self.mask_pixmap)
 
         # In case of direct mask paint mode, we need to paint on the mask as well
         if self.direct_mask_paint:
@@ -1009,7 +943,7 @@ class QtImageAnnotator(QGraphicsView):
 
         # Finally update the screen stuff
         self.mask_pixmap = QPixmap.fromImage(new_qimg)
-        self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap)
+        self._overlayHandle.setPixmap(self.mask_pixmap)
 
     # Repaint connected contour (disregarding color information) to the current paint color
     def repaintArea(self):
@@ -1039,7 +973,7 @@ class QtImageAnnotator(QGraphicsView):
                                           QImage.Format_Grayscale8)
 
         self.mask_pixmap = QPixmap.fromImage(new_qimg)
-        self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap)
+        self._overlayHandle.setPixmap(self.mask_pixmap)
 
 
     '''
@@ -1227,7 +1161,7 @@ class QtImageAnnotator(QGraphicsView):
                 if QApplication.keyboardModifiers() & Qt.ControlModifier:
                     if (len(self._overlay_stack) > 0):
                         self.mask_pixmap = self._overlay_stack.pop()
-                        self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap)
+                        self._overlayHandle.setPixmap(self.mask_pixmap)
 
                     if self.direct_mask_paint:
                         if len(self._offscreen_mask_stack) > 0:
