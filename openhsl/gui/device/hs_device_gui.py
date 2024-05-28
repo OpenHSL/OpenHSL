@@ -1497,15 +1497,16 @@ class HSDeviceGUI(QMainWindow):
             self.wt_graphics_scene.removeItem(self.wt_graphics_wavelength_line_item)
 
     def draw_wl_spectrum_top_left_x_line(self):
-        if 0 < self.wt_spectrum_top_left_point.x() < self.wt_wavelength_image_qt.width() - 1:
-            point_start = QPointF(self.wt_spectrum_top_left_point.x(), 0)
-            point_stop = QPointF(self.wt_spectrum_top_left_point.x(), self.wt_wavelength_image_qt.height() - 1)
-            self.draw_line(self.wt_graphics_scene, self.wt_graphics_spectrum_top_left_x_line_item,
-                           point_start, point_stop)
-        else:
-            self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_left_x_line_item)
-            self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_left_ellipse_item)
-            self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_bottom_left_ellipse_item)
+        if self.wt_wavelength_image_qt is not None:
+            if 0 < self.wt_spectrum_top_left_point.x() < self.wt_wavelength_image_qt.width() - 1:
+                point_start = QPointF(self.wt_spectrum_top_left_point.x(), 0)
+                point_stop = QPointF(self.wt_spectrum_top_left_point.x(), self.wt_wavelength_image_qt.height() - 1)
+                self.draw_line(self.wt_graphics_scene, self.wt_graphics_spectrum_top_left_x_line_item,
+                               point_start, point_stop)
+            else:
+                self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_left_x_line_item)
+                self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_top_left_ellipse_item)
+                self.wt_graphics_scene.removeItem(self.wt_graphics_spectrum_bottom_left_ellipse_item)
 
     def draw_wl_spectrum_top_left_y_line(self):
         if self.wt_wavelength_image_qt is not None:
