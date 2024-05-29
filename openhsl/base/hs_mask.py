@@ -295,7 +295,7 @@ class HSMask:
         _, file_extension = os.path.splitext(path_to_data)
 
         if file_extension in ['.jpg', '.jpeg', '.bmp', '.png']:
-            self.data = self.load_from_image(path_to_data=path_to_data)
+            self.load_from_image(path_to_data=path_to_data)
 
         elif file_extension == '.npy':
             self.load_from_npy(path_to_data=path_to_data)
@@ -310,7 +310,8 @@ class HSMask:
 
         elif file_extension == '.tiff' or file_extension == '.tif':
             self.load_from_tiff(path_to_data=path_to_data)
-
+        else:
+            raise ValueError("unsupported extension")
         # updates number of classes after loading mask
         self.n_classes = self.data.shape[-1]
         self.load_class_info(path_to_data)
@@ -499,7 +500,8 @@ class HSMask:
         path_to_save_file: str
             Path to file
         """
-        img = Image.fromarray(self.data[:, :, 0])
+        img_2d = self.get_2d()
+        img = Image.fromarray(img_2d)
         img.save(path_to_save_file)
         self.save_class_info(path_to_save_file)
     # ------------------------------------------------------------------------------------------------------------------
