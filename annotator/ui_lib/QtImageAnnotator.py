@@ -132,6 +132,7 @@ class QtImageAnnotator(QGraphicsView):
         self.min_x_2, self.max_x_2, self.min_y_2, self.max_y_2 = 0, 0, 0, 0
         self.isANDImethod = False
 
+        self.mask_pixmap_multy = []
 
     def hasImage(self):
         """ Returns whether or not the scene contains an image pixmap.
@@ -372,7 +373,8 @@ class QtImageAnnotator(QGraphicsView):
                                 direct_mask_paint=False, 
                                 color=None, 
                                 is_not_cube_mask = False, 
-                                data_shape = True):
+                                data_shape = True,
+                                is_hidden = False):
         # Clear the scene
         self.scene.clear()
 
@@ -497,8 +499,8 @@ class QtImageAnnotator(QGraphicsView):
             pixmap = QPixmap.fromImage(use_mask)
             self.mask_pixmap = pixmap
             '''
-            self._overlayHandle.clear()
             
+            self._overlayHandle.clear()
             self.mask_pixmap = QPixmap(pixmap.rect().width(), pixmap.rect().height())
             self.mask_pixmap.fill(QColor(0,0,0,0))
             self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
@@ -507,7 +509,6 @@ class QtImageAnnotator(QGraphicsView):
             
             if data_shape == True:
                 a1,a2,num_layers = mask.data.shape
-                            
             else:
                 a1,a2,num_layers = mask.shape    
                 
@@ -520,7 +521,10 @@ class QtImageAnnotator(QGraphicsView):
                         h, w, = a1,a2 # h, w, p = mask.data.shape
                         
                         if data_shape == True:
-                            mask_ = mask.data[:,:,ind_layer]
+                            if is_hidden == True:
+                                mask_ = mask[:,:,ind_layer] # mask.data[:,:,ind_layer]
+                            else:
+                                mask_ = mask.data[:,:,ind_layer]
                         else:
                             mask_ = mask[:,:,ind_layer]   
                 
@@ -568,8 +572,9 @@ class QtImageAnnotator(QGraphicsView):
                 #PLT.show()    
                 
                 pixmap = QPixmap.fromImage(use_mask)
-                self.mask_pixmap = pixmap
-                self._overlayHandle.append(self.scene.addPixmap(self.mask_pixmap))
+                self.mask_pixmap_multy.append(pixmap) # self.mask_pixmap_multy[ind_layer] = pixmap 
+                print(self.mask_pixmap_multy[ind_layer] , "self.mask_pixmap  in MASKLAYERS")
+                self._overlayHandle.append(self.scene.addPixmap(self.mask_pixmap_multy[ind_layer])) # self._overlayHandle.append(self.scene.addPixmap(self.mask_pixmap)) 
                 #self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
             ###############################################
 
@@ -581,10 +586,11 @@ class QtImageAnnotator(QGraphicsView):
         self._deleteCrossHandles = (self.scene.addLine(0, 0, self.brush_diameter, self.brush_diameter),
                                     self.scene.addLine(0, self.brush_diameter, self.brush_diameter, 0))
 
+        
         if self.current_painting_mode is not self.MODE_ERASE:
             self._deleteCrossHandles[0].hide()
             self._deleteCrossHandles[1].hide()
-
+        
         self.updateViewer()
                 
  #######################################################################################           
@@ -733,7 +739,7 @@ class QtImageAnnotator(QGraphicsView):
         self._pixmapHandle = None
         self._helperHandle = None
         self._auxHelper = None
-        self._overlayHandle = []
+        self._overlayHandle.clear() #self._overlayHandle = []
 
         if self.direct_mask_paint:
             self._offscreen_mask = None
@@ -943,13 +949,21 @@ class QtImageAnnotator(QGraphicsView):
     # Draws a line
     def drawMarkerLine(self, event):
         scenePos = self.mapToScene(event.pos())
-        painter = QPainter(self.mask_pixmap)
+        print(self.mask_pixmap_multy[self.layer_mask], "self.mask_pixmap drawMarkerLine")
+        
+        #sel = self._overlayHandle[self.layer_mask]
+        painter = QPainter(self.mask_pixmap_multy[self.layer_mask]) #
         painter.setCompositionMode(self.current_painting_mode)
         painter.setPen(QPen(self.brush_fill_color,
                             self.brush_diameter, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         painter.drawLine(self.lastPoint, scenePos)
-        self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap)
+        
+        
+        ###################### self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
+        self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap_multy[self.layer_mask])
+        #print(self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap))
 
+        
         # In case of direct mask paint mode, we need to paint on the mask as well
         if self.direct_mask_paint:
             if not self.d_rgb2gray:
@@ -962,6 +976,7 @@ class QtImageAnnotator(QGraphicsView):
             painter.drawLine(self.lastPoint, scenePos)
 
         self.lastPoint = scenePos
+        
 
     # Fills an area using the last stored cursor location
     # If optional argument remove_closed_contour is set to True, then
@@ -1039,6 +1054,7 @@ class QtImageAnnotator(QGraphicsView):
         # Finally update the screen stuff
         self.mask_pixmap = QPixmap.fromImage(new_qimg)
         self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap)
+
 
     # Repaint connected contour (disregarding color information) to the current paint color
     def repaintArea(self):
@@ -1138,6 +1154,7 @@ class QtImageAnnotator(QGraphicsView):
                 QGraphicsView.wheelEvent(self, event)
 
     def mouseMoveEvent(self, event):
+        ###############################################################################################
 
         if self.hasImage():
 
@@ -1252,6 +1269,7 @@ class QtImageAnnotator(QGraphicsView):
                         self.showHelper = True
 
             # Undo operations
+            
             if event.key() == Qt.Key_Z:
                 if QApplication.keyboardModifiers() & Qt.ControlModifier:
                     if (len(self._overlay_stack) > 0):
@@ -1284,6 +1302,8 @@ class QtImageAnnotator(QGraphicsView):
         QGraphicsView.keyPressEvent(self, event)
 
     def mousePressEvent(self, event):
+        
+        '''
 
         if self.hasImage():
             """ Start drawing, panning with mouse, or zooming in
@@ -1319,7 +1339,8 @@ class QtImageAnnotator(QGraphicsView):
 
                 # If the user just clicks, add a marker (unless repainting was done)
                 if not repaint_was_active:
-                    self.fillMarker(event)
+                    print("fillMarker")
+                    #self.fillMarker(event)
 
                 self.leftMouseButtonPressed.emit(scenePos.x(), scenePos.y())
             elif event.button() == Qt.MiddleButton:
@@ -1336,7 +1357,7 @@ class QtImageAnnotator(QGraphicsView):
                 self.rightMouseButtonPressed.emit(scenePos.x(), scenePos.y())                
                 
                 self.selection = [event.pos()] # ai mask - 2 method
-
+        '''
         QGraphicsView.mousePressEvent(self, event)
 
     def mouseReleaseEvent(self, event):
