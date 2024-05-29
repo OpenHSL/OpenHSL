@@ -1,0 +1,7 @@
+test_data/
+
+out/
+
+openhsl.egg*
+
+dist/
