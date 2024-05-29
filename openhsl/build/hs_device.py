@@ -153,8 +153,8 @@ class HSDevice:
     def __init__(self):
         self.device_type: HSDeviceType = HSDeviceType.Undef
         # ROI for slit
-        self.slit_data: Optional[HSCalibrationSlitData] = None
-        self.wavelength_data: Optional[HSCalibrationWavelengthData] = None
+        self.slit_data: Optional[HSCalibrationSlitData] = HSCalibrationSlitData()
+        self.wavelength_data: Optional[HSCalibrationWavelengthData] = HSCalibrationWavelengthData()
         self.illumination_mask: Optional[np.ndarray] = None
 
     def apply_roi(self, frame: np.ndarray):
