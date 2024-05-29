@@ -176,6 +176,9 @@ class HSDevice:
     def get_barrel_distortion_params(self) -> Dict[str, Union[List[float], Tuple[int]]]:
         return self.slit_data.barrel_distortion_params
 
+    def get_device_type(self):
+        return self.device_type
+
     def get_image_shape(self):
         return self.slit_data.image_shape
 
@@ -226,7 +229,7 @@ class HSDevice:
 
     def load_dict(self, device_data: dict):
         if utils.key_exists_in_dict(device_data, "device_type"):
-            self.device_type = device_data["device_type"]
+            self.device_type = HSDeviceType(device_data["device_type"])
         if utils.key_exists_in_dict(device_data, "slit_data"):
             self.slit_data = HSCalibrationSlitData.from_dict(device_data["slit_data"])
         if utils.key_exists_in_dict(device_data, "wavelength_data"):
@@ -236,7 +239,7 @@ class HSDevice:
     def from_dict(cls, device_data: dict):
         obj = cls()
         if utils.key_exists_in_dict(device_data, "device_type"):
-            obj.device_type = device_data["device_type"]
+            obj.device_type = HSDeviceType(device_data["device_type"])
         if utils.key_exists_in_dict(device_data, "slit_data"):
             obj.slit_data = HSCalibrationSlitData.from_dict(device_data["slit_data"])
         if utils.key_exists_in_dict(device_data, "wavelength_data"):

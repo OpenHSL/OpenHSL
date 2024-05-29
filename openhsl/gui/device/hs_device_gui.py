@@ -694,6 +694,7 @@ class HSDeviceGUI(QMainWindow):
         d = HSDeviceType.to_dict()
         for k, v in d.items():
             self.ui_device_type_combobox.addItem(k, v)
+        self.ui_device_type_combobox.currentIndexChanged.connect(self.on_ui_device_type_combobox_current_index_changed)
 
     def fill_recent_devices_menu(self):
         for action in self.ui_recent_device_settings_action_list:
@@ -816,7 +817,17 @@ class HSDeviceGUI(QMainWindow):
                 self.hsd.load_dict(device_data_dict)
             self.apply_device_settings()
 
+    def restore_device_type_combobox_current_index(self):
+        device_type = self.hsd.get_device_type()
+        dtc_model: QStandardItemModel = self.ui_device_type_combobox.model()
+
+        for i in range(dtc_model.rowCount()):
+            if dtc_model.data(dtc_model.index(i, 0), Qt.ItemDataRole.UserRole) == device_type:
+                self.ui_device_type_combobox.setCurrentIndex(i)
+                break
+
     def apply_device_settings(self):
+        self.restore_device_type_combobox_current_index()
         # TODO add mutex locker
         self.init_after_load_device_settings = True
         self.on_ui_load_slit_image_button_clicked()
@@ -1443,6 +1454,12 @@ class HSDeviceGUI(QMainWindow):
         self.ui_it_apply_roi_checkbox.setEnabled(True)
 
     # Tab 4: settings tab slots
+
+    @pyqtSlot(int)
+    def on_ui_device_type_combobox_current_index_changed(self, index: int):
+        dtc_model: QStandardItemModel = self.ui_device_type_combobox.model()
+        device_type = dtc_model.data(dtc_model.index(index, 0), Qt.ItemDataRole.UserRole)
+        self.hsd.set_device_type(device_type)
 
     @pyqtSlot()
     def on_ui_device_settings_path_save_button_clicked(self):

@@ -4,7 +4,7 @@ import numpy as np
 from PyQt6.QtCore import QObject, QRectF, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QImage
 from typing import Dict, List, Optional, Tuple, Union
-from openhsl.build.hs_device import HSDevice, HSCalibrationWavelengthData
+from openhsl.build.hs_device import HSDevice, HSDeviceType, HSCalibrationWavelengthData
 import openhsl.build.hs_image_utils as hsiutils
 import openhsl.build.utils as butils
 import openhsl.gui.device.utils as utils
@@ -85,6 +85,9 @@ class HSDeviceQt(QObject, HSDevice):
 
     def set_center(self, center_x: int, center_y: int):
         self.slit_data.barrel_distortion_params['center'] = [center_x, center_y]
+
+    def set_device_type(self, device_type: HSDeviceType):
+        self.device_type = device_type
 
     def set_barrel_distortion_params(self, barrel_distortion_params: Dict[str, Union[List[float], List[int]]]):
         self.slit_data.barrel_distortion_params = barrel_distortion_params
