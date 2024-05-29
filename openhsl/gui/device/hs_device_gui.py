@@ -9,11 +9,11 @@ from PyQt6.QtCore import Qt, QDir, QEvent, QLineF, QObject, QPointF, QRect, QRec
     QTimer, pyqtSignal, pyqtSlot, QModelIndex
 from PyQt6.QtGui import QAction, QActionGroup, QBrush, QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap, \
     QPolygonF, QStandardItemModel
-from PyQt6.QtWidgets import QApplication, QAbstractGraphicsShapeItem, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, \
-    QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsRectItem, \
-    QGraphicsTextItem, QGraphicsScene, QGraphicsSimpleTextItem, QGraphicsView, QHeaderView, QLabel, QLineEdit, \
+from PyQt6.QtWidgets import QApplication, QAbstractGraphicsShapeItem, QCheckBox, QComboBox, QDoubleSpinBox, \
+    QFileDialog, QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsTextItem, \
+    QGraphicsScene, QGraphicsSimpleTextItem, QGraphicsView, QHeaderView, QLabel, QLineEdit, \
     QMainWindow, QMenu, QMenuBar, QMessageBox, QPushButton, QSlider, QSpinBox, QTableView, QTableWidget, \
-    QTableWidgetItem, QToolBar, QToolButton, QWidget
+    QTableWidgetItem, QTabWidget, QToolBar, QToolButton, QWidget
 from PyQt6 import uic
 from typing import Any, Dict, List, Optional
 from openhsl.build.hs_device import HSDevice, HSDeviceType, HSCalibrationSlitData, HSCalibrationWavelengthData
@@ -61,7 +61,6 @@ class HSDeviceGUI(QMainWindow):
         self.wcdw.setWindowIcon(QIcon("icons:OpenHSL_logo.png"))
 
         qss_path = "./Resources/Dark.qss"
-        # qss_path = "./Resources/Grey.qss"
         self.stylesheet = ""
 
         with open(qss_path, 'r') as f:
@@ -84,6 +83,7 @@ class HSDeviceGUI(QMainWindow):
         self.ui_file_exit_action: QAction = self.findChild(QAction, "fileExit_action")
         self.ui_help_menu: QMenu = self.findChild(QMenu, "help_menu")
         self.ui_help_about_action: QAction = self.findChild(QAction, "helpAbout_action")
+        self.ui_tab_widget: QTabWidget = self.findChild(QTabWidget, "tabWidget")
 
         # Slit angle tab
         self.ui_slit_angle_graphics_view: HSGraphicsView = self.findChild(HSGraphicsView, 'slitAngle_graphicsView')
@@ -190,17 +190,22 @@ class HSDeviceGUI(QMainWindow):
         self.ui_it_compute_illumination_mask_button: QPushButton = \
             self.findChild(QPushButton, 'itComputeIlluminationMask_pushButton')
         # Settings tab
-        self.ui_device_type_combobox: QComboBox = self.findChild(QComboBox, "deviceType_comboBox")
-        self.ui_device_settings_path_line_edit: QLineEdit = self.findChild(QLineEdit, "deviceSettingsPath_lineEdit")
-        self.ui_device_settings_path_save_button: QPushButton = \
-            self.findChild(QPushButton, 'deviceSettingsPathSave_pushButton')
-        self.ui_device_settings_save_button: QPushButton = \
-            self.findChild(QPushButton, 'deviceSettingsSave_pushButton')
+        self.ui_st_device_type_combobox: QComboBox = self.findChild(QComboBox, "stDeviceType_comboBox")
+        self.ui_st_device_settings_path_line_edit: QLineEdit = \
+            self.findChild(QLineEdit, "stDeviceSettingsPath_lineEdit")
+        self.ui_st_device_settings_path_save_button: QPushButton = \
+            self.findChild(QPushButton, 'stDeviceSettingsPathSave_pushButton')
+        self.ui_st_all_settings_table_view: QTableView = self.findChild(QTableView, 'stAllSettings_tableView')
+        self.ui_st_device_settings_save_button: QPushButton = \
+            self.findChild(QPushButton, 'stDeviceSettingsSave_pushButton')
+        self.ui_st_device_settings_export_button: QPushButton = \
+            self.findChild(QPushButton, 'stDeviceSettingsExport_pushButton')
 
         # Signal and slot connections
         # Main window
         self.ui_file_open_action.triggered.connect(self.on_ui_file_open_action_triggered)
         self.ui_file_exit_action.triggered.connect(self.on_ui_file_exit_action_triggered)
+        self.ui_tab_widget.currentChanged.connect(self.on_ui_tab_widget_current_changed)
         # Slit angle tab
         self.ui_slit_image_threshold_value_checkbox.clicked.connect(
             self.on_ui_slit_image_threshold_value_checkbox_clicked)
@@ -322,8 +327,10 @@ class HSDeviceGUI(QMainWindow):
         self.apply_ilm_norm.connect(self.hsd.on_apply_ilm_norm_image, Qt.ConnectionType.QueuedConnection)
         self.hsd.ilm_mask_computed.connect(self.on_ilm_mask_computed)
         # Settings tab
-        self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
-        self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
+        self.ui_st_device_settings_path_save_button.clicked.connect(
+            self.on_ui_st_device_settings_path_save_button_clicked)
+        self.ui_st_device_settings_save_button.clicked.connect(self.on_ui_st_device_settings_save_button_clicked)
+        self.ui_st_device_settings_export_button.clicked.connect(self.on_ui_st_device_settings_export_button_clicked)
 
         # Slit angle tab graphics
         self.slit_angle_graphics_scene = QGraphicsScene(self)
@@ -447,7 +454,15 @@ class HSDeviceGUI(QMainWindow):
 
     def prepare_ui(self):
         self.render_latex_images()
-        self.fill_device_type_combobox()
+        self.fill_st_device_type_combobox()
+        all_settings_tv_model = QStandardItemModel()
+        all_settings_tv_model.setColumnCount(2)
+        self.ui_st_all_settings_table_view.setModel(all_settings_tv_model)
+        self.ui_st_all_settings_table_view.horizontalHeader().setMinimumHeight(22)
+        self.ui_st_all_settings_table_view.horizontalHeader().resizeSection(0, 200)
+        self.ui_st_all_settings_table_view.horizontalHeader().setStretchLastSection(True)
+        self.ui_st_all_settings_table_view.verticalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.ui_st_all_settings_table_view.setAlternatingRowColors(True)
 
         gv_hints = QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform | \
                    QPainter.RenderHint.TextAntialiasing
@@ -468,9 +483,7 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wt_graphics_view.setRenderHints(gv_hints)
         self.ui_wt_graphics_view.setMouseTracking(True)
         self.ui_wt_graphics_view.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
-        # self.ui_wt_graphics_view.add_preserved_pos_graphics_item(self.wt_graphics_text_info_simple_text_item)
         self.ui_wt_graphics_view.add_preserved_pos_graphics_item(self.wt_graphics_text_info_rect_item)
-        # self.ui_wt_graphics_view.marquee_area_changed.connect(self.on_marquee_area_changed)
 
         self.ui_it_graphics_view.setScene(self.it_graphics_scene)
         self.ui_it_graphics_view.setRenderHints(gv_hints)
@@ -548,7 +561,6 @@ class HSDeviceGUI(QMainWindow):
         self.ui_wcdw_wavelength_table_view.horizontalHeader().resizeSection(0, 100)
         self.ui_wcdw_wavelength_table_view.horizontalHeader().setStretchLastSection(True)
         self.ui_wcdw_wavelength_table_view.setAlternatingRowColors(True)
-        self.fill_wcdw()
 
         self.ui_it_apply_roi_checkbox.setEnabled(False)
         self.ui_it_apply_illumination_correction_checkbox.setEnabled(False)
@@ -696,11 +708,71 @@ class HSDeviceGUI(QMainWindow):
         self.slit_graphics_text_item.setFont(text_font)
         self.slit_graphics_text_item.setOpacity(0.5)
 
-    def fill_device_type_combobox(self):
+    def fill_st_device_type_combobox(self):
         d = HSDeviceType.to_dict()
         for k, v in d.items():
-            self.ui_device_type_combobox.addItem(k, v)
-        self.ui_device_type_combobox.currentIndexChanged.connect(self.on_ui_device_type_combobox_current_index_changed)
+            self.ui_st_device_type_combobox.addItem(k, v)
+        self.ui_st_device_type_combobox.currentIndexChanged.connect(
+            self.on_ui_st_device_type_combobox_current_index_changed)
+
+    def fill_st_all_settings_table(self):
+        device_settings_dict = self.gather_device_settings()
+        keys_to_exclude = ['generation_date', 'generation_time', 'device_metadata']
+        gui_keys = list(device_settings_dict.keys())
+        gui_keys = [k for k in gui_keys if k not in keys_to_exclude]
+        gui_settings_dict = {k: device_settings_dict[k] for k in gui_keys}
+
+        row = 0
+        font = QFont()
+        font.setBold(True)
+        tv = self.ui_st_all_settings_table_view
+        model = tv.model()
+        model.removeRows(0, model.rowCount())
+        tv.horizontalHeader().model().setHeaderData(0, Qt.Orientation.Horizontal, 'Name')
+        tv.horizontalHeader().model().setHeaderData(1, Qt.Orientation.Horizontal, 'Value')
+
+        model.insertRow(row)
+        model.setData(model.index(row, 0), 'Common GUI settings')
+        model.setData(model.index(row, 0), Qt.AlignmentFlag.AlignCenter, Qt.ItemDataRole.TextAlignmentRole)
+        model.setData(model.index(row, 0), font, Qt.ItemDataRole.FontRole)
+        tv.setSpan(row, 0, 1, 2)
+        row = row + 1
+
+        for k, v in gui_settings_dict.items():
+            model.insertRow(row)
+            model.setData(model.index(row, 0), k)
+            if type(v) is list:
+                if len(v) == 2:
+                    model.setData(model.index(row, 1), '[' + ', '.join(str(x) for x in v) + ']')
+                else:
+                    model.setData(model.index(row, 1), f'Array of data, {len(v)} elements' if len(v) > 0 else "Empty list")
+            else:
+                model.setData(model.index(row, 1), v)
+            row = row + 1
+
+        device_metadata_dict: Dict = device_settings_dict['device_metadata']
+
+        model.insertRow(row)
+        model.setData(model.index(row, 0), 'Device settings')
+        model.setData(model.index(row, 0), Qt.AlignmentFlag.AlignCenter, Qt.ItemDataRole.TextAlignmentRole)
+        model.setData(model.index(row, 0), font, Qt.ItemDataRole.FontRole)
+        tv.setSpan(row, 0, 1, 2)
+        row += 1
+
+        # Device type
+        model.insertRow(row)
+        model.setData(model.index(row, 0), 'device_type')
+        model.setData(model.index(row, 1), HSDeviceType(device_metadata_dict['device_type']).name)
+        row += 1
+
+        for k, v in device_metadata_dict['wavelength_data'].items():
+            model.insertRow(row)
+            model.setData(model.index(row, 0), k)
+            if type(v) is list:
+                model.setData(model.index(row, 1), f'Array of data, {len(v)} elements' if len(v) > 0 else "Empty list")
+            else:
+                model.setData(model.index(row, 1), v)
+            row = row + 1
 
     def fill_recent_devices_menu(self):
         for action in self.ui_recent_device_settings_action_list:
@@ -716,10 +788,6 @@ class HSDeviceGUI(QMainWindow):
             action.triggered.connect(self.recent_device_settings_action_triggered_signal_mapper.map)
         self.recent_device_settings_action_triggered_signal_mapper.mappedString.connect(
             self.on_ui_recent_device_settings_action_triggered)
-
-    def fill_wcdw(self):
-        wt_model = self.ui_wcdw_wavelength_table_view.model()
-        # wt_model.insertRows(0, 3)
 
     def initialize_settings_dict(self):
         settings_dict = {
@@ -750,21 +818,26 @@ class HSDeviceGUI(QMainWindow):
                 self.recent_device_settings_path_list = self.settings_dict["recent_device_settings_path_list"]
                 self.fill_recent_devices_menu()
 
-    def save_device_settings(self):
-        self.device_settings_dict["generation_date"] = utils.current_date()
-        self.device_settings_dict["generation_time"] = utils.current_time()
-        self.device_settings_dict["slit_image_path"] = self.slit_image_path
-        self.device_settings_dict["slit_threshold_value"] = self.ui_slit_image_threshold_value_spinbox.value()
-        self.device_settings_dict["bdt_contrast_value"] = self.ui_bdt_slit_image_contrast_value_spinbox.value()
-        self.device_settings_dict["bdt_grid_tile_size"] = self.ui_bdew_grid_tile_size_spinbox.value()
-        self.device_settings_dict["wt_wavelength_image_dir_path"] = self.wt_wavelength_image_dir_path
-        self.device_settings_dict["wt_contrast_value"] = self.ui_wt_contrast_preview_value_spinbox.value()
-        self.device_settings_dict["wt_spectrum_top_left_point"] = \
+    def gather_device_settings(self) -> Dict:
+        device_settings_dict = dict()
+        device_settings_dict["generation_date"] = utils.current_date()
+        device_settings_dict["generation_time"] = utils.current_time()
+        device_settings_dict["slit_image_path"] = self.slit_image_path
+        device_settings_dict["slit_threshold_value"] = self.ui_slit_image_threshold_value_spinbox.value()
+        device_settings_dict["bdt_contrast_value"] = self.ui_bdt_slit_image_contrast_value_spinbox.value()
+        device_settings_dict["bdt_grid_tile_size"] = self.ui_bdew_grid_tile_size_spinbox.value()
+        device_settings_dict["wt_wavelength_image_dir_path"] = self.wt_wavelength_image_dir_path
+        device_settings_dict["wt_contrast_value"] = self.ui_wt_contrast_preview_value_spinbox.value()
+        device_settings_dict["wt_spectrum_top_left_point"] = \
             [int(self.wt_spectrum_top_left_point.x()), int(self.wt_spectrum_top_left_point.y())]
-        self.device_settings_dict["wt_spectrum_bottom_right_point"] = \
+        device_settings_dict["wt_spectrum_bottom_right_point"] = \
             [int(self.wt_spectrum_bottom_right_point.x()), int(self.wt_spectrum_bottom_right_point.y())]
-        self.device_settings_dict["it_illumination_image_path"] = self.it_illumination_image_path
-        self.device_settings_dict["device_metadata"] = self.hsd.to_dict()
+        device_settings_dict["it_illumination_image_path"] = self.it_illumination_image_path
+        device_settings_dict["device_metadata"] = self.hsd.to_dict()
+        return device_settings_dict
+
+    def save_device_settings(self):
+        self.device_settings_dict = self.gather_device_settings()
         utils.save_dict_to_json(self.device_settings_dict, self.device_settings_path)
 
     def load_device_settings(self):
@@ -826,11 +899,11 @@ class HSDeviceGUI(QMainWindow):
 
     def restore_device_type_combobox_current_index(self):
         device_type = self.hsd.get_device_type()
-        dtc_model: QStandardItemModel = self.ui_device_type_combobox.model()
+        dtc_model: QStandardItemModel = self.ui_st_device_type_combobox.model()
 
         for i in range(dtc_model.rowCount()):
             if dtc_model.data(dtc_model.index(i, 0), Qt.ItemDataRole.UserRole) == device_type:
-                self.ui_device_type_combobox.setCurrentIndex(i)
+                self.ui_st_device_type_combobox.setCurrentIndex(i)
                 break
 
     def apply_device_settings(self):
@@ -920,7 +993,7 @@ class HSDeviceGUI(QMainWindow):
                                                          "Metadata file (*.json)")
         if file_path != "":
             self.device_settings_path = file_path
-            self.ui_device_settings_path_line_edit.setText(self.device_settings_path)
+            self.ui_st_device_settings_path_line_edit.setText(self.device_settings_path)
             self.last_device_settings_path = self.device_settings_path
             self.recent_device_settings_path_list.append(self.last_device_settings_path)
             self.recent_device_settings_path_list = list(set(self.recent_device_settings_path_list))
@@ -931,11 +1004,16 @@ class HSDeviceGUI(QMainWindow):
     def on_ui_file_exit_action_triggered(self):
         self.close()
 
+    @pyqtSlot(int)
+    def on_ui_tab_widget_current_changed(self, index: int):
+        if self.ui_tab_widget.widget(index).objectName() == 'settings_tab':
+            self.fill_st_all_settings_table()
+
     @pyqtSlot(str)
     def on_ui_recent_device_settings_action_triggered(self, path: str):
         if utils.path_exists(path):
             self.device_settings_path = path
-            self.ui_device_settings_path_line_edit.setText(self.device_settings_path)
+            self.ui_st_device_settings_path_line_edit.setText(self.device_settings_path)
             self.last_device_settings_path = self.device_settings_path
             self.load_device_settings()
         else:
@@ -1408,11 +1486,13 @@ class HSDeviceGUI(QMainWindow):
             self.ui_wcdw_spectrum_top_left_y_coord_spinbox.setMinimum(0)
             self.ui_wcdw_spectrum_top_left_y_coord_spinbox.setMaximum(self.wt_wavelength_image_qt.height() - 1)
             self.ui_wcdw_spectrum_bottom_right_x_coord_horizontal_slider.setMinimum(0)
-            self.ui_wcdw_spectrum_bottom_right_x_coord_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.width() - 1)
+            self.ui_wcdw_spectrum_bottom_right_x_coord_horizontal_slider.setMaximum(
+                self.wt_wavelength_image_qt.width() - 1)
             self.ui_wcdw_spectrum_bottom_right_x_coord_spinbox.setMinimum(0)
             self.ui_wcdw_spectrum_bottom_right_x_coord_spinbox.setMaximum(self.wt_wavelength_image_qt.width() - 1)
             self.ui_wcdw_spectrum_bottom_right_y_coord_horizontal_slider.setMinimum(0)
-            self.ui_wcdw_spectrum_bottom_right_y_coord_horizontal_slider.setMaximum(self.wt_wavelength_image_qt.height() - 1)
+            self.ui_wcdw_spectrum_bottom_right_y_coord_horizontal_slider.setMaximum(
+                self.wt_wavelength_image_qt.height() - 1)
             self.ui_wcdw_spectrum_bottom_right_y_coord_spinbox.setMinimum(0)
             self.ui_wcdw_spectrum_bottom_right_y_coord_spinbox.setMaximum(self.wt_wavelength_image_qt.height() - 1)
 
@@ -1471,28 +1551,32 @@ class HSDeviceGUI(QMainWindow):
     # Tab 4: settings tab slots
 
     @pyqtSlot(int)
-    def on_ui_device_type_combobox_current_index_changed(self, index: int):
-        dtc_model: QStandardItemModel = self.ui_device_type_combobox.model()
+    def on_ui_st_device_type_combobox_current_index_changed(self, index: int):
+        dtc_model: QStandardItemModel = self.ui_st_device_type_combobox.model()
         device_type = dtc_model.data(dtc_model.index(index, 0), Qt.ItemDataRole.UserRole)
         self.hsd.set_device_type(device_type)
 
     @pyqtSlot()
-    def on_ui_device_settings_path_save_button_clicked(self):
+    def on_ui_st_device_settings_path_save_button_clicked(self):
         self.device_settings_path, _filter = QFileDialog.getSaveFileName(self, "Save file", self.device_settings_path,
                                                                          "Settings file (*.json)")
 
         if self.device_settings_path != "":
-            self.ui_device_settings_path_line_edit.setText(self.device_settings_path)
+            self.ui_st_device_settings_path_line_edit.setText(self.device_settings_path)
             self.device_settings_name = utils.file_complete_name(self.device_settings_path)
 
     @pyqtSlot()
-    def on_ui_device_settings_save_button_clicked(self):
+    def on_ui_st_device_settings_save_button_clicked(self):
         self.save_device_settings()
         self.last_device_settings_path = self.device_settings_path
         # TODO rewrite
         self.recent_device_settings_path_list.append(self.last_device_settings_path)
         self.recent_device_settings_path_list = list(set(self.recent_device_settings_path_list))
         self.fill_recent_devices_menu()
+
+    @pyqtSlot()
+    def on_ui_st_device_settings_export_button_clicked(self):
+        pass
 
     @pyqtSlot(QPointF, QPointF)
     def on_marquee_area_changed(self, top_left_on_scene: QPointF, bottom_right_on_scene: QPointF):
@@ -1772,7 +1856,7 @@ class HSDeviceGUI(QMainWindow):
 
     def showEvent(self, event):
         event.accept()
-        # zero interval timer fires only when after all events in the queue are processed
+        # Zero interval timer fires only when after all events in the queue are processed
         QTimer.singleShot(0, self.on_main_window_is_shown)
 
     def show_message_box(self, title: str, message: str, message_type: str = 'info'):

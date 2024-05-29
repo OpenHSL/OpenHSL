@@ -692,43 +692,27 @@
         <item row="0" column="0">
          <layout class="QGridLayout" name="gridLayout_5">
           <item row="0" column="1">
-           <widget class="QComboBox" name="deviceType_comboBox"/>
+           <widget class="QComboBox" name="stDeviceType_comboBox"/>
           </item>
           <item row="0" column="0">
-           <widget class="QLabel" name="deviceType_label">
+           <widget class="QLabel" name="stDeviceType_label">
             <property name="text">
              <string>Device type</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="2">
-           <widget class="QPushButton" name="deviceAdd_pushButton">
-            <property name="maximumSize">
-             <size>
-              <width>24</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="id" stdset="0">
-             <string>add</string>
-            </property>
-           </widget>
-          </item>
           <item row="1" column="0">
-           <widget class="QLabel" name="deviceSettingsPath_label">
+           <widget class="QLabel" name="stDeviceSettingsPath_label">
             <property name="text">
              <string>Device settings path</string>
             </property>
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QLineEdit" name="deviceSettingsPath_lineEdit"/>
+           <widget class="QLineEdit" name="stDeviceSettingsPath_lineEdit"/>
           </item>
           <item row="1" column="2">
-           <widget class="QPushButton" name="deviceSettingsPathSave_pushButton">
+           <widget class="QPushButton" name="stDeviceSettingsPathSave_pushButton">
             <property name="maximumSize">
              <size>
               <width>24</width>
@@ -752,7 +736,7 @@
           </property>
           <layout class="QGridLayout" name="gridLayout_7">
            <item row="0" column="0">
-            <widget class="QTableWidget" name="allSettings_tableWidget"/>
+            <widget class="QTableView" name="stAllSettings_tableView"/>
            </item>
           </layout>
          </widget>
@@ -763,12 +747,12 @@
            <enum>Qt::Vertical</enum>
           </property>
           <property name="sizeType">
-           <enum>QSizePolicy::Expanding</enum>
+           <enum>QSizePolicy::Fixed</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
             <width>20</width>
-            <height>153</height>
+            <height>20</height>
            </size>
           </property>
          </spacer>
@@ -789,9 +773,19 @@
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="deviceSettingsSave_pushButton">
+           <widget class="QPushButton" name="stDeviceSettingsSave_pushButton">
             <property name="text">
              <string>Save</string>
+            </property>
+            <property name="id" stdset="0">
+             <string>big</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="stDeviceSettingsExport_pushButton">
+            <property name="text">
+             <string>Export</string>
             </property>
             <property name="id" stdset="0">
              <string>big</string>
