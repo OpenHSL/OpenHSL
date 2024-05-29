@@ -102,6 +102,25 @@ def contrast_image(image: np.ndarray, contrast_value: int, tile_grid_size: Tuple
     return image_equalized
 
 
+def norn_min_max(array: np.ndarray):
+    v_min = np.min(array)
+    v_max = np.max(array)
+    array_mm = copy.deepcopy(array)
+    array_mm = (array_mm - v_min) / (v_max - v_min)
+    return array_mm
+
+
+def normalize_illumination(frame: np.ndarray, illumination_mask: np.ndarray) -> np.ndarray:
+    frame_ilm_norm = copy.deepcopy(frame)
+    max_v = float(np.iinfo(frame.dtype).max)
+    frame_ilm_norm = frame_ilm_norm.astype(float) / max_v
+    idx = illumination_mask > 0
+    frame_ilm_norm[idx] = frame_ilm_norm[idx] / illumination_mask[idx]
+    frame_ilm_norm[frame_ilm_norm > 1] = 1
+    frame_ilm_norm = (frame_ilm_norm * max_v).astype(frame.dtype)
+    return frame_ilm_norm
+
+
 def rotate_image(image: np.ndarray, angle: float) -> np.ndarray:
     h, w = image.shape[0:2]
     center_x, center_y = (w // 2, h // 2)

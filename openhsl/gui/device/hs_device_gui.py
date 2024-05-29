@@ -39,6 +39,8 @@ class HSDeviceGUI(QMainWindow):
     read_wl_image = pyqtSignal(int, bool, bool, bool)
     read_ilm_image = pyqtSignal(str)
     apply_roi_ilm_image = pyqtSignal(bool)
+    apply_ilm_norm = pyqtSignal(bool)
+    compute_ilm_mask = pyqtSignal()
 
     def __init__(self):
         super(HSDeviceGUI, self).__init__()
@@ -316,6 +318,9 @@ class HSDeviceGUI(QMainWindow):
         self.read_ilm_image.connect(self.hsd.on_read_ilm_image, Qt.ConnectionType.QueuedConnection)
         self.hsd.send_ilm_image.connect(self.on_receive_ilm_image, Qt.ConnectionType.QueuedConnection)
         self.apply_roi_ilm_image.connect(self.hsd.on_apply_roi_ilm_image, Qt.ConnectionType.QueuedConnection)
+        self.compute_ilm_mask.connect(self.hsd.on_compute_ilm_mask, Qt.ConnectionType.QueuedConnection)
+        self.apply_ilm_norm.connect(self.hsd.on_apply_ilm_norm_image, Qt.ConnectionType.QueuedConnection)
+        self.hsd.ilm_mask_computed.connect(self.on_ilm_mask_computed)
         # Settings tab
         self.ui_device_settings_path_save_button.clicked.connect(self.on_ui_device_settings_path_save_button_clicked)
         self.ui_device_settings_save_button.clicked.connect(self.on_ui_device_settings_save_button_clicked)
@@ -1440,14 +1445,19 @@ class HSDeviceGUI(QMainWindow):
     @pyqtSlot(bool)
     def on_ui_it_apply_roi_checkbox_clicked(self, checked: bool):
         self.apply_roi_ilm_image.emit(checked)
+        self.ui_it_compute_illumination_mask_button.setEnabled(checked)
 
     @pyqtSlot(bool)
     def on_ui_it_apply_illumination_correction_checkbox_clicked(self, checked: bool):
-        pass
+        self.apply_ilm_norm.emit(checked)
 
     @pyqtSlot()
     def on_ui_it_compute_illumination_mask_button_clicked(self):
-        pass
+        self.compute_ilm_mask.emit()
+
+    @pyqtSlot()
+    def on_ilm_mask_computed(self):
+        self.ui_it_apply_illumination_correction_checkbox.setEnabled(True)
 
     @pyqtSlot(QImage)
     def on_receive_ilm_image(self, image_qt: QImage):

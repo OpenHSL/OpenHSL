@@ -24,6 +24,7 @@ class HSDeviceQt(QObject, HSDevice):
     send_wl_image = pyqtSignal(QImage, str)
     send_wl_image_count = pyqtSignal(int)
     send_ilm_image = pyqtSignal(QImage)
+    ilm_mask_computed = pyqtSignal()
 
     # send_slit_angle = pyqtSignal(float)
     # send_slit_offset = pyqtSignal(float)
@@ -61,6 +62,7 @@ class HSDeviceQt(QObject, HSDevice):
         self.ilm_image_roi: Optional[np.ndarray] = None
         self.ilm_image_preview: Optional[np.ndarray] = None
         self.ilm_image_roi_preview: Optional[np.ndarray] = None
+        self.ilm_image_norm_preview: Optional[np.ndarray] = None
 
     def get_slit_angle_min(self):
         return self.slit_angle_min
@@ -336,3 +338,28 @@ class HSDeviceQt(QObject, HSDevice):
         else:
             image_qt = self.image_to_qimage(self.ilm_image_preview)
             self.send_ilm_image.emit(image_qt.copy())
+
+    @pyqtSlot(bool)
+    def on_apply_ilm_norm_image(self, apply: bool):
+        if apply:
+            self.ilm_image_norm_preview = hsiutils.normalize_illumination(self.ilm_image_roi,
+                                                                          self.illumination_mask)
+            self.ilm_image_norm_preview = cv.cvtColor(self.ilm_image_norm_preview, cv.COLOR_GRAY2RGB)
+            image_qt = self.image_to_qimage(self.ilm_image_norm_preview)
+            self.send_ilm_image.emit(image_qt.copy())
+        else:
+            image_qt = self.image_to_qimage(self.ilm_image_roi_preview)
+            self.send_ilm_image.emit(image_qt.copy())
+
+    @pyqtSlot()
+    def on_compute_ilm_mask(self):
+        max_v = float(np.iinfo(self.ilm_image_roi.dtype).max)
+        illumination_mask = copy.deepcopy(self.ilm_image_roi).astype(float)
+        illumination_mask = illumination_mask.mean(axis=0)
+        illumination_mask = hsiutils.norn_min_max(illumination_mask)
+        self.illumination_mask = copy.deepcopy(self.ilm_image_roi).astype(float)
+        self.illumination_mask /= max_v
+        self.illumination_mask = hsiutils.norn_min_max(self.illumination_mask)
+        self.illumination_mask *= illumination_mask
+        # self.illumination_mask[self.illumination_mask > 0] = 1.0 / self.illumination_mask[self.illumination_mask > 0]
+        self.ilm_mask_computed.emit()
