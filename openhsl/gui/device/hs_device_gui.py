@@ -677,10 +677,11 @@ class HSDeviceGUI(QMainWindow):
     def load_wavelength_calibration_data(self):
         wcd = self.hsd.get_wavelength_calibration_data()
         if wcd is not None:
-            wt_model: WavelengthCalibrationTableModel = self.ui_wcdw_wavelength_table_view.model()
-            data = [wcd.wavelength_list, wcd.wavelength_y_list, wcd.wavelength_slit_offset_y_list]
-            data = np.transpose(np.array(data)).tolist()
-            wt_model.load_data_from_list(data)
+            if None not in [wcd.wavelength_list, wcd.wavelength_y_list, wcd.wavelength_slit_offset_y_list]:
+                wt_model: WavelengthCalibrationTableModel = self.ui_wcdw_wavelength_table_view.model()
+                data = [wcd.wavelength_list, wcd.wavelength_y_list, wcd.wavelength_slit_offset_y_list]
+                data = np.transpose(np.array(data)).tolist()
+                wt_model.load_data_from_list(data)
 
     def initialize_texts(self):
         text_font = QFont("Century Gothic", 20, QFont.Weight.Light)
@@ -786,7 +787,8 @@ class HSDeviceGUI(QMainWindow):
             if utils.key_exists_in_dict(self.device_settings_dict, "wt_wavelength_image_dir_path"):
                 self.wt_wavelength_image_dir_path = self.device_settings_dict["wt_wavelength_image_dir_path"]
                 self.ui_wt_image_dir_path_line_edit.setText(self.wt_wavelength_image_dir_path)
-                self.read_wl_image_dir.emit(self.wt_wavelength_image_dir_path)
+                if self.wt_wavelength_image_dir_path != "":
+                    self.read_wl_image_dir.emit(self.wt_wavelength_image_dir_path)
             if utils.key_exists_in_dict(self.device_settings_dict, "wt_contrast_value"):
                 wt_contrast_value = self.device_settings_dict["wt_contrast_value"]
                 self.hsd.set_wl_contrast_value(wt_contrast_value)
@@ -1105,6 +1107,8 @@ class HSDeviceGUI(QMainWindow):
     def on_receive_bd_slit_center(self, center_x: int, center_y: int):
         self.ui_bdew_center_x_spinbox.setValue(center_x)
         self.ui_bdew_center_y_spinbox.setValue(center_y)
+        self.ui_bdew_center_x_spinbox.setEnabled(True)
+        self.ui_bdew_center_y_spinbox.setEnabled(True)
         self.draw_bd_slit_data()
 
     @pyqtSlot()
@@ -1333,6 +1337,7 @@ class HSDeviceGUI(QMainWindow):
     def on_ui_wcdw_estimate_wavelengths_by_range_button_clicked(self):
         model = self.ui_wcdw_wavelength_table_view_model
         y_min, y_max = model.fill_missing_by_y_coord_range()
+        self.draw_calibrated_roi()
         if not (0 < self.wt_spectrum_top_left_point.x() < self.wt_wavelength_image_qt.width() - 1):
             self.on_ui_wcdw_spectrum_top_left_y_coord_spinbox_value_changed(y_min)
         if not (0 < self.wt_spectrum_bottom_right_point.x() < self.wt_wavelength_image_qt.width() - 1):
