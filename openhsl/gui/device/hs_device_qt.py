@@ -220,25 +220,26 @@ class HSDeviceQt(QObject, HSDevice):
 
     @pyqtSlot(str)
     def on_read_ilm_image(self, path: str):
-        self.ilm_image = cv.imread(path, cv.IMREAD_ANYCOLOR)
+        if path != "":
+            self.ilm_image = cv.imread(path, cv.IMREAD_ANYCOLOR)
 
-        if self.ilm_image is not None:
-            if len(self.ilm_image.shape) == 3:
-                self.ilm_image = cv.cvtColor(self.ilm_image, cv.COLOR_BGR2RGB)
-            # Apply rotation
-            self.ilm_image = hsiutils.rotate_image(self.ilm_image, self.get_slit_angle())
-            # Apply undistortion
-            # TODO check undistortion coeffs
-            undistortion_coefficients = self.get_undistortion_coefficients()
-            self.ilm_image = hsiutils.undistort_image(self.ilm_image, undistortion_coefficients)
-            if len(self.ilm_image.shape) == 2:
-                self.ilm_image_preview = cv.cvtColor(self.ilm_image, cv.COLOR_GRAY2RGB)
-            else:
-                self.ilm_image_preview = copy.deepcopy(self.ilm_image)
-            image_to_draw_qt = self.image_to_qimage(self.ilm_image_preview)
-            # QImage references ndarray data, so we need to copy QImage
-            # See: https://stackoverflow.com/a/49516303
-            self.send_ilm_image.emit(image_to_draw_qt.copy())
+            if self.ilm_image is not None:
+                if len(self.ilm_image.shape) == 3:
+                    self.ilm_image = cv.cvtColor(self.ilm_image, cv.COLOR_BGR2RGB)
+                # Apply rotation
+                self.ilm_image = hsiutils.rotate_image(self.ilm_image, self.get_slit_angle())
+                # Apply undistortion
+                # TODO check undistortion coeffs
+                undistortion_coefficients = self.get_undistortion_coefficients()
+                self.ilm_image = hsiutils.undistort_image(self.ilm_image, undistortion_coefficients)
+                if len(self.ilm_image.shape) == 2:
+                    self.ilm_image_preview = cv.cvtColor(self.ilm_image, cv.COLOR_GRAY2RGB)
+                else:
+                    self.ilm_image_preview = copy.deepcopy(self.ilm_image)
+                image_to_draw_qt = self.image_to_qimage(self.ilm_image_preview)
+                # QImage references ndarray data, so we need to copy QImage
+                # See: https://stackoverflow.com/a/49516303
+                self.send_ilm_image.emit(image_to_draw_qt.copy())
 
     @pyqtSlot(QRectF)
     def on_compute_slit_angle(self, area_rect: QRectF):
