@@ -18,7 +18,7 @@ def __get_cluster(cl_type):
 
 def cluster_hsi(hsi: HSImage,
                 n_clusters: int = 2,
-                cl_type='Kmeans') -> np.ndarray:
+                cl_type='KMeans') -> np.ndarray:
     km = __get_cluster(cl_type=cl_type)(n_clusters=n_clusters)
     h, w, _ = hsi.data.shape
     pred = km.fit_predict(hsi.to_spectral_list())
