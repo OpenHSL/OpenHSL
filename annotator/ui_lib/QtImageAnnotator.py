@@ -1303,7 +1303,7 @@ class QtImageAnnotator(QGraphicsView):
 
     def mousePressEvent(self, event):
         
-        '''
+        
 
         if self.hasImage():
             """ Start drawing, panning with mouse, or zooming in
@@ -1357,7 +1357,7 @@ class QtImageAnnotator(QGraphicsView):
                 self.rightMouseButtonPressed.emit(scenePos.x(), scenePos.y())                
                 
                 self.selection = [event.pos()] # ai mask - 2 method
-        '''
+        
         QGraphicsView.mousePressEvent(self, event)
 
     def mouseReleaseEvent(self, event):
