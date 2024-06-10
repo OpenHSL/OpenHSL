@@ -83,7 +83,7 @@ class HSMask:
     # ------------------------------------------------------------------------------------------------------------------
 
     def __len__(self):
-        if np.any(self.data):
+        if self.data is not None:
             return self.data.shape[-1]
         else:
             return 0
@@ -126,7 +126,9 @@ class HSMask:
         self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
     # ------------------------------------------------------------------------------------------------------------------
 
-    def add_void_layer(self, pos: int, shape=None):
+    def add_void_layer(self,
+                       pos: int = 0,
+                       shape=None):
         """
         add_void_layer(pos)
             adds filled by zeros layer in mask by index
@@ -134,12 +136,16 @@ class HSMask:
             ----------
             pos: int
                 layer position for adding
+            shape: tuple
+                shape of void layer
         """
         if np.any(self.data):
             tmp_list = list(np.transpose(self.data, (2, 0, 1)))
             tmp_list.insert(pos, np.zeros(self.data.shape[:-1], dtype="uint8"))
             self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
         else:
+            if not shape:
+                raise ValueError('Void shape')
             self.data = np.transpose(np.array([np.zeros(shape)]), (1, 2, 0))
     # ------------------------------------------------------------------------------------------------------------------
 
