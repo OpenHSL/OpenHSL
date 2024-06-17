@@ -512,10 +512,11 @@ class QtImageAnnotator(QGraphicsView):
             else:
                 a1,a2,num_layers = mask.shape    
                 
-            print(a1,a2,num_layers, "a1,a2,num_layers ") 
+            ########## print(a1,a2,num_layers, "a1,a2,num_layers ") 
             for ind_layer in range(num_layers):
+                ########## print(process_gray2rgb, ind_layer, num_layers, "process_gray2rgb, ind_layer, num_layers" )
                 if process_gray2rgb:
-                    print(self.d_gray2rgb_arr, "self.d_gray2rgb")
+                    ########## print(self.d_gray2rgb_arr, "self.d_gray2rgb_arr")
                     if self.d_gray2rgb_arr:
                         # We assume mask is np array, grayscale and the conversion rules are set (otherwise cannot continue)
                         h, w, = a1,a2 # h, w, p = mask.data.shape
@@ -529,31 +530,36 @@ class QtImageAnnotator(QGraphicsView):
                             mask_ = mask[:,:,ind_layer]   
                 
 
+                        #print(mask_, " mask_ ")
                         
-                        print(mask_, " mask_ ")
-                        
-                        print(self.d_gray2rgb_arr, "self.d_gray2rgb_arr")
+                        #print(self.d_gray2rgb_arr, "self.d_gray2rgb_arr")
 
-                        print(self.d_gray2rgb_arr.keys(), "self.d_gray2rgb_arr.keys")
+                        #print(self.d_gray2rgb_arr.keys(), "self.d_gray2rgb_arr.keys")
+                        print(self.d_gray2rgb_arr.keys(), ind_layer, "////////////////////")
                         mask_ = mask_ * list(self.d_gray2rgb_arr.keys())[ind_layer]
                         
                         new_mask = np.zeros((h, w, 4), np.uint8)
                         
-                        print(self.d_gray2rgb_arr.items(), " self.d_gray2rgb_arr.items() ")
+                        #print(self.d_gray2rgb_arr.items(), " self.d_gray2rgb_arr.items() ")
                         for gr, rgb in self.d_gray2rgb_arr.items(): # color self.d_gray2rgb.items():
-                            print (gr, rgb)
+                            #print (gr, rgb)
                             col = QColor("#63" + rgb.split("#")[1]).getRgb() #col = QColor("#63" + "#ddffe7".split("#")[1]).getRgb() #color.getRgb() # QColor("#63" + rgb.split("#")[1]).getRgb() 
                             new_mask[mask_ == gr] = col
-                        #print(new_mask, "QT - clearandsetmasklayers - new_mask")
+
+                                                
+                        #print(new_mask, "new_mask")
                         
-                        print(new_mask, "new_mask")
                         #from matplotlib import pyplot as PLT
                         #PLT.imshow(new_mask, interpolation='nearest')
                         #PLT.show() 
                         
                         use_mask = array2qimage(new_mask) #array2qimage(new_mask)
                     else:
-                        raise RuntimeError("Cannot convert the provided grayscale mask to RGB without color specifications.")
+                        #raise RuntimeError("Cannot convert the provided grayscale mask to RGB without color specifications.")
+                        print("RuntimeError")
+                        h, w = image.shape
+                        new_mask = np.zeros((h, w, 4), np.uint8)
+                        use_mask = array2qimage(new_mask) 
                 else:
                     if data_shape == True:  
                         mask_ = mask.data[:,:,ind_layer]
@@ -573,7 +579,7 @@ class QtImageAnnotator(QGraphicsView):
                 
                 pixmap = QPixmap.fromImage(use_mask)
                 self.mask_pixmap_multy.append(pixmap) # self.mask_pixmap_multy[ind_layer] = pixmap 
-                print(self.mask_pixmap_multy[ind_layer] , "self.mask_pixmap  in MASKLAYERS")
+                ########### print(self.mask_pixmap_multy[ind_layer] , "self.mask_pixmap  in MASKLAYERS")
                 self._overlayHandle.append(self.scene.addPixmap(self.mask_pixmap_multy[ind_layer])) # self._overlayHandle.append(self.scene.addPixmap(self.mask_pixmap)) 
                 #self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
             ###############################################
@@ -1303,7 +1309,7 @@ class QtImageAnnotator(QGraphicsView):
 
     def mousePressEvent(self, event):
         
-        '''
+        
 
         if self.hasImage():
             """ Start drawing, panning with mouse, or zooming in
@@ -1357,7 +1363,7 @@ class QtImageAnnotator(QGraphicsView):
                 self.rightMouseButtonPressed.emit(scenePos.x(), scenePos.y())                
                 
                 self.selection = [event.pos()] # ai mask - 2 method
-        '''
+        
         QGraphicsView.mousePressEvent(self, event)
 
     def mouseReleaseEvent(self, event):
