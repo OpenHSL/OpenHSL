@@ -1,5 +1,5 @@
-matplotlib~=3.4.2
-scikit-learn~=0.24.2
+matplotlib
+scikit-learn
 h5py~=3.6.0
 libsass~=0.22.0
 numpy~=1.21.1

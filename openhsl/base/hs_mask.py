@@ -445,7 +445,7 @@ class HSMask:
         """
 
         with h5py.File(path_to_file, 'w') as f:
-            f.create_dataset(h5_key, data=self.data)
+            f.create_dataset(h5_key, data=self.get_2d())
         self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
     
@@ -463,7 +463,7 @@ class HSMask:
         path_to_file: str
             Path to file
         """
-        np.save(path_to_file, self.data)
+        np.save(path_to_file, self.get_2d())
         self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
