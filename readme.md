@@ -16,20 +16,20 @@
 --------------------
 
 Для формирования ГСИ из набора кадров, содержащих спектральную развёртку, в форматах AVI, PNG или BMP можно воспользоваться:
-1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_builder.py), выполнив команду *python cli_demo_builder.py*
+1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_builder.py), задав в этом файле требуемые параметры и затем выполнив команду *python cli_demo_builder.py*
 2) GUI версией, выполнив команду *python builder_app.py*
 
 
 ## Разметка ГСИ
 --------------------
 Для разметки ГСИ можно воспользоваться:
-1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_painter.py), поддерживающей только методы автоматизированной разметки, выполнив команду *python cli_demo_painter.py*
+1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_painter.py), поддерживающей только методы автоматизированной разметки, задав в этом файле требуемые параметры и затем выполнив команду *python cli_demo_painter.py*
 2) GUI версией, выполнив команду *python annotator_main.py*
 
 ## Нейросетевой анализ ГСИ
 ---------------------------
 Для обучения и инференса нейросетевых классификаторов можно воспользоваться:
-1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_trainer.py), выполнив команду python *cli_demo_trainer.py*
+1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_trainer.py), задав в этом файле требуемые параметры и затем выполнив команду python *cli_demo_trainer.py*
 2) GUI версией, выполнив команду python *trainer_app.py*
 
 
