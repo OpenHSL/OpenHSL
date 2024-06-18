@@ -29,8 +29,8 @@
 ## Нейросетевой анализ ГСИ
 ---------------------------
 Для обучения и инференса нейросетевых классификаторов можно воспользоваться:
-1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_trainer.py), задав в этом файле требуемые параметры и затем выполнив команду python *cli_demo_trainer.py*
-2) GUI версией, выполнив команду python *trainer_app.py*
+1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_trainer.py), задав в этом файле требуемые параметры и затем выполнив команду *python cli_demo_trainer.py*
+2) GUI версией, выполнив команду *python trainer_app.py*
 
 
 ## Примеры работы с наборами данных
@@ -68,6 +68,19 @@
 
 Веса модели доступны по [ссылке](https://huggingface.co/OpenHSL/corn_tf2dcnn/blob/main/tf2d_70band_PCA.h5)
 
+Для демонстрации инференса предобученной модели при помощи CLI требуется:
+1) изменить в файле *cli_demo_trainer.py* значения нижепредставленных параметров следующим образом:
+   - HSI_PATH = '.../hsi/corn1.mat', где вместо ... указать директорию содержащую папку *hsi* с файлом ГСИ *corn1.mat* и метаданными *corn1_metainfo.json*
+   - HSI_KEY = 'image'
+   - MASK_PATH = '.../mask/mask_corn_1.mat', где вместо ... указать директорию содержащую папку *mask* с файлом ГСИ *mask_corn_1.mat* и метаданными *mask_corn_1_metainfo.json*
+   - MASK_KEY = 'img'
+   - USE_PCA = True
+   - NUM_COMPONENTS = 70
+   - CLASSIFIER = 'TF2DCNN'
+   - PATH_TO_WEIGHTS = '.../tf2d_70band_PCA.h5', где вместо ... указать директорию содержащую файл весов модели *tf2d_70band_PCA.h5*
+   - PREDICT_ONLY = True
+2) Остальные параметры оставить по-умолчанию;
+3) выполнить команду *python cli_demo_trainer.py*.
 
 ### 2. Три сорта кофе
 
@@ -98,6 +111,18 @@
 Архитектура предобученной модели: SSFTT
 
 Веса модели доступны по [ссылке](https://huggingface.co/OpenHSL/coffee_ssftt/blob/main/ssftt.pth)
+
+Для демонстрации инференса предобученной модели при помощи CLI требуется:
+1) изменить в файле *cli_demo_trainer.py* значения нижепредставленных параметров следующим образом:
+   - HSI_PATH = '.../hsi/triple_coffee.mat', где вместо ... указать директорию содержащую папку *hsi* с файлом ГСИ *triple_coffee.mat* и метаданными *triple_coffee_metainfo.json*
+   - HSI_KEY = 'image'
+   - MASK_PATH = '.../mask/triple_coffee_mask.mat', где вместо ... указать директорию содержащую папку *mask* с файлом ГСИ *triple_coffee_mask.mat* и метаданными *triple_coffee_mask_metainfo.json*
+   - MASK_KEY = 'img'
+   - CLASSIFIER = 'SSFTT'
+   - PATH_TO_WEIGHTS = '.../ssftt.pth', где вместо ... указать директорию содержащую файл весов модели *ssftt.pth*
+   - PREDICT_ONLY = True
+2) Остальные параметры оставить по-умолчанию;
+3) выполнить команду *python cli_demo_trainer.py*.
 
 ### 3. Растительный микропрепарат
 
