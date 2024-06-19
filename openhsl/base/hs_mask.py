@@ -50,11 +50,11 @@ class HSMask:
                  mask: Optional[np.array] = None,
                  label_class: Optional[Dict] = None):
         if np.any(mask):
-            if HSMask.__is_correct_2d_mask(mask):
+            if len(mask.shape) == 2 and HSMask.__is_correct_2d_mask(mask):
                 print("got 2d mask")
                 self.data = HSMask.convert_2d_to_3d_mask(mask)
 
-            elif HSMask.__is_correct_3d_mask(mask):
+            elif len(mask.shape) == 3 and HSMask.__is_correct_3d_mask(mask):
                 print("got 3d mask")
                 self.data = mask
             else:
