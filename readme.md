@@ -590,44 +590,44 @@
 #### Формирование ГСИ из набора кадров
 Для формирования данного ГСИ из набора кадров при помощи CLI требуется:
 1) Сформировать первое ГСИ:
-- 1.1 изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
-   - PATH_TO_SOURCE_DATA = '.../source/source_1', где вместо ... указать директорию содержащую папку *source* c видеофайлами в формате AVI
-   - PATH_TO_METADATA = '../source/source_1/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
-   - PATH_TO_GPS = '../source/source_1/gps_2023-09-01-12-39-42.csv', где вместо ... указать директорию содержащую папку *source* c файлом содержащим GPS для учёта траектории движения
-   - DATA_TYPE = 'video'
-   - ROTATION_CORRECTION = False
-   - NUM_ROTATE_HSI_90 = 0
-   - FLIP_WAVELENGTHS = False
-   - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
-   - HSI_NAME = 'uav_1'
-   - HSI_EXTENSION = 'npy'
-   - KEY = None
-- 1.2 Выполнить команду `python cli_demo_builder.py`.
+   - 1.1 изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
+      - PATH_TO_SOURCE_DATA = '.../source/source_1', где вместо ... указать директорию содержащую папку *source* c видеофайлами в формате AVI
+      - PATH_TO_METADATA = '../source/source_1/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
+      - PATH_TO_GPS = '../source/source_1/gps_2023-09-01-12-39-42.csv', где вместо ... указать директорию содержащую папку *source* c файлом содержащим GPS для учёта траектории движения
+      - DATA_TYPE = 'video'
+      - ROTATION_CORRECTION = False
+      - NUM_ROTATE_HSI_90 = 0
+      - FLIP_WAVELENGTHS = False
+      - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
+      - HSI_NAME = 'uav_1'
+      - HSI_EXTENSION = 'npy'
+      - KEY = None
+   - 1.2 Выполнить команду `python cli_demo_builder.py`.
 
 2) Сформировать второе ГСИ:
-- 2.1 изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
-   - PATH_TO_SOURCE_DATA = '.../source/source_2', где вместо ... указать директорию содержащую папку *source* c видеофайлами в формате AVI
-   - PATH_TO_METADATA = '../source/source_2/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
-   - PATH_TO_GPS = '.../source/source_2/gps_2023-09-01-14-39-21.csv', где вместо ... указать директорию содержащую папку *source* c файлом содержащим GPS для учёта траектории движения
-   - DATA_TYPE = 'video'
-   - ROTATION_CORRECTION = False
-   - NUM_ROTATE_HSI_90 = 0
-   - FLIP_WAVELENGTHS = False
-   - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
-   - HSI_NAME = 'uav_2'
-   - HSI_EXTENSION = 'npy'
-   - KEY = None
-- 2.2 Выполнить команду `python cli_demo_builder.py`.
+   - 2.1 изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
+      - PATH_TO_SOURCE_DATA = '.../source/source_2', где вместо ... указать директорию содержащую папку *source* c видеофайлами в формате AVI
+      - PATH_TO_METADATA = '../source/source_2/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
+      - PATH_TO_GPS = '.../source/source_2/gps_2023-09-01-14-39-21.csv', где вместо ... указать директорию содержащую папку *source* c файлом содержащим GPS для учёта траектории движения
+      - DATA_TYPE = 'video'
+      - ROTATION_CORRECTION = False
+      - NUM_ROTATE_HSI_90 = 0
+      - FLIP_WAVELENGTHS = False
+      - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
+      - HSI_NAME = 'uav_2'
+      - HSI_EXTENSION = 'npy'
+      - KEY = None
+   - 2.2 Выполнить команду `python cli_demo_builder.py`.
 
 3) Сформировать итоговое ГСИ из двух вышеописанных:
-- 3.1 изменить в файле *uav_dataset_builder.py* значения нижепредставленных параметров следующим образом:
-   - PATH_TO_UAV_1 = '.../uav_1.npy', где вместо ... указать директорию содержащую сформированное первое ГСИ и сопутствующую метаинформацию
-   - PATH_TO_UAV_2 = '.../uav_2.npy', где вместо ... указать директорию содержащую сформированное второе ГСИ и сопутствующую метаинформацию
-   - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения итогового ГСИ и сопутствующей метаинформации
-   - HSI_NAME = 'river'
-   - HSI_EXTENSION = 'mat'
-   - KEY = 'image'
-- 3.2 Выполнить команду `python cli_demo_builder.py`.
+   - 3.1 изменить в файле *uav_dataset_builder.py* значения нижепредставленных параметров следующим образом:
+      - PATH_TO_UAV_1 = '.../uav_1.npy', где вместо ... указать директорию содержащую сформированное первое ГСИ и сопутствующую метаинформацию
+      - PATH_TO_UAV_2 = '.../uav_2.npy', где вместо ... указать директорию содержащую сформированное второе ГСИ и сопутствующую метаинформацию
+      - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения итогового ГСИ и сопутствующей метаинформации
+      - HSI_NAME = 'river'
+      - HSI_EXTENSION = 'mat'
+      - KEY = 'image'
+   - 3.2 Выполнить команду `python cli_demo_builder.py`.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
