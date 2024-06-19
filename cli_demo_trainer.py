@@ -11,37 +11,95 @@ from openhsl.nn.models.nm3dcnn import NM3DCNN
 from openhsl.nn.models.ssftt import SSFTT
 from openhsl.nn.models.utils import draw_fit_plots, get_accuracy, get_f1
 
-HSI_PATH = './test_data/tr_pr/PaviaU.mat'
-HSI_KEY = 'paviaU'
-MASK_PATH = './test_data/tr_pr/PaviaU_gt.mat'
-MASK_KEY = 'paviaU_gt'
+# ----------------------------------------------------------------------------------------------------------------------
 
+# Указывается путь до файла ГСИ, допустимые форматы MAT, NPY, TIFF, H5
+HSI_PATH = '...'
+
+# Указывается ключ файла ГСИ, если формат MAT или H5, иначе None
+HSI_KEY = '...'
+
+# Указывается путь до файла маски разметки ГСИ, допустимые форматы MAT, NPY, TIFF, H5, PNG, BMP
+MASK_PATH = '...'
+
+# Указывается ключ файла маски разметки ГСИ, если формат MAT или H5, иначе None
+MASK_KEY = '...'
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Указывается тип скалера 'Standard' или 'MinMax'
 SCALER_TYPE = 'Standard'
+
+# Указывается ось для скалера 'band' или 'pixel'
 SCALE_PER = 'band'
 
+# ----------------------------------------------------------------------------------------------------------------------
+# Указывается False или True для применения PCA
 USE_PCA = False
-NUM_COMPONENTS = 30
 
+# Указывается количество компонент PCA
+NUM_COMPONENTS = 70
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Указывается тип нейросетевого классификатора, доступны для выбора: 'M1DCNN', 'TF2DCNN', 'M3DCNN', 'NM3DCNN', 'SSFTT'
 CLASSIFIER = 'M1DCNN'
+
+# Указывается путь до весов предобученной модели или None
 PATH_TO_WEIGHTS = None
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Указывается False или True для использования в качестве RT API WandB.
+# Для использования требуется заполненный файл wandb.yaml
 USE_WANDB = False
 
-PREDICT_ONLY = False
+# ----------------------------------------------------------------------------------------------------------------------
 
+# Указывается False или True для случая, когда не требуется обучение
+PREDICT_ONLY = True
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Указывается шаг обучения
 OPTIM_LEARNING_RATE = 0.01
+
+# Указывается коэффициент сокращения весов
 OPTIM_WEIGHT_DECAY = 0
 
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Указывается тип шедулера, доступные значения 'StepLR', 'CosineAnnealingLR', 'ReduceLROnPlateau'
 SCHEDULER_TYPE = 'StepLR'
+
+# Указывается количество эпох, после которого шедулер уменьшает шаг обучения
 SCHED_STEP_SIZE = 5
+
+# Указывается коэффициент уменьшения шага обучения
 SCHED_GAMMA = 0.5
 
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Указывается количество эпох обучения
 EPOCHS = 50
+
+# Указывается доля данных из ГСИ для обучения
 TRAIN_SAMPLE_PERCENTAGE = 0.1
-DATALOADER_MODE = 'fixed'
+
+# Указывается режим работы даталоадера, доступные 'random', 'fixed', 'disjoint'
+DATALOADER_MODE = '...'
+
+# Указывается размер батча обучения
 BATCH_SIZE = 32
+# ----------------------------------------------------------------------------------------------------------------------
 
-f1_type = 'weighted'
+# Указывается
+f1_type = '...'
 
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 hsi = HSImage()
 mask = HSMask()
 
@@ -73,26 +131,6 @@ CLASSIFIERS = {
 
 _CLASSIFIER = CLASSIFIERS[CLASSIFIER]
 
-optimizer_params = {
-    "learning_rate": OPTIM_LEARNING_RATE,
-    "weight_decay": OPTIM_WEIGHT_DECAY
-}
-
-scheduler_params = {
-    "step_size": SCHED_STEP_SIZE,
-    "gamma": SCHED_GAMMA
-}
-
-fit_params = {
-    "epochs": EPOCHS,
-    "train_sample_percentage": TRAIN_SAMPLE_PERCENTAGE,
-    "dataloader_mode": DATALOADER_MODE,
-    "optimizer_params": optimizer_params,
-    "batch_size": BATCH_SIZE,
-    "scheduler_type": SCHEDULER_TYPE,
-    "scheduler_params": scheduler_params
-}
-
 net = _CLASSIFIER(n_classes=mask.n_classes,
                   n_bands=hsi.data.shape[-1],  # or hsi.data.shape[-1]
                   path_to_weights=PATH_TO_WEIGHTS,
@@ -102,6 +140,26 @@ if USE_WANDB:
     net.init_wandb()
 
 if not PREDICT_ONLY:
+    optimizer_params = {
+        "learning_rate": OPTIM_LEARNING_RATE,
+        "weight_decay": OPTIM_WEIGHT_DECAY
+    }
+
+    scheduler_params = {
+        "step_size": SCHED_STEP_SIZE,
+        "gamma": SCHED_GAMMA
+    }
+
+    fit_params = {
+        "epochs": EPOCHS,
+        "train_sample_percentage": TRAIN_SAMPLE_PERCENTAGE,
+        "dataloader_mode": DATALOADER_MODE,
+        "optimizer_params": optimizer_params,
+        "batch_size": BATCH_SIZE,
+        "scheduler_type": SCHEDULER_TYPE,
+        "scheduler_params": scheduler_params
+    }
+
     net.fit(X=hsi,  # or hsi
             y=mask.get_2d(),
             fit_params=fit_params)
