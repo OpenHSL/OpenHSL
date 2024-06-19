@@ -28,21 +28,21 @@
 --------------------
 
 Для формирования ГСИ из набора кадров, содержащих спектральную развёртку, в форматах AVI, PNG или BMP можно воспользоваться:
-1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_builder.py), задав в этом файле требуемые параметры и затем выполнив команду *python cli_demo_builder.py*
-2) GUI версией, выполнив команду *python builder_app.py*
+1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_builder.py), задав в этом файле требуемые параметры и затем выполнив команду `python cli_demo_builder.py`
+2) GUI версией, выполнив команду `python builder_app.py`
 
 
 ## Разметка ГСИ
 --------------------
 Для разметки ГСИ можно воспользоваться:
-1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_painter.py), поддерживающей только методы автоматизированной разметки, задав в этом файле требуемые параметры и затем выполнив команду *python cli_demo_painter.py*
-2) GUI версией, выполнив команду *python annotator_main.py*
+1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_painter.py), поддерживающей только методы автоматизированной разметки, задав в этом файле требуемые параметры и затем выполнив команду `python cli_demo_painter.py`
+2) GUI версией, выполнив команду `python annotator_main.py`
 
 ## Нейросетевой анализ ГСИ
 ---------------------------
 Для обучения и инференса нейросетевых классификаторов можно воспользоваться:
-1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_trainer.py), задав в этом файле требуемые параметры и затем выполнив команду *python cli_demo_trainer.py*
-2) GUI версией, выполнив команду *python trainer_app.py*
+1) [CLI версией](https://github.com/OpenHSL/OpenHSL/blob/main/cli_demo_trainer.py), задав в этом файле требуемые параметры и затем выполнив команду `python cli_demo_trainer.py`
+2) GUI версией, выполнив команду `python trainer_app.py`
 
 
 ## Примеры работы с наборами данных
@@ -94,7 +94,7 @@
    - HSI_NAME = 'corn'
    - HSI_EXTENSION = 'mat'
    - KEY = 'image'
-2) Выполнить команду *python cli_demo_builder.py*.
+2) Выполнить команду `python cli_demo_builder.py`.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
@@ -109,7 +109,7 @@
    - PATH_TO_WEIGHTS = '.../tf2d_70band_PCA.h5', где вместо ... указать директорию содержащую файл весов модели *tf2d_70band_PCA.h5*
    - PREDICT_ONLY = True
 2) Остальные параметры оставить по-умолчанию;
-3) Выполнить команду *python cli_demo_trainer.py*.
+3) Выполнить команду `python cli_demo_trainer.py`.
 
 ### 2. Три сорта кофе
 
@@ -154,7 +154,7 @@
    - HSI_NAME = 'triple_coffee'
    - HSI_EXTENSION = 'npy'
    - KEY = None
-2) Выполнить команду *python cli_demo_builder.py*.
+2) Выполнить команду `python cli_demo_builder.py`.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
@@ -167,7 +167,7 @@
    - PATH_TO_WEIGHTS = '.../ssftt.pth', где вместо ... указать директорию содержащую файл весов модели *ssftt.pth*
    - PREDICT_ONLY = True
 2) Остальные параметры оставить по-умолчанию;
-3) выполнить команду *python cli_demo_trainer.py*.
+3) выполнить команду `python cli_demo_trainer.py`.
 
 ### 3. Растительный микропрепарат
 
@@ -212,7 +212,7 @@
    - PATH_TO_WEIGHTS = '.../M3DCNN_Li.pth', где вместо ... указать директорию содержащую файл весов модели *M3DCNN_Li.pth*
    - PREDICT_ONLY = True
 2) Остальные параметры оставить по-умолчанию;
-3) выполнить команду *python cli_demo_trainer.py*.
+3) выполнить команду `python cli_demo_trainer.py`.
 
 ### 4. Окрашенный медицинский микропрепарат
 
@@ -259,7 +259,7 @@
    - HSI_NAME = 'artery'
    - HSI_EXTENSION = 'h5'
    - KEY = None
-2) Выполнить команду *python cli_demo_builder.py*.
+2) Выполнить команду `python cli_demo_builder.py`.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
@@ -272,7 +272,7 @@
    - PATH_TO_WEIGHTS = '.../NM3DCNN.pth', где вместо ... указать директорию содержащую файл весов модели *NM3DCNN.pth*
    - PREDICT_ONLY = True
 2) Остальные параметры оставить по-умолчанию;
-3) выполнить команду *python cli_demo_trainer.py*.
+3) выполнить команду `python cli_demo_trainer.py`.
 
 ### 5. Неокрашенный медицинский микропрепарат
 
@@ -316,7 +316,7 @@
    - HSI_NAME = 'vessel1'
    - HSI_EXTENSION = 'mat'
    - KEY = 'image'
-2) Выполнить команду *python cli_demo_builder.py*.
+2) Выполнить команду `python cli_demo_builder.py`.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
@@ -329,7 +329,7 @@
    - PATH_TO_WEIGHTS = '.../NM3DCNN.pth', где вместо ... указать директорию содержащую файл весов модели *NM3DCNN.pth*
    - PREDICT_ONLY = True
 2) Остальные параметры оставить по-умолчанию;
-3) выполнить команду *python cli_demo_trainer.py*.
+3) выполнить команду `python cli_demo_trainer.py`.
 
 ### 6. Образцы почвы
 
@@ -374,7 +374,7 @@
    - HSI_NAME = 'soil'
    - HSI_EXTENSION = 'mat'
    - KEY = 'image'
-2) Выполнить команду *python cli_demo_builder.py*.
+2) Выполнить команду `python cli_demo_builder.py`.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
@@ -387,7 +387,7 @@
    - PATH_TO_WEIGHTS = '.../SSFTT.pth', где вместо ... указать директорию содержащую файл весов модели *SSFTT.pth*
    - PREDICT_ONLY = True
 2) Остальные параметры оставить по-умолчанию;
-3) выполнить команду *python cli_demo_trainer.py*.
+3) выполнить команду `python cli_demo_trainer.py`.
 
 ### 7. Сельскохозяйственное и сорное растения
 
@@ -431,7 +431,7 @@
    - HSI_NAME = 'strawberries'
    - HSI_EXTENSION = 'mat'
    - KEY = 'image'
-2) Выполнить команду *python cli_demo_builder.py*.
+2) Выполнить команду `python cli_demo_builder.py`.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
@@ -444,7 +444,7 @@
    - PATH_TO_WEIGHTS = '.../m1dcnn.pth', где вместо ... указать директорию содержащую файл весов модели *m1dcnn.pth*
    - PREDICT_ONLY = True
 2) Остальные параметры оставить по-умолчанию;
-3) выполнить команду *python cli_demo_trainer.py*.
+3) выполнить команду `python cli_demo_trainer.py`.
 
 ### 8. Натуральные и пластиковые объекты
 
@@ -493,7 +493,7 @@
    - HSI_NAME = 'tomato'
    - HSI_EXTENSION = 'mat'
    - KEY = 'image'
-2) Выполнить команду *python cli_demo_builder.py*.
+2) Выполнить команду `python cli_demo_builder.py`.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
@@ -506,7 +506,7 @@
    - PATH_TO_WEIGHTS = '.../M3DCNN_Li.pth', где вместо ... указать директорию содержащую файл весов модели *M3DCNN_Li.pth*
    - PREDICT_ONLY = True
 2) Остальные параметры оставить по-умолчанию;
-3) выполнить команду *python cli_demo_trainer.py*.
+3) выполнить команду `python cli_demo_trainer.py`.
 
 ### 9. Два вида таблеток
 
@@ -549,7 +549,7 @@
    - HSI_NAME = 'tablets'
    - HSI_EXTENSION = 'mat'
    - KEY = 'image'
-2) Выполнить команду *python cli_demo_builder.py*.
+2) Выполнить команду `python cli_demo_builder.py`.
 
 #### Инференс на предобученных весах модели
 1) изменить в файле *cli_demo_trainer.py* значения нижепредставленных параметров следующим образом:
@@ -561,7 +561,7 @@
    - PATH_TO_WEIGHTS = '.../M1DCNN.pth', где вместо ... указать директорию содержащую файл весов модели *M1DCNN.pth*
    - PREDICT_ONLY = True
 2) Остальные параметры оставить по-умолчанию;
-3) выполнить команду *python cli_demo_trainer.py*.
+3) выполнить команду `python cli_demo_trainer.py`.
 
 ### 10. Область водоёма
 
@@ -607,4 +607,4 @@
    - PATH_TO_WEIGHTS = '.../TF2DCNN_70bands_PCA.h5', где вместо ... указать директорию содержащую файл весов модели *TF2DCNN_70bands_PCA.h5*
    - PREDICT_ONLY = True
 2) Остальные параметры оставить по-умолчанию;
-3) выполнить команду *python cli_demo_trainer.py*.
+3) выполнить команду `python cli_demo_trainer.py`.
