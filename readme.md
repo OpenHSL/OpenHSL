@@ -21,6 +21,7 @@
 - Cuda 12.2+
 
 ## Установка
+Установка платформы производится командой `git clone https://github.com/OpenHSL/OpenHSL.git`
 
 Установка всех требуемых для запуска пакетов производится командой `pip install -r requirements.txt`
 
