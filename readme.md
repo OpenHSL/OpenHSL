@@ -86,10 +86,10 @@
    - ROTATION_CORRECTION = False
    - NUM_ROTATE_HSI_90 = 1
    - FLIP_WAVELENGTHS = False
-   - DIR_TO_SAVE_HSI = './test_data/results'
+   - DIR_TO_SAVE_HSI =  '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
    - HSI_NAME = 'corn'
-   - HSI_EXTENSION = 'npy'
-   - KEY = None
+   - HSI_EXTENSION = 'mat'
+   - KEY = 'image'
 2) Выполнить команду *python cli_demo_builder.py*.
 
 #### Инференс на предобученных весах модели
@@ -138,7 +138,19 @@
 Веса модели доступны по [ссылке](https://huggingface.co/OpenHSL/coffee_ssftt/blob/main/ssftt.pth)
 #### Формирование ГСИ из набора кадров
 Для формирования данного ГСИ из набора кадров при помощи CLI требуется:
-...
+1) изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
+   - PATH_TO_SOURCE_DATA = '.../source/source_triple_coffee_2.avi' где вместо ... указать директорию содержащую папку *source* c файлом *source_triple_coffee_2.avi* в формате AVI
+   - PATH_TO_METADATA = '.../source/build_metadata.json' где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
+   - PATH_TO_GPS = None
+   - DATA_TYPE = 'video'
+   - ROTATION_CORRECTION = False
+   - NUM_ROTATE_HSI_90 = 1
+   - FLIP_WAVELENGTHS = False
+   - DIR_TO_SAVE_HSI =  '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
+   - HSI_NAME = 'triple_coffee'
+   - HSI_EXTENSION = 'npy'
+   - KEY = None
+2) Выполнить команду *python cli_demo_builder.py*.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
@@ -231,7 +243,19 @@
 Веса модели доступны по [ссылке](https://huggingface.co/OpenHSL/stained_micro_nm3d/blob/main/NM3DCNN.pth)
 #### Формирование ГСИ из набора кадров
 Для формирования данного ГСИ из набора кадров при помощи CLI требуется:
-...
+1) изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
+   - PATH_TO_SOURCE_DATA = '.../source/images', где вместо ... указать директорию содержащую папку *source* c растровыми изображениями в формате PNG
+   - PATH_TO_METADATA = '../source/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
+   - PATH_TO_GPS = None
+   - DATA_TYPE = 'images'
+   - ROTATION_CORRECTION = False
+   - NUM_ROTATE_HSI_90 = 3
+   - FLIP_WAVELENGTHS = False
+   - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
+   - HSI_NAME = 'artery'
+   - HSI_EXTENSION = 'h5'
+   - KEY = None
+2) Выполнить команду *python cli_demo_builder.py*.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
@@ -276,7 +300,19 @@
 Веса модели доступны по [ссылке](https://huggingface.co/OpenHSL/unstained_micro_nm3d/blob/main/NM3DCNN.pth)
 #### Формирование ГСИ из набора кадров
 Для формирования данного ГСИ из набора кадров при помощи CLI требуется:
-...
+1) изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
+   - PATH_TO_SOURCE_DATA = '.../source/images', где вместо ... указать директорию содержащую папку *source* c растровыми изображениями в формате BMP
+   - PATH_TO_METADATA = '../source/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
+   - PATH_TO_GPS = None
+   - DATA_TYPE = 'images'
+   - ROTATION_CORRECTION = False
+   - NUM_ROTATE_HSI_90 = 3
+   - FLIP_WAVELENGTHS = False
+   - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
+   - HSI_NAME = 'vessel1'
+   - HSI_EXTENSION = 'mat'
+   - KEY = 'image'
+2) Выполнить команду *python cli_demo_builder.py*.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
@@ -322,7 +358,19 @@
 Веса модели доступны по [ссылке]
 #### Формирование ГСИ из набора кадров
 Для формирования данного ГСИ из набора кадров при помощи CLI требуется:
-...
+1) изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
+   - PATH_TO_SOURCE_DATA = '.../source/source_soil_6.avi', где вместо ... указать директорию содержащую папку *source* c файлом *source_soil_6.avi* в формате AVI
+   - PATH_TO_METADATA = '../source/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
+   - PATH_TO_GPS = None
+   - DATA_TYPE = 'video'
+   - ROTATION_CORRECTION = False
+   - NUM_ROTATE_HSI_90 = 1
+   - FLIP_WAVELENGTHS = False
+   - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
+   - HSI_NAME = 'soil'
+   - HSI_EXTENSION = 'mat'
+   - KEY = 'image'
+2) Выполнить команду *python cli_demo_builder.py*.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
@@ -367,7 +415,19 @@
 Веса модели доступны по [ссылке](https://huggingface.co/OpenHSL/strawberry_m1d/blob/main/m1dcnn.pth)
 #### Формирование ГСИ из набора кадров
 Для формирования данного ГСИ из набора кадров при помощи CLI требуется:
-...
+1) изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
+   - PATH_TO_SOURCE_DATA = '.../source/source_strawberry_7.avi', где вместо ... указать директорию содержащую папку *source* c файлом *source_strawberry_7.avi* в формате AVI
+   - PATH_TO_METADATA = '../source/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
+   - PATH_TO_GPS = None
+   - DATA_TYPE = 'video'
+   - ROTATION_CORRECTION = False
+   - NUM_ROTATE_HSI_90 = 1
+   - FLIP_WAVELENGTHS = False
+   - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
+   - HSI_NAME = 'strawberries'
+   - HSI_EXTENSION = 'mat'
+   - KEY = 'image'
+2) Выполнить команду *python cli_demo_builder.py*.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
@@ -417,7 +477,19 @@
 Веса модели доступны по [ссылке](https://huggingface.co/OpenHSL/natural_and_plastic_m3dli/blob/main/M3DCNN_Li.pth)
 #### Формирование ГСИ из набора кадров
 Для формирования данного ГСИ из набора кадров при помощи CLI требуется:
-...
+1) изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
+   - PATH_TO_SOURCE_DATA = '.../source/source_tomatoes_8.avi', где вместо ... указать директорию содержащую папку *source* c файлом *source_tomatoes_8.avi* в формате AVI
+   - PATH_TO_METADATA = '../source/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
+   - PATH_TO_GPS = None
+   - DATA_TYPE = 'video'
+   - ROTATION_CORRECTION = False
+   - NUM_ROTATE_HSI_90 = 1
+   - FLIP_WAVELENGTHS = False
+   - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
+   - HSI_NAME = 'tomato'
+   - HSI_EXTENSION = 'mat'
+   - KEY = 'image'
+2) Выполнить команду *python cli_demo_builder.py*.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
@@ -461,7 +533,19 @@
 Веса модели доступны по [ссылке](https://huggingface.co/OpenHSL/tablets_m1d/blob/main/M1DCNN.pth)
 #### Формирование ГСИ из набора кадров
 Для формирования данного ГСИ из набора кадров при помощи CLI требуется:
-...
+1) изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
+   - PATH_TO_SOURCE_DATA = '.../source/source_tablet_9.avi', где вместо ... указать директорию содержащую папку *source* c файлом *source_tablet_9.avi* в формате AVI
+   - PATH_TO_METADATA = '../source/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
+   - PATH_TO_GPS = None
+   - DATA_TYPE = 'video'
+   - ROTATION_CORRECTION = False
+   - NUM_ROTATE_HSI_90 = 1
+   - FLIP_WAVELENGTHS = False
+   - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
+   - HSI_NAME = 'tablets'
+   - HSI_EXTENSION = 'mat'
+   - KEY = 'image'
+2) Выполнить команду *python cli_demo_builder.py*.
 
 #### Инференс на предобученных весах модели
 1) изменить в файле *cli_demo_trainer.py* значения нижепредставленных параметров следующим образом:
