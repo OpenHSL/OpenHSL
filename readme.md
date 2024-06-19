@@ -196,7 +196,77 @@
 Веса модели доступны по [ссылке](https://huggingface.co/OpenHSL/plant_micro_m3dli/blob/main/M3DCNN_Li.pth)
 #### Формирование ГСИ из набора кадров
 Для формирования данного ГСИ из набора кадров при помощи CLI требуется:
-...
+1) Сформировать первое ГСИ:
+   - 1.1 изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
+      - PATH_TO_SOURCE_DATA = '.../source/leaf_1_1', где вместо ... указать директорию содержащую папку *source* c растровыми изображениями в формате PNG
+      - PATH_TO_METADATA = '../source/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
+      - PATH_TO_GPS = None
+      - DATA_TYPE = 'images'
+      - ROTATION_CORRECTION = False
+      - NUM_ROTATE_HSI_90 = 0
+      - FLIP_WAVELENGTHS = False
+      - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
+      - HSI_NAME = 'plant_1_1'
+      - HSI_EXTENSION = 'npy'
+      - KEY = None
+   - 1.2 Выполнить команду `python cli_demo_builder.py`.
+
+2) Сформировать второе ГСИ:
+   - 2.1 изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
+      - PATH_TO_SOURCE_DATA = '.../source/leaf_1_2', где вместо ... указать директорию содержащую папку *source* c растровыми изображениями в формате PNG
+      - PATH_TO_METADATA = '../source/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
+      - PATH_TO_GPS = None
+      - DATA_TYPE = 'images'
+      - ROTATION_CORRECTION = False
+      - NUM_ROTATE_HSI_90 = 0
+      - FLIP_WAVELENGTHS = False
+      - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
+      - HSI_NAME = 'plant_1_2'
+      - HSI_EXTENSION = 'npy'
+      - KEY = None
+   - 2.2 Выполнить команду `python cli_demo_builder.py`.
+
+3) Сформировать третье ГСИ:
+   - 2.1 изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
+      - PATH_TO_SOURCE_DATA = '.../source/leaf_2_1', где вместо ... указать директорию содержащую папку *source* c растровыми изображениями в формате PNG
+      - PATH_TO_METADATA = '../source/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
+      - PATH_TO_GPS = None
+      - DATA_TYPE = 'images'
+      - ROTATION_CORRECTION = False
+      - NUM_ROTATE_HSI_90 = 0
+      - FLIP_WAVELENGTHS = False
+      - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
+      - HSI_NAME = 'plant_2_1'
+      - HSI_EXTENSION = 'npy'
+      - KEY = None
+   - 2.2 Выполнить команду `python cli_demo_builder.py`.
+
+4) Сформировать четвертое ГСИ:
+   - 2.1 изменить в файле *cli_demo_builder.py* значения нижепредставленных параметров следующим образом:
+      - PATH_TO_SOURCE_DATA = '.../source/leaf_2_2', где вместо ... указать директорию содержащую папку *source* c растровыми изображениями в формате PNG
+      - PATH_TO_METADATA = '../source/build_metadata.json', где вместо ... указать директорию содержащую папку *source* c файлом метаданных *build_metadata.json* для формирования 
+      - PATH_TO_GPS = None
+      - DATA_TYPE = 'images'
+      - ROTATION_CORRECTION = False
+      - NUM_ROTATE_HSI_90 = 0
+      - FLIP_WAVELENGTHS = False
+      - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
+      - HSI_NAME = 'plant_2_2'
+      - HSI_EXTENSION = 'npy'
+      - KEY = None
+   - 2.2 Выполнить команду `python cli_demo_builder.py`.
+
+5) Сформировать итоговое ГСИ из четырех вышеописанных:
+   - 3.1 изменить в файле *plant_dataset_builder.py* значения нижепредставленных параметров следующим образом:
+      - PATH_TO_PLANT_1_1 = '.../plant_1_1.npy', где вместо ... указать директорию содержащую сформированное первое ГСИ и сопутствующую метаинформацию
+      - PATH_TO_PLANT_1_2 = '.../plant_1_2.npy', где вместо ... указать директорию содержащую сформированное второе ГСИ и сопутствующую метаинформацию
+      - PATH_TO_PLANT_2_1 = '.../plant_2_1.npy', где вместо ... указать директорию содержащую сформированное третье ГСИ и сопутствующую метаинформацию
+      - PATH_TO_PLANT_2_2 = '.../plant_2_2.npy', где вместо ... указать директорию содержащую сформированное четвертое ГСИ и сопутствующую метаинформацию
+      - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения итогового ГСИ и сопутствующей метаинформации
+      - HSI_NAME = 'leaves'
+      - HSI_EXTENSION = 'tiff'
+      - KEY = None
+   - 3.2 Выполнить команду `python cli_demo_builder.py`.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
