@@ -96,10 +96,25 @@
    - FLIP_WAVELENGTHS = False
    - DIR_TO_SAVE_HSI =  '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
    - HSI_NAME = 'corn'
-   - HSI_EXTENSION = 'mat'
+   - HSI_EXTENSION = 'mat', допустимые значения 'mat', 'tiff', 'h5', 'npy'
    - KEY = 'image'
 2) Выполнить команду `python cli_demo_builder.py`.
 
+#### Разметка ГСИ
+В качестве примера можно рассмотреть формирование предварительной маски разметки при помощи автоматизированных методов.
+Для этого с помощью CLI требуется:
+1) изменить в файле *cli_demo_painter.py* значения нижепредставленных параметров следующим образом:
+   - PATH_TO_HSI = '.../hsi/corn1.mat', где вместо ... указать директорию содержащую папку *hsi* с файлом ГСИ *corn1.mat* и метаданными *corn1_metainfo.json*
+   - HSI_KEY = 'image'
+   - PAINT_UTIL = 'ANDVI'
+   - PATH_TO_SAVE_DIR = '...', где вместо ... указать папку для сохранения маски и сопутствующей метаинформации
+   - MASK_NAME = '...', где вместо ... указать имя маски разметки ГСИ
+   - MASK_EXTENSION = '...', где вместо ... указать формат файла маски ГСИ, допустимые 'mat', 'tiff', 'h5', 'npy', 'png', 'bmp'
+   - MASK_KEY = None
+   - Остальные параметры оставить по умолчанию.
+2) Выполнить команду `python cli_demo_painter.py`, после чего на ПЗУ будет сохранена заготовка маски с размеченными растениями.
+3) Воспользоваться GUI для разметки ГСИ, уточнив разметку.
+   
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
 1) Изменить в файле *cli_demo_trainer.py* значения нижепредставленных параметров следующим образом:
@@ -156,7 +171,7 @@
    - FLIP_WAVELENGTHS = False
    - DIR_TO_SAVE_HSI =  '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
    - HSI_NAME = 'triple_coffee'
-   - HSI_EXTENSION = 'npy'
+   - HSI_EXTENSION = 'npy', допустимые значения 'mat', 'tiff', 'h5', 'npy'
    - KEY = None
 2) Выполнить команду `python cli_demo_builder.py`.
 
@@ -214,7 +229,7 @@
       - FLIP_WAVELENGTHS = False
       - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
       - HSI_NAME = 'plant_1_1'
-      - HSI_EXTENSION = 'npy'
+      - HSI_EXTENSION = 'npy', допустимые значения 'mat', 'tiff', 'h5', 'npy'
       - KEY = None
    - 1.2 Выполнить команду `python cli_demo_builder.py`.
 
@@ -229,7 +244,7 @@
       - FLIP_WAVELENGTHS = False
       - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
       - HSI_NAME = 'plant_1_2'
-      - HSI_EXTENSION = 'npy'
+      - HSI_EXTENSION = 'npy', допустимые значения 'mat', 'tiff', 'h5', 'npy'
       - KEY = None
    - 2.2 Выполнить команду `python cli_demo_builder.py`.
 
@@ -244,7 +259,7 @@
       - FLIP_WAVELENGTHS = False
       - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
       - HSI_NAME = 'plant_2_1'
-      - HSI_EXTENSION = 'npy'
+      - HSI_EXTENSION = 'npy', допустимые значения 'mat', 'tiff', 'h5', 'npy'
       - KEY = None
    - 2.2 Выполнить команду `python cli_demo_builder.py`.
 
@@ -259,7 +274,7 @@
       - FLIP_WAVELENGTHS = False
       - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
       - HSI_NAME = 'plant_2_2'
-      - HSI_EXTENSION = 'npy'
+      - HSI_EXTENSION = 'npy', допустимые значения 'mat', 'tiff', 'h5', 'npy'
       - KEY = None
    - 2.2 Выполнить команду `python cli_demo_builder.py`.
 
@@ -271,7 +286,7 @@
       - PATH_TO_PLANT_2_2 = '.../plant_2_2.npy', где вместо ... указать директорию содержащую сформированное четвертое ГСИ и сопутствующую метаинформацию
       - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения итогового ГСИ и сопутствующей метаинформации
       - HSI_NAME = 'leaves'
-      - HSI_EXTENSION = 'tiff'
+      - HSI_EXTENSION = 'tiff', допустимые значения 'mat', 'tiff', 'h5', 'npy'
       - KEY = None
    - 3.2 Выполнить команду `python cli_demo_builder.py`.
 
@@ -331,7 +346,7 @@
    - FLIP_WAVELENGTHS = False
    - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
    - HSI_NAME = 'artery'
-   - HSI_EXTENSION = 'h5'
+   - HSI_EXTENSION = 'h5', допустимые значения 'mat', 'tiff', 'h5', 'npy'
    - KEY = None
 2) Выполнить команду `python cli_demo_builder.py`.
 
@@ -388,7 +403,7 @@
    - FLIP_WAVELENGTHS = False
    - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
    - HSI_NAME = 'vessel1'
-   - HSI_EXTENSION = 'mat'
+   - HSI_EXTENSION = 'mat', допустимые значения 'mat', 'tiff', 'h5', 'npy'
    - KEY = 'image'
 2) Выполнить команду `python cli_demo_builder.py`.
 
@@ -446,7 +461,7 @@
    - FLIP_WAVELENGTHS = False
    - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
    - HSI_NAME = 'soil'
-   - HSI_EXTENSION = 'mat'
+   - HSI_EXTENSION = 'mat', допустимые значения 'mat', 'tiff', 'h5', 'npy'
    - KEY = 'image'
 2) Выполнить команду `python cli_demo_builder.py`.
 
@@ -503,7 +518,7 @@
    - FLIP_WAVELENGTHS = False
    - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
    - HSI_NAME = 'strawberries'
-   - HSI_EXTENSION = 'mat'
+   - HSI_EXTENSION = 'mat', допустимые значения 'mat', 'tiff', 'h5', 'npy'
    - KEY = 'image'
 2) Выполнить команду `python cli_demo_builder.py`.
 
@@ -565,7 +580,7 @@
    - FLIP_WAVELENGTHS = False
    - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
    - HSI_NAME = 'tomato'
-   - HSI_EXTENSION = 'mat'
+   - HSI_EXTENSION = 'mat', допустимые значения 'mat', 'tiff', 'h5', 'npy'
    - KEY = 'image'
 2) Выполнить команду `python cli_demo_builder.py`.
 
@@ -621,7 +636,7 @@
    - FLIP_WAVELENGTHS = False
    - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
    - HSI_NAME = 'tablets'
-   - HSI_EXTENSION = 'mat'
+   - HSI_EXTENSION = 'mat', допустимые значения 'mat', 'tiff', 'h5', 'npy'
    - KEY = 'image'
 2) Выполнить команду `python cli_demo_builder.py`.
 
@@ -677,7 +692,7 @@
       - FLIP_WAVELENGTHS = False
       - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
       - HSI_NAME = 'uav_1'
-      - HSI_EXTENSION = 'npy'
+      - HSI_EXTENSION = 'npy', допустимые значения 'mat', 'tiff', 'h5', 'npy'
       - KEY = None
    - 1.2 Выполнить команду `python cli_demo_builder.py`.
 
@@ -692,7 +707,7 @@
       - FLIP_WAVELENGTHS = False
       - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения ГСИ и сопутствующей метаинформации
       - HSI_NAME = 'uav_2'
-      - HSI_EXTENSION = 'npy'
+      - HSI_EXTENSION = 'npy', допустимые значения 'mat', 'tiff', 'h5', 'npy'
       - KEY = None
    - 2.2 Выполнить команду `python cli_demo_builder.py`.
 
@@ -702,7 +717,7 @@
       - PATH_TO_UAV_2 = '.../uav_2.npy', где вместо ... указать директорию содержащую сформированное второе ГСИ и сопутствующую метаинформацию
       - DIR_TO_SAVE_HSI = '...', где вместо ... указать папку для сохранения итогового ГСИ и сопутствующей метаинформации
       - HSI_NAME = 'river'
-      - HSI_EXTENSION = 'mat'
+      - HSI_EXTENSION = 'mat', допустимые значения 'mat', 'tiff', 'h5', 'npy'
       - KEY = 'image'
    - 3.2 Выполнить команду `python cli_demo_builder.py`.
 
