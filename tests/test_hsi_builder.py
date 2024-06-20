@@ -4,18 +4,43 @@ import pytest
 from openhsl.base.hsi import HSImage
 from openhsl.build.builder import HSBuilder
 
+# Тестирование проводилось на наборах данных 1, 4 и 5, выложенных вместе с платформой
 
-path_to_avi = '../test_data/bortnik_3/1_corn/source/source_corn_1.avi'
-path_to_metadata_avi = '../test_data/bortnik_3/1_corn/source/build_metadata.json'
-path_to_avi_hsi = '../test_data/bortnik_3/1_corn/hsi/corn1.mat'
 
-path_to_png = '../test_data/bortnik_3/4_stained_micro/source/images'
-path_to_metadata_png = '../test_data/bortnik_3/4_stained_micro/source/build_metadata.json'
-path_to_png_hsi = '../test_data/bortnik_3/4_stained_micro/hsi/artery.h5'
+# ----------------------------------------------------------------------------------------------------------------------
 
-path_to_bmp = '../test_data/bortnik_3/5_unstained_micro/source/images'
-path_to_metadata_bmp = '../test_data/bortnik_3/5_unstained_micro/source/build_metadata.json'
-path_to_bmp_hsi = '../test_data/bortnik_3/5_unstained_micro/hsi/vessel1.mat'
+# Указывается путь к видеофайлу
+path_to_avi = '.../source/source_corn_1.avi'
+
+# Указывается путь к файлу содержащему метаданные для формирования
+path_to_metadata_avi = '.../source/build_metadata.json'
+
+# Указывается путь к файлу ГСИ
+path_to_avi_hsi = '.../hsi/corn1.mat'
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Указывается путь к видеофайлу
+path_to_png = '.../source/images'
+
+# Указывается путь к файлу содержащему метаданные для формирования
+path_to_metadata_png = '.../source/build_metadata.json'
+
+# Указывается путь к файлу ГСИ
+path_to_png_hsi = '.../hsi/artery.h5'
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Указывается путь к видеофайлу
+path_to_bmp = '.../source/images'
+
+# Указывается путь к файлу содержащему метаданные для формирования
+path_to_metadata_bmp = '.../source/build_metadata.json'
+
+# Указывается путь к файлу ГСИ
+path_to_bmp_hsi = '..../hsi/vessel1.mat'
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 @pytest.fixture
