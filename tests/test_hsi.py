@@ -1,18 +1,25 @@
+import os
 import pytest
+import shutil
 import numpy as np
 
-from scipy.io import loadmat
 from openhsl.base.hsi import HSImage
 
 
 @pytest.fixture
 def return_hsi():
-    return loadmat('../test_data/tr_pr/PaviaU.mat')['paviaU']
+    dummy_hsi = np.array([np.eye(200, 200) for _ in range(150)]).transpose((1, 2, 0)).astype(int)
+    return dummy_hsi
 
 
 @pytest.fixture
-def return_HSImage(return_hsi):
-    hsi = HSImage(return_hsi)
+def return_wavelengths():
+    return list(range(420, 720, 2))
+
+
+@pytest.fixture
+def return_HSImage(return_hsi, return_wavelengths):
+    hsi = HSImage(hsi=return_hsi, wavelengths=return_wavelengths)
     return hsi
 
 
@@ -36,14 +43,78 @@ def test_get_out_of_bound_hyperpixel(return_HSImage):
         hsi.get_hyperpixel_by_coordinates(x=x, y=y)
 
 
-def test_load_from_mat(return_hsi):
-    pass
+def _create_dir(path_to_dir):
+    if not os.path.exists(path_to_dir):
+        os.mkdir(path_to_dir)
 
 
-def test_load_from_npy(return_hsi):
-    pass
+def _remove_dir(path_to_dir):
+    shutil.rmtree(path_to_dir)
 
 
-def test_load_from_h5(return_hsi):
-    pass
+def test_save_and_load_mat(return_HSImage):
+    path_to_test_dir = './test_dir'
+    _create_dir(path_to_test_dir)
 
+    extension = 'mat'
+    path_to_save = f'{path_to_test_dir}/test_.{extension}'
+
+    return_HSImage.save(path_to_data=path_to_save, key='test_key')
+    loaded_HSImage = HSImage()
+    loaded_HSImage.load(path_to_save, key='test_key')
+
+    _remove_dir(path_to_test_dir)
+
+    assert np.all(return_HSImage.data == loaded_HSImage.data)
+    assert np.all(return_HSImage.wavelengths == loaded_HSImage.wavelengths)
+
+
+def test_save_and_load_npy(return_HSImage, return_hsi):
+    path_to_test_dir = './test_dir'
+    _create_dir(path_to_test_dir)
+
+    extension = 'npy'
+    path_to_save = f'{path_to_test_dir}/test_.{extension}'
+
+    return_HSImage.save(path_to_data=path_to_save)
+    loaded_HSImage = HSImage()
+    loaded_HSImage.load(path_to_save)
+
+    _remove_dir(path_to_test_dir)
+
+    assert np.all(return_HSImage.data == loaded_HSImage.data)
+    assert np.all(return_HSImage.wavelengths == loaded_HSImage.wavelengths)
+
+
+def test_save_and_load_h5(return_HSImage, return_hsi):
+    path_to_test_dir = './test_dir'
+    _create_dir(path_to_test_dir)
+
+    extension = 'h5'
+    path_to_save = f'{path_to_test_dir}/test_.{extension}'
+
+    return_HSImage.save(path_to_data=path_to_save, key='test_key')
+    loaded_HSImage = HSImage()
+    loaded_HSImage.load(path_to_save, key='test_key')
+
+    _remove_dir(path_to_test_dir)
+
+    assert np.all(return_HSImage.data == loaded_HSImage.data)
+    assert np.all(return_HSImage.wavelengths == loaded_HSImage.wavelengths)
+
+
+def test_save_and_load_tiff(return_HSImage, return_hsi):
+    path_to_test_dir = './test_dir'
+    _create_dir(path_to_test_dir)
+
+    extension = 'tiff'
+    path_to_save = f'{path_to_test_dir}/test_.{extension}'
+
+    return_HSImage.save(path_to_data=path_to_save)
+    loaded_HSImage = HSImage()
+    loaded_HSImage.load(path_to_save)
+
+    _remove_dir(path_to_test_dir)
+
+    assert np.all(return_HSImage.data == loaded_HSImage.data)
+    assert np.all(return_HSImage.wavelengths == loaded_HSImage.wavelengths)

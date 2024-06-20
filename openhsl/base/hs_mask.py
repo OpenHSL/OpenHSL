@@ -369,7 +369,7 @@ class HSMask:
 
     def load_from_npy(self,
                       path_to_data):
-        tmp_data = np.load(path_to_data)
+        tmp_data = np.load(path_to_data).astype('uint8')
         if HSMask.__is_correct_2d_mask(tmp_data):
             self.data = HSMask.convert_2d_to_3d_mask(tmp_data)
         elif HSMask.__is_correct_3d_mask(tmp_data):
