@@ -16,8 +16,8 @@
 - ОС: Windows 10 или старше / Ubuntu 20.04 или старше
 - GPU: Nvidia RTX 3090 или старше
 - не менее 32 ГБ ОЗУ
-- Python 3.9+
-- Cuda 12.2+
+- Python 3.9
+- Cuda 12.2
 ---------------------
 ## Установка
 Установка платформы производится командой `git clone https://github.com/OpenHSL/OpenHSL.git`
