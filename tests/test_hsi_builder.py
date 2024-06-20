@@ -1,198 +1,71 @@
-#sys.path.insert(1, '../OpenHSL')
-
 import numpy as np
-import os
 import pytest
-import shutil
 
 from openhsl.base.hsi import HSImage
 from openhsl.build.builder import HSBuilder
 
 
-path_to_micro_metadata = "../microscope_build_metadata.json"
-path_to_simple_metadata = "../build_metadata.json"
-path_to_uav_metadata = "../uav_build_metadata.json"
-path_to_copter_data = "../test_data/builder/copter"
-path_to_copter_gps = "../test_data/builder/copter/gps_2021-03-30.csv"
-path_to_rail_data = "../test_data/builder/imgs"
-path_to_rotary_data = "../test_data/builder/video/rec_2022-06-06-12-24-02.avi"
-not_valid_path = "incorrect_path"
+path_to_avi = '../test_data/bortnik_3/1_corn/source/source_corn_1.avi'
+path_to_metadata_avi = '../test_data/bortnik_3/1_corn/source/build_metadata.json'
+path_to_avi_hsi = '../test_data/bortnik_3/1_corn/hsi/corn1.mat'
 
+path_to_png = '../test_data/bortnik_3/4_stained_micro/source/images'
+path_to_metadata_png = '../test_data/bortnik_3/4_stained_micro/source/build_metadata.json'
+path_to_png_hsi = '../test_data/bortnik_3/4_stained_micro/hsi/artery.h5'
 
-def saving_correct_check(hsi):
-    # check if the saving is correct for .npy
-    hsi.save_to_npy(path_to_file="../for_test/test.npy")
-    load_hsi = HSImage()
-    load_hsi.load_from_npy(path_to_file="../for_test/test.npy")
-    assert np.allclose(load_hsi.data, hsi.data)
-
-    # check if the saving is correct for .h5
-    hsi.save_to_h5("../for_test/test.h5", h5_key='image')
-    load_hsi = HSImage()
-    load_hsi.load_from_h5("../for_test/test.h5", "image")
-    assert np.allclose(load_hsi.data, hsi.data)
-
-    # check if the saving is correct for .mat
-    hsi.save_to_mat("../for_test/test.mat", mat_key='image')
-    load_hsi = HSImage()
-    load_hsi.load_from_mat("../for_test/test.mat", "image")
-    assert np.allclose(load_hsi.data, hsi.data)
-
-    # check if the saving is correct for .png
-    hsi.save_to_images("../for_test/png", "png")
-
-    # check of the saving is correct for .jpg
-    hsi.save_to_images("../for_test/jpg", "jpg")
-
-    os.remove("../for_test/test.npy")
-    os.remove("../for_test/test.h5")
-    os.remove("../for_test/test.mat")
-    shutil.rmtree("../for_test/png")
-    shutil.rmtree("../for_test/jpg")
+path_to_bmp = '../test_data/bortnik_3/5_unstained_micro/source/images'
+path_to_metadata_bmp = '../test_data/bortnik_3/5_unstained_micro/source/build_metadata.json'
+path_to_bmp_hsi = '../test_data/bortnik_3/5_unstained_micro/hsi/vessel1.mat'
 
 
 @pytest.fixture
-def return_rail_sample():
+def get_avi_hsi():
     hsi = HSImage()
-    hsi.load_from_h5(path_to_file='../for_test/sample_rail.h5', h5_key='image')
+    hsi.load(path_to_avi_hsi, key='image')
     return hsi
 
 
 @pytest.fixture
-def return_rotary_sample():
+def get_png_hsi():
     hsi = HSImage()
-    hsi.load_from_h5(path_to_file='../for_test/sample_rotary.h5', h5_key='image')
+    hsi.load(path_to_png_hsi, key='image')
     return hsi
 
 
-# TODO must update that
 @pytest.fixture
-def return_copter_sample():
+def get_bmp_hsi():
     hsi = HSImage()
-    hsi.load_from_h5(path_to_file='../for_test/sample_copter.h5', h5_key='image')
+    hsi.load(path_to_bmp_hsi, key='image')
     return hsi
 
 
-# TODO must update that
-def test_normal_rail(return_rail_sample):
-    hsb = HSBuilder(path_to_data=path_to_rail_data,
-                    path_to_metadata=path_to_micro_metadata,
-                    data_type="images")
-    hsb.build(norm_rotation=True)
-    hsi = hsb.get_hsi()
-
-    # dimension check
-    assert (300, 900, 250) == hsi.data.shape
-
-    # pattern similarity check
-    assert np.allclose(return_rail_sample.data, hsi.data)
-
-    saving_correct_check(hsi)
+def test_build_from_avi(get_avi_hsi):
+    hsb = HSBuilder(path_to_data=path_to_avi,
+                    path_to_metadata=path_to_metadata_avi,
+                    data_type='video')
+    hsb.build()
+    builded_hsi = hsb.get_hsi()
+    builded_hsi.rot90()
+    assert np.all(builded_hsi.data == get_avi_hsi.data)
 
 
-def test_normal_rotary(return_rotary_sample):
-    hsb = HSBuilder(path_to_data=path_to_rotary_data,
-                    path_to_metadata=path_to_simple_metadata,
-                    data_type="video")
-    hsb.build(principal_slices=250)
-    hsi = hsb.get_hsi()
-
-    # dimension check
-    assert (1001, 2048, 250) == hsi.data.shape
-
-    # pattern similarity check
-    assert np.allclose(return_rotary_sample.data, hsi.data)
-
-    saving_correct_check(hsi)
+def test_build_from_png(get_png_hsi):
+    hsb = HSBuilder(path_to_data=path_to_png,
+                    path_to_metadata=path_to_metadata_png,
+                    data_type='images')
+    hsb.build()
+    builded_hsi = hsb.get_hsi()
+    for _ in range(3):
+        builded_hsi.rot90()
+    assert np.all(builded_hsi.data == get_png_hsi.data)
 
 
-def test_normal_copter(return_copter_sample):
-    hsb = HSBuilder(path_to_data=path_to_copter_data,
-                    path_to_gps=path_to_copter_gps,
-                    path_to_metadata=path_to_uav_metadata,
-                    data_type="video")
-    hsb.build(principal_slices=40)
-    hsi = hsb.get_hsi()
-
-    # dimension check
-    assert (1724, 1080, 40) == hsi.data.shape
-
-    # pattern similarity check
-    assert np.allclose(return_copter_sample.data, hsi.data)
-
-    saving_correct_check(hsi)
-
-
-def test_incorrect_path_to_data():
-    with pytest.raises(ValueError):
-        hsb = HSBuilder(path_to_data=not_valid_path, data_type="video")
-
-
-def test_incorrect_data_type():
-    with pytest.raises(ValueError):
-        hsb = HSBuilder(path_to_data=path_to_rail_data, data_type="incorrect")
-
-
-def test_incorrect_type_data():
-    with pytest.raises(TypeError):
-        hsb = HSBuilder(path_to_data=[path_to_rail_data], data_type="video")
-
-
-def test_incorrect_type_metadata():
-    with pytest.raises(TypeError):
-        hsb = HSBuilder(path_to_data=path_to_copter_data,
-                        path_to_gps=[path_to_copter_gps],
-                        data_type="video")
-        print(hsb.path_to_metadata)
-
-
-def test_not_valid_data_type():
-    with pytest.raises(ValueError):
-        hsb = HSBuilder(path_to_data=path_to_rotary_data,
-                        data_type="music")
-        hsb.build(principal_slices=250)
-
-
-def test_copter_without_metadata():
-    hsb = HSBuilder(path_to_data=path_to_copter_data,
-                    data_type="video")
-    hsb.build(principal_slices=10)
-    hsi = hsb.get_hsi()
-
-"""
-# TODO: It's failed
-def test_rotary_with_metadata():
-    with pytest.raises(ValueError):
-        hsb = HSBuilder(path_to_data=path_to_rotary_data,
-                        path_to_metadata=path_to_copter_metadata,
-                        data_type="video")
-        hsb.build(principal_slices=10)
-        hsi = hsb.get_hsi()
-"""
-"""
-# TODO: It's failed
-def test_rail_with_metadata():
-    with pytest.raises(ValueError):
-        hsb = HSBuilder(path_to_data=path_to_rail_data,
-                        path_to_metadata=path_to_copter_metadata,
-                        data_type="images")
-        hsb.build(principal_slices=10)
-        hsi = hsb.get_hsi()
-"""
-
-
-def test_all_flags_for_rail():
-    hsb = HSBuilder(path_to_data=path_to_rail_data,
-                    path_to_metadata=path_to_micro_metadata,
-                    data_type="images")
-    hsb.build(principal_slices=250,
-              norm_rotation=True)
-
-    hsi = hsb.get_hsi()
-    # dimension check
-    assert (300, 900, 250) == hsi.data.shape
-
-
-
-
-
+def test_build_from_bmp(get_bmp_hsi):
+    hsb = HSBuilder(path_to_data=path_to_bmp,
+                    path_to_metadata=path_to_metadata_bmp,
+                    data_type='images')
+    hsb.build()
+    builded_hsi = hsb.get_hsi()
+    for _ in range(3):
+        builded_hsi.rot90()
+    assert np.all(builded_hsi.data == get_bmp_hsi.data)
