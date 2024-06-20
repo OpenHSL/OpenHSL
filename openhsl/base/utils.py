@@ -7,8 +7,8 @@ from openhsl.base.hsi import HSImage
 from openhsl.base.hs_mask import HSMask
 
 
-def unite_hsi_and_mask(hsi_list: List[HSImage, np.ndarray],
-                       mask_list: List[HSMask, np.ndarray],
+def unite_hsi_and_mask(hsi_list: List,
+                       mask_list: List,
                        mode: Literal['v', 'h'] = 'v') -> Tuple[HSImage, HSMask]:
     """
     hsi_list:
