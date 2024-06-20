@@ -726,7 +726,7 @@
       - HSI_NAME = 'river'
       - HSI_EXTENSION = 'mat', допустимые значения 'mat', 'tiff', 'h5', 'npy'
       - KEY = 'image'
-   - 3.2 Выполнить команду `python cli_demo_builder.py`.
+   - 3.2 Выполнить команду `python uav_dataset_builder.py`.
 
 #### Инференс на предобученных весах модели
 Для демонстрации инференса предобученной модели при помощи CLI требуется:
