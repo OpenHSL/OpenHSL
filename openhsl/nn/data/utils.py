@@ -345,8 +345,10 @@ def grouper(n, iterable):
 
 
 def sample_gt(gt: np.ndarray,
-              train_size: float,
+              train_size: float = 0.1,
               mode: SamplerMod = 'random',
+              train_num_samples: int = None,
+              val_num_samples: int = 0,
               msg: str = 'train/test'):
     """Extract a fixed percentage of samples from an array of labels.
 
@@ -354,6 +356,8 @@ def sample_gt(gt: np.ndarray,
         gt: a 2D array of int labels
         train_size: [0, 1] float
         mode: str
+        train_num_samples: int
+        val_num_samples: int
         msg: str
     Returns:
         train_gt, test_gt: 2D arrays of int labels
@@ -412,8 +416,35 @@ def sample_gt(gt: np.ndarray,
             train_gt[mask] = 0
 
         test_gt[train_gt > 0] = 0
+    elif mode == 'n_samples':
+        train_indices = []
+        test_indices = []
+        for c in np.unique(gt):
+            if c == 0:
+                continue
+
+            indices = np.nonzero(gt == c)
+            X = np.array(list(zip(*indices)))  # x,y features
+            random_choice = np.random.choice(len(X), size=train_num_samples + val_num_samples, replace=False)
+
+            train_random_choice = np.random.choice(random_choice, train_num_samples, replace=False)
+            train = [el for el in X[train_random_choice]]
+            train_indices += train
+
+            if val_num_samples > 0:
+
+                val_random_choice = [el for el in random_choice if el not in train_random_choice]
+                test = [el for el in X[val_random_choice]]
+                test_indices += test
+
+        train_indices = [list(t) for t in zip(*train_indices)]
+        test_indices = [list(t) for t in zip(*test_indices)]
+        train_gt[tuple(train_indices)] = gt[tuple(train_indices)]
+        test_gt[tuple(test_indices)] = gt[tuple(test_indices)]
+
     else:
         raise ValueError(f"{mode} sampling is not implemented yet.")
+
     return train_gt, test_gt
 # ----------------------------------------------------------------------------------------------------------------------
 

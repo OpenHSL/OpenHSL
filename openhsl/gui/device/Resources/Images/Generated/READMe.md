@@ -1,0 +1,1 @@
+Generated icons will be placed in this directory after first run. 

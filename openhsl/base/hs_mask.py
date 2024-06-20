@@ -83,7 +83,7 @@ class HSMask:
     # ------------------------------------------------------------------------------------------------------------------
 
     def __len__(self):
-        if np.any(self.data):
+        if self.data is not None:
             return self.data.shape[-1]
         else:
             return 0
@@ -126,7 +126,9 @@ class HSMask:
         self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
     # ------------------------------------------------------------------------------------------------------------------
 
-    def add_void_layer(self, pos: int):
+    def add_void_layer(self,
+                       pos: int = 0,
+                       shape=None):
         """
         add_void_layer(pos)
             adds filled by zeros layer in mask by index
@@ -134,10 +136,17 @@ class HSMask:
             ----------
             pos: int
                 layer position for adding
+            shape: tuple
+                shape of void layer
         """
-        tmp_list = list(np.transpose(self.data, (2, 0, 1)))
-        tmp_list.insert(pos, np.zeros(self.data.shape[:-1], dtype="uint8"))
-        self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
+        if np.any(self.data):
+            tmp_list = list(np.transpose(self.data, (2, 0, 1)))
+            tmp_list.insert(pos, np.zeros(self.data.shape[:-1], dtype="uint8"))
+            self.data = np.transpose(np.array(tmp_list), (1, 2, 0))
+        else:
+            if not shape:
+                raise ValueError('Void shape')
+            self.data = np.transpose(np.array([np.zeros(shape)]), (1, 2, 0))
     # ------------------------------------------------------------------------------------------------------------------
 
     def add_completed_layer(self, pos: int, layer: np.ndarray):
@@ -292,7 +301,7 @@ class HSMask:
         _, file_extension = os.path.splitext(path_to_data)
 
         if file_extension in ['.jpg', '.jpeg', '.bmp', '.png']:
-            self.data = self.load_from_image(path_to_data=path_to_data)
+            self.load_from_image(path_to_data=path_to_data)
 
         elif file_extension == '.npy':
             self.load_from_npy(path_to_data=path_to_data)
@@ -307,7 +316,8 @@ class HSMask:
 
         elif file_extension == '.tiff' or file_extension == '.tif':
             self.load_from_tiff(path_to_data=path_to_data)
-
+        else:
+            raise ValueError("unsupported extension")
         # updates number of classes after loading mask
         self.n_classes = self.data.shape[-1]
         self.load_class_info(path_to_data)
@@ -370,7 +380,12 @@ class HSMask:
 
     def save(self,
              path_to_file: str,
-             key: str = 'img'):
+             key: Optional[str] = 'img'):
+
+        pth = os.path.dirname(path_to_file)
+        if not os.path.exists(pth):
+            os.mkdir(pth)
+
         if path_to_file.endswith('.mat'):
             self.save_to_mat(path_to_file=path_to_file, mat_key=key)
         elif path_to_file.endswith('.h5'):
@@ -430,7 +445,7 @@ class HSMask:
         """
 
         with h5py.File(path_to_file, 'w') as f:
-            f.create_dataset(h5_key, data=self.data)
+            f.create_dataset(h5_key, data=self.get_2d())
         self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
     
@@ -448,7 +463,7 @@ class HSMask:
         path_to_file: str
             Path to file
         """
-        np.save(path_to_file, self.data)
+        np.save(path_to_file, self.get_2d())
         self.save_class_info(path_to_file)
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -491,10 +506,8 @@ class HSMask:
         path_to_save_file: str
             Path to file
         """
-        g = self.data[:, :, 0]
-        g = g.astype(np.uint8)
-        img = Image.fromarray(g)
-        #img = img.convert("L")
+        img_2d = self.get_2d()
+        img = Image.fromarray(img_2d)
         img.save(path_to_save_file)
         self.save_class_info(path_to_save_file)
     # ------------------------------------------------------------------------------------------------------------------
