@@ -1069,14 +1069,20 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                 print(data)
                 
                 the_new_mask.append(data)  # Easy, as this is implemented in annotator
+                print(self.hsmask.data.shape, ind, " shape")
+                
+                self.hsmask.delete_layer(pos=ind) 
                 self.hsmask.add_completed_layer(layer=data, pos=ind) 
+                print(self.hsmask.data.shape, " shape")
+                
                 
                 #from matplotlib import pyplot as PLT
                 #PLT.imshow(the_new_mask[ind], interpolation='nearest')
                 #PLT.show()    
            
- 
-            
+            print(len(the_new_mask), self.hsmask.data.shape, " len and shape")
+           
+           
             #self.hsmask.data[0] = the_new_mask #self.annotator.mask_pixmap_multy[i]
             self.hsmask.save(save_path_masks, self.key_answer)
             self.status_bar_message("ready")
@@ -1836,13 +1842,15 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         #h, w = self.current_image.rect().height(), self.current_image.rect().width() 
         data = np.eye(mask_h, mask_w) # np.eye(mask_h, mask_w) np.zeros((mask_h,mask_w))
         
-        #print(len(self.annotator._overlayHandle), self.hsmask.data, " zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz")
+        
         if cind == 0:
             self.hsmask.add_void_layer(shape=(mask_h,mask_w))        
-        else:        
+            print(self.hsmask.data.shape, " ------------------ self.hsmask.data.shape ---- create_hsmask_layer")
+        else:
+            print(self.hsmask.data.shape, " ------------------ self.hsmask.data.shape ---- create_hsmask_layer")          
             self.hsmask.add_completed_layer(layer=data, pos=cind)        
         #print(len(self.annotator._overlayHandle), " zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz")    
-        #print(self.hsmask.data.shape, "self.hsmask.data.shape ------------------ v01")          
+        print(self.hsmask.data.shape, " ------------------ self.hsmask.data.shape ---- create_hsmask_layer")          
 
         ################################################
         # add_empty_mask_layer
@@ -1879,8 +1887,6 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             #hsmask.add_void_layer(i)
             layer_img = self.hsmask.data[:, :, i] # self.loaded_hsmask[:, :, i] self.hsmask.data
         
-        
-        #print(type(layer_img), layer_img.shape, len(layer_img), "type(layer_img), layer_img.shape, len(layer_img)")
         
         the_color = QColor("#63" + self.add_layer_current_color.split("#")[1])
         self.current_paint = the_color
