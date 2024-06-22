@@ -4,7 +4,7 @@ import numpy as np
 import collections
 from qimage2ndarray import rgb_view, alpha_view, array2qimage, byte_view
 from PyQt5.QtCore import Qt, QRectF, pyqtSignal, QT_VERSION_STR, QPoint
-from PyQt5.QtGui import QImage, QPixmap, QPainterPath, QPainter, QColor, QPen
+from PyQt5.QtGui import QImage, QPixmap, QPainterPath, QPainter, QColor, QPen, QBrush
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QFileDialog, QApplication
 
 __author__ = "AI dept"
@@ -133,6 +133,13 @@ class QtImageAnnotator(QGraphicsView):
         self.isANDImethod = False
 
         self.mask_pixmap_multy = []
+        
+        self._cursorHandle = self.scene.addEllipse(0, 0, self.brush_diameter, self.brush_diameter)
+
+        # Add also X to the cursor for "delete" operation, and hide it by default only showing it when the
+        # either the global drawing mode is set to ERASE or when CTRL is held while drawing
+        self._deleteCrossHandles = (self.scene.addLine(0, 0, self.brush_diameter, self.brush_diameter),
+                                    self.scene.addLine(0, self.brush_diameter, self.brush_diameter, 0))
 
     def hasImage(self):
         """ Returns whether or not the scene contains an image pixmap.
@@ -321,6 +328,7 @@ class QtImageAnnotator(QGraphicsView):
 
         ###############################################
 
+        '''
         # Add brush cursor to top layer
         self._cursorHandle = self.scene.addEllipse(0, 0, self.brush_diameter, self.brush_diameter)
 
@@ -328,6 +336,7 @@ class QtImageAnnotator(QGraphicsView):
         # either the global drawing mode is set to ERASE or when CTRL is held while drawing
         self._deleteCrossHandles = (self.scene.addLine(0, 0, self.brush_diameter, self.brush_diameter),
                                     self.scene.addLine(0, self.brush_diameter, self.brush_diameter, 0))
+        '''
 
         if self.current_painting_mode is not self.MODE_ERASE:
             self._deleteCrossHandles[0].hide()
@@ -379,13 +388,11 @@ class QtImageAnnotator(QGraphicsView):
         self._pixmapHandle = self.scene.addPixmap(pixmap)
         self.setSceneRect(QRectF(pixmap.rect()))
 
-
         # Off-screen mask for direct drawing
         if direct_mask_paint:
             # We need to convert the offscreen mask to QImage at this point
             if data_shape == True:
                 gray_mask = QImage(mask.data[:,:,0], mask.data.shape[1], mask.data.shape[0], mask.data.strides[0], QImage.Format_Grayscale8)
-    
             else:
                 gray_mask = QImage(mask[:,:,0], mask.shape[1], mask.shape[0], mask.strides[0], QImage.Format_Grayscale8)
 
@@ -415,7 +422,7 @@ class QtImageAnnotator(QGraphicsView):
             #if is_load_mask == True:
                 
             ind_layer = num_layers - 1
-            #print(process_gray2rgb, self.d_gray2rgb_arr, "-------------------- process_gray2rgb, self.d_gray2rgb_arr")
+            
             if process_gray2rgb:
                 ########## print(self.d_gray2rgb_arr, "self.d_gray2rgb_arr")
                 if self.d_gray2rgb_arr:
@@ -467,19 +474,10 @@ class QtImageAnnotator(QGraphicsView):
                     mask_ = mask.data[:,:,ind_layer]
                 else:
                     mask_ = mask[:,:,ind_layer]
-                    
-                    import matplotlib.pyplot as plt
-                    plt.imshow(mask_)
-                    plt.show()   
-                        
+                       
                 #mask_ = mask.data[:,:,ind_layer]
                 use_mask = array2qimage(mask_)            
             
-            #from matplotlib import pyplot as PLT
-            #PLT.imshow(mask_, interpolation='nearest')
-            #PLT.show()    
-            
-            print(use_mask, "-------------------- use_mask")
             
             if after_delete_layer == False:
                 pixmap = QPixmap.fromImage(use_mask)
@@ -496,24 +494,28 @@ class QtImageAnnotator(QGraphicsView):
                 for i in range(ind_layer+1):
                     self._overlayHandle[i] = self.scene.addPixmap(self.mask_pixmap_multy[i])
                             
-
-            
-            print(len(self._overlayHandle), "-------------------- len(self._overlayHandle)")            
+  
             ###############################################
-
-        # Add brush cursor to top layer
-        self._cursorHandle = self.scene.addEllipse(0, 0, self.brush_diameter, self.brush_diameter)
-        # Add also X to the cursor for "delete" operation, and hide it by default only showing it when the
-        self._deleteCrossHandles = (self.scene.addLine(0, 0, self.brush_diameter, self.brush_diameter),
-                                    self.scene.addLine(0, self.brush_diameter, self.brush_diameter, 0))
         
+
+        # Add brush cursor to top layer            
+        self.add_drush_cursor_to_top()
+        
+        self.updateViewer()
+        
+#######################################################################################
+    def add_drush_cursor_to_top(self):
+        # Add brush cursor to top layer            
+        self.scene.removeItem(self._cursorHandle)        
+        color = self.brush_fill_color #QColor(46, 84, 255)
+        self._cursorHandle = self.scene.addEllipse(0, 0, self.brush_diameter, self.brush_diameter, QPen(color)) # , QBrush(color)
+        # Add also X to the cursor for "delete" operation, and hide it by default only showing it when the
+        self._deleteCrossHandles = (self.scene.addLine(0, 0, self.brush_diameter, self.brush_diameter, QPen(color)),
+                                    self.scene.addLine(0, self.brush_diameter, self.brush_diameter, 0, QPen(color)))                
         if self.current_painting_mode is not self.MODE_ERASE:
             self._deleteCrossHandles[0].hide()
             self._deleteCrossHandles[1].hide()
-        
-        self.updateViewer()
-#######################################################################################
-
+            
 #######################################################################################
     # для update_annotator_view     - накладывает несколько цветов по слоям маски
     def update_MaskLayers(self, image, mask, helper=None, aux_helper=None,
@@ -543,7 +545,6 @@ class QtImageAnnotator(QGraphicsView):
         else:
             raise RuntimeError("QtImageAnnotator.clearAndSetImageAndMask: Argument must be a QImage or QPixmap.")
 
-        print(pixmap, "self.current_img !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         self.current_img = pixmap # for ai mask
 
         self.shape = pixmap.height(), pixmap.width()
@@ -586,7 +587,7 @@ class QtImageAnnotator(QGraphicsView):
                     if self.d_gray2rgb_arr:
                         # We assume mask is np array, grayscale and the conversion rules are set (otherwise cannot continue)
                         h, w, = a1,a2 # h, w, p = mask.data.shape
-                        
+                                                
                         if data_shape == True:
                             if is_hidden == True:
                                 mask_ = mask[:,:,ind_layer] # mask.data[:,:,ind_layer]
@@ -594,12 +595,10 @@ class QtImageAnnotator(QGraphicsView):
                                 mask_ = mask.data[:,:,ind_layer]
                         else:
                             mask_ = mask[:,:,ind_layer]   
-
-                        
-                        print(mask_, " mask_ ")                        
+                   
                         #print(self.d_gray2rgb_arr, "self.d_gray2rgb_arr")
                         #print(self.d_gray2rgb_arr.keys(), "self.d_gray2rgb_arr.keys")
-                        print(self.d_gray2rgb_arr.keys(), ind_layer, "////////////////////")
+                        print(self.d_gray2rgb_arr.keys(), ind_layer, "//// self.d_gray2rgb_arr.keys(), ind_layer ////")
                         mask_ = mask_ * list(self.d_gray2rgb_arr.keys())[ind_layer]
                         
                         new_mask = np.zeros((h, w, 4), np.uint8)
@@ -609,11 +608,6 @@ class QtImageAnnotator(QGraphicsView):
                             #print (gr, rgb)
                             col = QColor("#63" + rgb.split("#")[1]).getRgb() #col = QColor("#63" + "#ddffe7".split("#")[1]).getRgb() #color.getRgb() # QColor("#63" + rgb.split("#")[1]).getRgb() 
                             new_mask[mask_ == gr] = col
-
-                        #print(new_mask, "new_mask")                                                
-                        #from matplotlib import pyplot as PLT
-                        #PLT.imshow(new_mask, interpolation='nearest')
-                        #PLT.show() 
                         
                         use_mask = array2qimage(new_mask) #array2qimage(new_mask)
                     else:
@@ -629,22 +623,16 @@ class QtImageAnnotator(QGraphicsView):
                     else:
                         mask_ = mask[:,:,ind_layer]
                         
-                        import matplotlib.pyplot as plt
-                        plt.imshow(mask_)
-                        plt.show()   
-                            
                     #mask_ = mask.data[:,:,ind_layer]
                     use_mask = array2qimage(mask_)            
                 
-                #from matplotlib import pyplot as PLT
-                #PLT.imshow(mask_, interpolation='nearest')
-                #PLT.show()    
-                                
+
                 pixmap = QPixmap.fromImage(use_mask)
                 
                 #self.mask_pixmap_multy.append(pixmap) # self.mask_pixmap_multy[ind_layer] = pixmap                     
                
                 if len(self._overlayHandle) != 0:   # при отсутствии слоёв, чтобы не давало ошибку в прокрутке wavel
+                    
                     self._overlayHandle[ind_layer] = self.scene.addPixmap(self.mask_pixmap_multy[ind_layer])
                     print(self._overlayHandle[ind_layer], " ----- self.scene.addPixmap(self.mask_pixmap_multy[ind_layer])  ")  
                 
@@ -652,21 +640,11 @@ class QtImageAnnotator(QGraphicsView):
                 #self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
             ###############################################
 
-        # Add brush cursor to top layer
-        self._cursorHandle = self.scene.addEllipse(0, 0, self.brush_diameter, self.brush_diameter)
-
-        # Add also X to the cursor for "delete" operation, and hide it by default only showing it when the
-        self._deleteCrossHandles = (self.scene.addLine(0, 0, self.brush_diameter, self.brush_diameter),
-                                    self.scene.addLine(0, self.brush_diameter, self.brush_diameter, 0))
-
-        
-        if self.current_painting_mode is not self.MODE_ERASE:
-            self._deleteCrossHandles[0].hide()
-            self._deleteCrossHandles[1].hide()
+        # Add brush cursor to top layer            
+        self.add_drush_cursor_to_top()
         
         self.updateViewer()
 #######################################################################################       
-
 
 
 #######################################################################################
@@ -758,9 +736,9 @@ class QtImageAnnotator(QGraphicsView):
                         
                         if data_shape == True:
                             if is_hidden == True:
-                                mask_ = mask[:,:,ind_layer] # mask.data[:,:,ind_layer]
+                                mask_ = mask[:,:,ind_layer] #
                             else:
-                                mask_ = mask.data[:,:,ind_layer]
+                                mask_ = mask.data[:,:,ind_layer] # mask.data[:,:,ind_layer]
                         else:
                             mask_ = mask[:,:,ind_layer]   
 
@@ -822,13 +800,14 @@ class QtImageAnnotator(QGraphicsView):
                 #self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
             ###############################################
 
+        '''
         # Add brush cursor to top layer
         self._cursorHandle = self.scene.addEllipse(0, 0, self.brush_diameter, self.brush_diameter)
 
         # Add also X to the cursor for "delete" operation, and hide it by default only showing it when the
         self._deleteCrossHandles = (self.scene.addLine(0, 0, self.brush_diameter, self.brush_diameter),
                                     self.scene.addLine(0, self.brush_diameter, self.brush_diameter, 0))
-
+        '''
         
         if self.current_painting_mode is not self.MODE_ERASE:
             self._deleteCrossHandles[0].hide()
@@ -950,6 +929,7 @@ class QtImageAnnotator(QGraphicsView):
         ###############################################
         ###############################################
 
+        '''
         # Add brush cursor to top layer
         self._cursorHandle = self.scene.addEllipse(0, 0, self.brush_diameter, self.brush_diameter)
 
@@ -957,7 +937,8 @@ class QtImageAnnotator(QGraphicsView):
         # either the global drawing mode is set to ERASE or when CTRL is held while drawing
         self._deleteCrossHandles = (self.scene.addLine(0, 0, self.brush_diameter, self.brush_diameter),
                                     self.scene.addLine(0, self.brush_diameter, self.brush_diameter, 0))
-
+        '''
+        
         if self.current_painting_mode is not self.MODE_ERASE:
             self._deleteCrossHandles[0].hide()
             self._deleteCrossHandles[1].hide()
@@ -1024,6 +1005,7 @@ class QtImageAnnotator(QGraphicsView):
         self.mask_pixmap.fill(QColor(0,0,0,0))
         self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
 
+        '''
         # Add brush cursor to top layer
         self._cursorHandle = self.scene.addEllipse(0,0,self.brush_diameter,self.brush_diameter)
 
@@ -1031,7 +1013,8 @@ class QtImageAnnotator(QGraphicsView):
         # either the global drawing mode is set to ERASE or when CTRL is held while drawing
         self._deleteCrossHandles = (self.scene.addLine(0, 0, self.brush_diameter, self.brush_diameter),
                                     self.scene.addLine(0, self.brush_diameter, self.brush_diameter, 0))
-
+        '''
+        
         if self.current_painting_mode is not self.MODE_ERASE:
             self._deleteCrossHandles[0].hide()
             self._deleteCrossHandles[1].hide()
@@ -1159,68 +1142,101 @@ class QtImageAnnotator(QGraphicsView):
 
 #######################################################################################
     # Draws a single ellipse
-    def fillMarker(self, event):
-      
-        scenePos = self.mapToScene(event.pos())
-        print(self.mask_pixmap_multy[self.layer_mask], "ffffffffff")
-        painter = QPainter(self.mask_pixmap_multy[self.layer_mask])
-        painter.setCompositionMode(self.current_painting_mode)
-        painter.setPen(self.brush_fill_color)
-        painter.setBrush(self.brush_fill_color)
-        
+    def fillMarker(self, event):      
+        scenePos = self.mapToScene(event.pos())        
+
         # Get the coordinates of where to draw
-        a0 = scenePos.x() - self.brush_diameter/2
-        b0 = scenePos.y() - self.brush_diameter/2
+        a0 = scenePos.x() - self.brush_diameter/2 # scenePos.x() - self.brush_diameter/2
+        b0 = scenePos.y() - self.brush_diameter/2 # scenePos.y() - self.brush_diameter/2
         r0 = self.brush_diameter
 
-        # Finally, draw
-        painter.drawEllipse(int(a0), int(b0), r0, r0)
-
-        self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap_multy[self.layer_mask])
-
-        # In case of direct mask paint mode, we need to paint on the mask as well
+        # Finally, draw        
+        for ind in range(len(self._overlayHandle)):
+            if ind == self.layer_mask:
+                print("space")
+                painter_b = QPainter(self.mask_pixmap_multy[ind])
+                painter_b.setCompositionMode(self.current_painting_mode)
+                painter_b.setPen(self.brush_fill_color)
+                painter_b.setBrush(self.brush_fill_color)                                 
+                painter_b.drawEllipse(int(a0), int(b0), r0, r0)                        
+                self._overlayHandle[ind].setPixmap(self.mask_pixmap_multy[ind])
+            else:
+                painter_b = QPainter(self.mask_pixmap_multy[ind])
+                painter_b.setCompositionMode(self.MODE_ERASE)
+                painter_b.setPen(self.brush_fill_color)
+                painter_b.setBrush(self.brush_fill_color)                                 
+                painter_b.drawEllipse(int(a0), int(b0), r0, r0)                        
+                self._overlayHandle[ind].setPixmap(self.mask_pixmap_multy[ind])        
+       
+        # In case of direct mask paint mode, we need to paint on the mask as well                
         if self.direct_mask_paint:
-            if not self.d_rgb2gray:
-                raise RuntimeError("Cannot use direct mask painting since there is no color conversion rules set.")
-            painter = QPainter(self._offscreen_mask)
-            painter.setCompositionMode(self.current_painting_mode)
-            tc = self.d_rgb2gray[self.brush_fill_color.name()]
-            painter.setPen(QColor(tc,tc,tc))
-            painter.setBrush(QColor(tc,tc,tc))
-            painter.drawEllipse(a0, b0, r0, r0)
-
+            print("... self.direct_mask_paint")
+            for i in range(len(self._overlayHandle)):
+                if i == self.layer_mask:
+                    print("space_2")
+                    painter2 = QPainter(self._offscreen_mask)
+                    painter2.setCompositionMode(self.current_painting_mode)
+                    tc = self.d_rgb2gray[self.brush_fill_color.name()]
+                    painter2.setPen(QColor(tc,tc,tc))
+                    painter2.setBrush(QColor(tc,tc,tc))
+                    painter2.drawEllipse(a0, b0, r0, r0)
+                else:
+                    painter2 = QPainter(self._offscreen_mask)
+                    painter2.setCompositionMode(self.MODE_ERASE)
+                    tc = self.d_rgb2gray[self.brush_fill_color.name()]
+                    painter2.setPen(QColor(tc,tc,tc))
+                    painter2.setBrush(QColor(tc,tc,tc))
+                    painter2.drawEllipse(a0, b0, r0, r0)
+        
         self.lastPoint = scenePos
 
     # Draws a line
     def drawMarkerLine(self, event):
         scenePos = self.mapToScene(event.pos())
-        print(len(self.mask_pixmap_multy), self.mask_pixmap_multy[self.layer_mask], "+++++++++++++++++++++++++++++++++++++++++++++ self.mask_pixmap drawMarkerLine")
-        
-        #sel = self._overlayHandle[self.layer_mask]
-        painter = QPainter(self.mask_pixmap_multy[self.layer_mask]) #
-        painter.setCompositionMode(self.current_painting_mode)
-        painter.setPen(QPen(self.brush_fill_color,
-                            self.brush_diameter, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        painter.drawLine(self.lastPoint, scenePos)
-        
-        ###################### self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
-        print(self.layer_mask, len(self._overlayHandle), len(self.mask_pixmap_multy), "**************************  self.layer_mask")
 
-        self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap_multy[self.layer_mask])
+        #print(self.layer_mask, len(self._overlayHandle), len(self.mask_pixmap_multy), "**************************  self.layer_mask")
+        # удаление со слоёв за ним
         
-        # In case of direct mask paint mode, we need to paint on the mask as well
+        for i in range(len(self._overlayHandle)):
+            if i == self.layer_mask:
+                print("space")
+                painter2 = QPainter(self.mask_pixmap_multy[i]) #
+                painter2.setCompositionMode(self.current_painting_mode)
+                painter2.setPen(QPen(self.brush_fill_color, self.brush_diameter, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+                painter2.drawLine(self.lastPoint, scenePos)
+                self._overlayHandle[i].setPixmap(self.mask_pixmap_multy[i])
+            else:
+                painter2 = QPainter(self.mask_pixmap_multy[i]) #
+                painter2.setCompositionMode(self.MODE_ERASE)
+                painter2.setPen(QPen(self.brush_fill_color, self.brush_diameter, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+                painter2.drawLine(self.lastPoint, scenePos)
+                self._overlayHandle[i].setPixmap(self.mask_pixmap_multy[i])
+        
+       
+        # In case of direct mask paint mode, we need to paint on the mask as well       
+        
         if self.direct_mask_paint:
             if not self.d_rgb2gray:
                 raise RuntimeError("Cannot use direct mask painting since there is no color conversion rules set.")
-            painter = QPainter(self._offscreen_mask)
-            painter.setCompositionMode(self.current_painting_mode)
-            tc = self.d_rgb2gray[self.brush_fill_color.name()]
-            painter.setPen(QPen(QColor(tc, tc, tc),
-                           self.brush_diameter, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-            painter.drawLine(self.lastPoint, scenePos)
-
-        self.lastPoint = scenePos
-        
+                        
+            for i in range(len(self._overlayHandle)):
+                if i == self.layer_mask:
+                    print("space_2")
+                    painter2 = QPainter(self._offscreen_mask)
+                    painter2.setCompositionMode(self.current_painting_mode)
+                    tc = self.d_rgb2gray[self.brush_fill_color.name()]
+                    painter2.setPen(QPen(QColor(tc, tc, tc),
+                                self.brush_diameter, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+                    painter2.drawLine(self.lastPoint, scenePos)        
+                else:
+                    painter2 = QPainter(self._offscreen_mask)
+                    painter2.setCompositionMode(self.MODE_ERASE)
+                    tc = self.d_rgb2gray[self.brush_fill_color.name()]
+                    painter2.setPen(QPen(QColor(tc, tc, tc),
+                                self.brush_diameter, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+                    painter2.drawLine(self.lastPoint, scenePos)        
+            
+        self.lastPoint = scenePos        
         
 
     # Fills an area using the last stored cursor location
@@ -1433,22 +1449,18 @@ class QtImageAnnotator(QGraphicsView):
     def keyPressEvent(self, event):
 
         if self.hasImage():
-
             # Zoom in
             if event.key() == Qt.Key_Plus:
-
                 viewBBox = self.zoomStack[-1] if len(self.zoomStack) else self.sceneRect()
 
                 wh12 = int(max(viewBBox.width(), viewBBox.height()) / self.zoom_in_modifier)
                 x, y = self._lastCursorCoords
-
                 
                 selectionBBox = QRectF(x-wh12, y-wh12, 2*wh12, 2*wh12).intersected(viewBBox)
 
                 if selectionBBox.isValid() and (selectionBBox != viewBBox):
                     self.zoomStack.append(selectionBBox)
-                    self.updateViewer()
-                
+                    self.updateViewer()                
 
             # Zoom out
             if event.key() == Qt.Key_Minus:
@@ -1582,7 +1594,6 @@ class QtImageAnnotator(QGraphicsView):
 
                 # If the user just clicks, add a marker (unless repainting was done)
                 if not repaint_was_active:
-                    print("fillMarker")
                     self.fillMarker(event)
 
                 self.leftMouseButtonPressed.emit(scenePos.x(), scenePos.y())

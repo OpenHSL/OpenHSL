@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'annotator_5jtTDdT.ui'
+## Form generated from reading UI file 'annotator_5ATiXWE.ui'
 ##
 ## Created by: Qt User Interface Compiler version 5.15.2
 ##
@@ -17,7 +17,7 @@ class Ui_AnnotatorMainWindow(object):
     def setupUi(self, AnnotatorMainWindow):
         if not AnnotatorMainWindow.objectName():
             AnnotatorMainWindow.setObjectName(u"AnnotatorMainWindow")
-        AnnotatorMainWindow.resize(1137, 862)
+        AnnotatorMainWindow.resize(1288, 862)
         AnnotatorMainWindow.setMinimumSize(QSize(820, 620))
         self.actionLog = QAction(AnnotatorMainWindow)
         self.actionLog.setObjectName(u"actionLog")
@@ -437,7 +437,7 @@ class Ui_AnnotatorMainWindow(object):
         AnnotatorMainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(AnnotatorMainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1137, 21))
+        self.menubar.setGeometry(QRect(0, 0, 1288, 22))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuView = QMenu(self.menubar)

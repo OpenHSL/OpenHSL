@@ -147,8 +147,8 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
     
     isANDImethod = False
     
-    colors_arr =(['#ddffe7', '#98d7c2', '#167d7f', '#29a0b1','#3d550c', '#81b622', '#ecf87f', '#59981a', '#FBA40A', '#F6D542', '#FCFEA4'])
-    colors_gray_arr =([10, 25, 50, 60, 75, 85, 100, 125, 150, 175, 200])
+    colors_arr =(['#8bc92e', '#2825cc', '#e6f542', '#9c0202','#2ed9d6', '#bf1f82', '#fa6e02', '#00ff2f', '#ff7dc7', '#e04f4f']) # , '#6d8fc9'
+    colors_gray_arr =([10, 25, 50, 60, 75, 85, 100, 125, 150, 175]) 
 
 
     def __init__(self, parent=None):
@@ -575,17 +575,16 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                             color = self.mask_all_colors,
                             is_not_cube_mask = True) # direct_mask_paint=True))     
 
-            
+           
         else: 
             mask = self.hsmask    
-        
+            print(" ------------------обнова каждую смену ползунка hsi / update annotaotr view -----------------------")
             if self.annotation_mode is self.ANNOTATION_MODE_MARKING_DEFECTS:
                 h, w = self.current_image.rect().height(), self.current_image.rect().width()                            
                 helper = np.zeros((h,w,4), dtype=np.uint8)
                 helper[self.current_helper == 0] = list(HELPER_COLOR.getRgb())
                 # self.current_image=qimage2ndarray.array2qimage(self.loaded_hsi[:, :, self.wavelengths.index(self.HSI_slider.value())])
-                print("-----  2   ---- update annotaotr view-------------")                 
-                
+               
                 #print(mask.data)
                 #if mask.data == None:
                 #    print(type(mask))
@@ -603,7 +602,8 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                                             data_shape = True) # direct_mask_paint=True))     
                 
             else:
-
+                print(" ------------------обнова при загрузки-----------------------")
+            
                 # Remember, the mask must be inverted here, but saved properly
                 h, w = self.current_image.rect().height(), self.current_image.rect().width()
                 mask = 255 * np.zeros((h, w, 1), dtype=np.uint8)
@@ -627,7 +627,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                             is_hidden = True) # direct_mask_paint=True))     
          
                 #self.annotator.clearAndSetImageAndMask(self.current_image, mask)
-            
+             
 
     def process_mask(self):
 
@@ -826,7 +826,12 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
           
     def onClicked(self, btn):
         from functools import partial  
-        if btn == 'ANDVI': # btn.text()
+        if btn == 'load': # btn.text()
+            #ai_mask =            
+            self.current_mask = ai_mask
+            self.setmasktocolor(ai_mask, is_multy_layer = False)        
+        
+        elif btn == 'ANDVI': # btn.text()
             ai_mask = ANDVI(self.hsi)            
             self.current_mask = ai_mask
             self.setmasktocolor(ai_mask, is_multy_layer = False)
@@ -986,7 +991,13 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         self.message_box_dialog.setWindowTitle("Внимание")
         self.message_box_dialog.resize(300, 150)
 
+
+ 
         self.message_box_label = QLabel("Выберите метод для получения маски")
+        
+        message_box_ok_button_0 = QPushButton("Load Binary")
+        message_box_ok_button_0.clicked.connect(partial(self.onClicked, "load")) # message_box_ok_button.clicked.connect(self.onClicked("ANDVI")) 
+     
         message_box_ok_button = QPushButton("ANDVI метод")
         message_box_ok_button.clicked.connect(partial(self.onClicked, "ANDVI")) # message_box_ok_button.clicked.connect(self.onClicked("ANDVI")) 
         
@@ -1000,6 +1011,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         self.message_box_dialog.setLayout(self.message_box_layout)
 
         self.message_box_layout.addWidget(self.message_box_label)
+        self.message_box_layout.addWidget(message_box_ok_button_0)
         self.message_box_layout.addWidget(message_box_ok_button)
         self.message_box_layout.addWidget(message_box_ok_button_2)
         self.message_box_layout.addWidget(message_box_ok_button_3)
@@ -1459,7 +1471,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                                                 direct_mask_paint=False,
                                                 color = self.mask_all_colors,
                                                 data_shape = True,
-                                                is_load_mask = is_load_mask) # direct_mask_paint=True))     
+                                                is_load_mask = True ) # direct_mask_paint=True))     
             
         self.check_paths()
         self.store_paths_to_config()        
@@ -1864,7 +1876,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         self.dialog_COLOR.setWindowTitle("Параметры генерации")
         self.dialog_COLOR.resize(300, 150)                    
         
-        palette = PaletteGrid('17undertones') # or PaletteHorizontal, or PaletteVertical           
+        palette = PaletteGrid(self.colors_arr) # or PaletteHorizontal, or PaletteVertical   '17undertones'         
           
         message_box_label_2 = QLabel("Name your layer: ")
         self.message_name_layer = QLineEdit()                  
