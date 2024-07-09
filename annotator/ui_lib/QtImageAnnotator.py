@@ -413,7 +413,7 @@ class QtImageAnnotator(QGraphicsView):
             self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap_multy[self.layer_mask])
         
         else:
-            
+            print(mask, "------------------------------------------------------------------ mask")
             if data_shape == True:
                 a1,a2,num_layers = mask.data.shape
             else:
@@ -573,8 +573,8 @@ class QtImageAnnotator(QGraphicsView):
             self._overlayHandle.clear()
             self.mask_pixmap = QPixmap(pixmap.rect().width(), pixmap.rect().height())
             self.mask_pixmap.fill(QColor(0,0,0,0))
-            #self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
-            self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap_multy[self.layer_mask])
+            self._overlayHandle = self.scene.addPixmap(self.mask_pixmap)
+            #self._overlayHandle[self.layer_mask].setPixmap(self.mask_pixmap_multy[self.layer_mask])
         
         else:
                             

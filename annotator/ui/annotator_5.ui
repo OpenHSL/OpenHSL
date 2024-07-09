@@ -279,6 +279,9 @@
              </item>
              <item>
               <widget class="QSlider" name="sldBrushDiameter">
+               <property name="value">
+                <number>30</number>
+               </property>
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
                </property>

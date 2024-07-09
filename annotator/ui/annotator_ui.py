@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'annotator_5jtTDdT.ui'
+## Form generated from reading UI file 'annotator_5sHTrmR.ui'
 ##
 ## Created by: Qt User Interface Compiler version 5.15.2
 ##
@@ -175,6 +175,7 @@ class Ui_AnnotatorMainWindow(object):
 
         self.sldBrushDiameter = QSlider(self.gbAnnotWindow)
         self.sldBrushDiameter.setObjectName(u"sldBrushDiameter")
+        self.sldBrushDiameter.setValue(30)
         self.sldBrushDiameter.setOrientation(Qt.Horizontal)
 
         self.horizontalLayout_8.addWidget(self.sldBrushDiameter)

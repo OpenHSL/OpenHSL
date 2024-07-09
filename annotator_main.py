@@ -607,15 +607,23 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
                 print(" ------------------обнова при загрузки-----------------------")
             
                 # Remember, the mask must be inverted here, but saved properly
-                h, w = self.current_image.rect().height(), self.current_image.rect().width()
-                mask = 255 * np.zeros((h, w, 1), dtype=np.uint8)
-                mask[self.current_updated_mask == 0] = list(MARK_COLOR_MASK.getRgb())
+                #h, w = self.current_image.rect().height(), self.current_image.rect().width()
+                #mask = 255 * np.zeros((h, w, 4), dtype=np.uint8)
                 
+                mask = self.current_mask #  mask = self.hsmask self.current_mask
+                #print(mask.data.shape, self.current_updated_mask, list(MARK_COLOR_MASK.getRgb()), "______")
+                #mask[self.current_updated_mask == 0] = 0  # list(MARK_COLOR_MASK.getRgb())
+             
+                where_not0 = np.where(mask != 0)
+                mask[where_not0] = 0
+                 
                 cind = self.lstDefectsAndColors.currentIndex()
+                
                 lol = []
                 #a,b,c = self.hsmask.data.shape()
-                lol = self.hsmask.data
-                lol[:,:,cind] = mask[:,:,1]
+                lol = self.hsmask # self.hsmask.data
+                
+                lol[:,:,cind] = mask
                 #self.hsmask.data.itemset(4, 0)
                 
                 print("-----  3   ---- update annotaotr view-------------") 
@@ -1342,7 +1350,8 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             self.HSI_SLIDER_DEFAULT = (self.HSI_SLIDER_MIN + self.HSI_SLIDER_MAX)/2
             self.HSI_slider.setMinimum(self.HSI_SLIDER_MIN)
             self.HSI_slider.setMaximum(self.HSI_SLIDER_MAX)
-            #self.HSI_slider.setValue(self.HSI_SLIDER_DEFAULT)        
+            print(int(self.HSI_SLIDER_DEFAULT), "!!!! self.HSI_SLIDER_DEFAULT !!!")
+            self.HSI_slider.setValue(int(self.HSI_SLIDER_DEFAULT))        
                 
             # Set the path
             self.txtImageDir.setText(directory)
@@ -1444,16 +1453,34 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         rgb2g_arr = {}        
         g2rgb_arr = {}
 
-        max_index = self.lstDefectsAndColors.count()-1        
-        #print(max_index, self.cspec, "___def apeend_new_lstDefectsAndColors___: max_index, self.cspec")
+        #print(max_index, self.cspec, "___def apeend_new_lstDefectsAndColors___: max_index, self.cspec")        
+
+           
+        #for i in range(self.lstDefectsAndColors.count()):
+        #    print(self.lstDefectsAndColors.count(), "!!!!!!!!!!!!!!!!!!!!!!! self.lstDefectsAndColors.count()")
+        #    self.delete_layerclass(index=i)
+        #self.clear_all_annotations() 
         
+        '''
+        self.d_gray2rgb_arr.clear()
+        self.d_rgb2gray_arr.clear() 
+        self.annotator.d_gray2rgb_arr.clear()
+        self.annotator.d_rgb2gray_arr.clear()            
+        self.mask_all_colors.clear() 
+        self.mask_all_colors_rgb_to.clear() 
+        '''
+            
         self.lstDefectsAndColors.clear()
-        self.cspec.clear()         
+        
+        self.cspec.clear()  
+
+        
         #for ind_d in range(max_index):
         #        self.cspec.pop(ind_d)
         #        self.lstDefectsAndColors.removeItem(ind_d)                
     
-        for i in range(k):                                                       
+        for i in range(k):                
+            print(self.colors_arr, i, self.colors_arr[i], " ================ add new lstD")                                       
             self.add_layer_current_color = self.colors_arr[i]
             self.add_layer_current_color_rgb_to = self.colors_gray_arr[i]
             #print(self.cspec, i, k, "self.cspec, i, k,")
@@ -1524,7 +1551,8 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         #self.annotator.d_gray2rgb = self.d_gray2rgb
         
         self.current_mask = layer_img
-        self.current_defect = self.current_mask         
+        self.current_defect = self.current_mask       
+        self.current_updated_mask  = self.current_mask
         
         '''
         if is_browser_load == True:
@@ -1745,22 +1773,18 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
         self.annotator.brush_fill_color = the_color
 
 
-    def delete_layerclass(self):        
+    def delete_layerclass(self, index=None):        
+        
+        print(index, "*********************   delete_layerclass  // index")
+            
         cind = self.lstDefectsAndColors.currentIndex()
-        
-
         self.lstDefectsAndColors.removeItem(cind)
-
-        print(self.d_gray2rgb_arr, "..........self.d_gray2rgb_arr ")
-        
-        
-        self.annotator.d_rgb2gray_arr = self.d_rgb2gray_arr
-        self.annotator.d_gray2rgb_arr = self.d_gray2rgb_arr
+       
+        #self.annotator.d_rgb2gray_arr = self.d_rgb2gray_arr
+        #self.annotator.d_gray2rgb_arr = self.d_gray2rgb_arr
         
         #self.annotator.d_gray2rgb_arr.pop(self.cspec[cind]["COLOR_GSCALE_MAPPING"])              
         self.cspec.pop(cind)
-        print(self.cspec , "......... cspec ")        
-        print(self.hsmask.data.shape, cind, "self.hsmask.shape *******************")
         
         # удаление с общей маски
         #self.add_layer_current_color
@@ -1780,9 +1804,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
             #self.hsmask.add_void_layer(shape=(mask_h,mask_w), pos=cind-1)
             #self.hsmask.add_completed_layer(layer=data, pos=cind-1) 
             #print(self.hsmask.data.shape, " 2 2 ")
-            self.hsmask.delete_layer(cind)
-          
-
+            self.hsmask.delete_layer(cind)          
 
         print(len(self.annotator.mask_pixmap_multy), " ----------------------  ")
         self.annotator.mask_pixmap_multy.pop(cind) # self.annotator.layer_mask
@@ -1926,6 +1948,7 @@ class AnnotatorGUI(QtWidgets.QMainWindow, annotator_ui.Ui_AnnotatorMainWindow):
 
         self.current_mask = layer_img
         self.current_defect = self.current_mask        
+        self.current_updated_mask = self.current_mask
         
         #self.current_image=qimage2ndarray.array2qimage(self.loaded_hsi[:, :, self.HSI_slider.value()]) 
 
